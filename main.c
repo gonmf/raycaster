@@ -11,14 +11,8 @@ typedef struct  __attribute__((__packed__)) __pixel_ {
     unsigned char red;
     unsigned char green;
     unsigned char blue;
-    unsigned char alpha;
+    unsigned char alpha; // not used but present for performance
 } pixel_t;
-
-typedef struct  __attribute__((__packed__)) __image_ {
-    unsigned int width;
-    unsigned int height;
-    pixel_t data[];
-} image_t;
 
 typedef struct  __attribute__((__packed__)) __maze_ {
     unsigned int width;
@@ -29,23 +23,27 @@ typedef struct  __attribute__((__packed__)) __maze_ {
     unsigned char contents[];
 } maze_t;
 
-#define RADIAN_CONSTANT 57.2957795131 // 180 / Pi
+#define RADIAN_CONSTANT 57.2957795131 // equals 180 / Pi
 
 #define MAZE_EMPTY 0 
 #define MAZE_BLOCK 1
-#define RAY_STEP 128.0
-#define MAX_KEYS_PRESSED 16
+#define KEYS_PRESSED_BUFFER_SIZE 16
 
-static image_t * create_image(unsigned int width, unsigned int height) {
-    unsigned int total_size = sizeof(int) * 2 + sizeof(pixel_t) * width * height;
+#define VIEWPORT_WIDTH 800
+#define VIEWPORT_HEIGHT 600
+#define MAX_FPS 60
+#define FIELD_OF_VIEW 72.0 // degrees
 
-    image_t * ret = (image_t *)calloc(total_size, 1);
+// Voodoo:
+#define MOVEMENT_CONSTANT 0.095
+#define RAY_STEP_CONSTANT 0.0078125
 
-    ret->width = width;
-    ret->height = height;
+static pixel_t bg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
+static pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
-    return ret;
-}
+static sfKeyCode keys_pressed[KEYS_PRESSED_BUFFER_SIZE];
+static unsigned char keys_pressed_count;
+static maze_t * maze;
 
 static maze_t * create_maze(unsigned int width, unsigned int height) {
     unsigned int total_size = sizeof(int) * 2 + sizeof(double) * 3 + width * height;
@@ -71,39 +69,39 @@ static maze_t * create_maze(unsigned int width, unsigned int height) {
     return ret;
 }
 
-static double horizon_distance(const image_t * image, unsigned int x, unsigned int y) {
-    if (x < image->width / 2) {
-        x = image->width / 2 - x;
+static double horizon_distance(unsigned int x, unsigned int y) {
+    if (x < VIEWPORT_WIDTH / 2) {
+        x = VIEWPORT_WIDTH / 2 - x;
     } else {
-        x = x - image->width / 2;
+        x = x - VIEWPORT_WIDTH / 2;
     }
 
-    double w2 = (double)(image->width / 2);
-    double h2 = (double)(image->height / 2);
+    double w2 = (double)(VIEWPORT_WIDTH / 2);
+    double h2 = (double)(VIEWPORT_HEIGHT / 2);
     double max = sqrt(w2 * w2 + h2 * h2);
     double dst_to_max = 1.0 - sqrt(((double)x) * x + ((double)y) * y) / max;
     return (dst_to_max + 1.0) / 2.0;
 }
 
-static void paint_horizon(image_t * image) {
-    for (unsigned int y = 0; y < image->height; ++y) {
-        for (unsigned int x = 0; x < image->width; ++x) {
+static void fill_in_background() {
+    for (unsigned int y = 0; y < VIEWPORT_HEIGHT; ++y) {
+        for (unsigned int x = 0; x < VIEWPORT_WIDTH; ++x) {
             double r, g, b, factor;
 
-            if (y < image->height / 2) { // sky
-                factor = horizon_distance(image, x, y);
+            if (y < VIEWPORT_HEIGHT / 2) { // sky
+                factor = horizon_distance(x, y);
 
                 r = 113.0 * factor;
                 g = 113.0 * factor;
                 b = 210.0 * factor;
             } else { // floor
-                factor = horizon_distance(image, x, image->height - y - 1);
+                factor = horizon_distance(x, VIEWPORT_HEIGHT - y - 1);
                 r = 113.0 * factor;
                 g = 112.0 * factor;
                 b = 107.0 * factor;
             }
 
-            pixel_t * pixel = &(image->data[x + y * image->width]);
+            pixel_t * pixel = &(bg_buffer[x + y * VIEWPORT_WIDTH]);
             pixel->red = (unsigned char)r;
             pixel->green = (unsigned char)g;
             pixel->blue = (unsigned char)b;
@@ -111,7 +109,7 @@ static void paint_horizon(image_t * image) {
     }
 }
 
-static void randomize_maze(maze_t * maze) {
+static void randomize_maze() {
     for (unsigned int y = 0; y < maze->height; ++y) {
         for (unsigned int x = 0; x < maze->width; ++x) {
             double r = ((double)rand()) / RAND_MAX;
@@ -129,16 +127,18 @@ static void randomize_maze(maze_t * maze) {
 }
 
 static double fit_angle(double d) {
-    while (d < 0.0) d += 360.0;
-    while (d >= 360.0) d -= 360.0;
+    if (d < 0.0) {
+        d += 360.0;
+    } else if (d >= 360.0) {
+        d -= 360.0;
+    }
     return d;
 }
 
-static unsigned int cast_ray(const image_t * image, const maze_t * maze, double angle) {
+static unsigned int cast_ray(const maze_t * maze, double angle) {
     double angle_radians = angle / RADIAN_CONSTANT;
-    double hypotenuse = 1.0 / RAY_STEP;
-    double x_change = sin(angle_radians) * hypotenuse;
-    double y_change = cos(angle_radians) * hypotenuse;
+    double x_change = sin(angle_radians) * RAY_STEP_CONSTANT;
+    double y_change = cos(angle_radians) * RAY_STEP_CONSTANT;
     double curr_x = maze->observer_x;
     double curr_y = maze->observer_y;
 
@@ -163,17 +163,16 @@ static unsigned char block_color(unsigned char val, double factor) {
     return (unsigned char)(val * factor);
 }
 
-static void paint_maze(image_t * image, const maze_t * maze) {
-    double fov = 72.0;
-    double min_angle = fit_angle(maze->observer_angle - fov / 2.0);
+static void paint_maze(const maze_t * maze) {
+    double min_angle = fit_angle(maze->observer_angle - FIELD_OF_VIEW / 2.0);
     unsigned int min_distance = 0;
 
-    for (unsigned int x = 0 ; x < image->width; ++x) {
-        double x_angle = (((double)x) / image->width);
-        x_angle = fit_angle(min_angle + fov * x_angle);
+    for (unsigned int x = 0 ; x < VIEWPORT_WIDTH; ++x) {
+        double x_angle = (((double)x) / VIEWPORT_WIDTH);
+        x_angle = fit_angle(min_angle + FIELD_OF_VIEW * x_angle);
 
 
-        unsigned int distance = cast_ray(image, maze, x_angle);
+        unsigned int distance = cast_ray(maze, x_angle);
         if (min_distance == 0 || min_distance > distance) {
             min_distance = distance;
         }
@@ -184,16 +183,15 @@ static void paint_maze(image_t * image, const maze_t * maze) {
             block_size = 1.0;
         }
 
-        // printf("\tblock_size=%f\n", block_size);
-        unsigned int mid = image->height / 2;
+        unsigned int mid = VIEWPORT_HEIGHT / 2;
         for (unsigned int y = 0; y < (unsigned int)(mid * block_size); ++y) {
             pixel_t * pixel;
 
-            pixel = &(image->data[x + (y + mid) * image->width]);
+            pixel = &(fg_buffer[x + (y + mid) * VIEWPORT_WIDTH]);
             pixel->red = block_color(61, block_size);
             pixel->green = block_color(40, block_size);
             pixel->blue = block_color(23, block_size);
-            pixel = &(image->data[x + (mid - y) * image->width]);
+            pixel = &(fg_buffer[x + (mid - y) * VIEWPORT_WIDTH]);
             pixel->red = block_color(61, block_size);
             pixel->green = block_color(40, block_size);
             pixel->blue = block_color(23, block_size);
@@ -201,38 +199,36 @@ static void paint_maze(image_t * image, const maze_t * maze) {
     }
 }
 
-static void clone_painting(image_t * restrict dst, const image_t * restrict src) {
-    unsigned int total_size = sizeof(int) * 2 + sizeof(pixel_t) * src->width * src->height;
-    memcpy(dst, src, total_size);
+static void copy_bg_to_fg() {
+    memcpy(fg_buffer, bg_buffer, sizeof(pixel_t) * VIEWPORT_WIDTH * VIEWPORT_HEIGHT);
 }
 
-static unsigned char add_key_pressed(sfKeyCode * keys_pressed, unsigned char keys_pressed_count, sfKeyCode code) {
-    if (keys_pressed_count == MAX_KEYS_PRESSED) {
-        return MAX_KEYS_PRESSED;
+static void add_key_pressed(sfKeyCode code) {
+    if (keys_pressed_count == KEYS_PRESSED_BUFFER_SIZE) {
+        return;
     }
 
     for (int i = 0; i < keys_pressed_count; ++i) {
         if (keys_pressed[i] == code) {
-            return keys_pressed_count;
+            return;
         }
     }
 
     keys_pressed[keys_pressed_count] = code;
-    return keys_pressed_count + 1;
+    keys_pressed_count += 1;
 }
 
-static unsigned char remove_key_pressed(sfKeyCode * keys_pressed, unsigned char keys_pressed_count, sfKeyCode code) {
+static void remove_key_pressed(sfKeyCode code) {
     for (int i = 0; i < keys_pressed_count; ++i) {
         if (keys_pressed[i] == code) {
             keys_pressed[i] = keys_pressed[keys_pressed_count - 1];
-            return keys_pressed_count - 1;
+            keys_pressed_count -= 1;
+            return;
         }
     }
-
-    return keys_pressed_count;
 }
 
-static int key_is_pressed(const sfKeyCode * keys_pressed, unsigned char keys_pressed_count, sfKeyCode code) {
+static int key_is_pressed(sfKeyCode code) {
     for (int i = 0; i < keys_pressed_count; ++i) {
         if (keys_pressed[i] == code) {
             return 1;
@@ -261,20 +257,59 @@ static void move_observer(maze_t * maze, double x_change, double y_change) {
     maze->observer_y = new_y;
 }
 
-static void main_render_loop(maze_t * maze, unsigned int window_width, unsigned int window_height, unsigned int max_fps) {
-    image_t * image = create_image(window_width, window_height);
-    image_t * horizon = create_image(window_width, window_height);
-    paint_horizon(horizon);
+static void rotate_observer(maze_t * maze, double degrees) {
+    maze->observer_angle = fit_angle(maze->observer_angle + degrees);
+}
+
+static void update_observer_state() {
+    if (key_is_pressed(sfKeyW)) {
+        double angle_radians = maze->observer_angle / RADIAN_CONSTANT;
+        double x_change = sin(angle_radians) * MOVEMENT_CONSTANT;
+        double y_change = cos(angle_radians) * MOVEMENT_CONSTANT;
+
+        move_observer(maze, x_change, y_change);
+    }
+    if (key_is_pressed(sfKeyS)) {
+        double angle_radians = maze->observer_angle / RADIAN_CONSTANT;
+        double x_change = sin(angle_radians) * MOVEMENT_CONSTANT;
+        double y_change = cos(angle_radians) * MOVEMENT_CONSTANT;
+
+        move_observer(maze, -x_change, -y_change);
+    }
+    if (key_is_pressed(sfKeyQ)) {
+        double angle_radians = fit_angle(maze->observer_angle + 270.0) / RADIAN_CONSTANT;
+        double x_change = sin(angle_radians) * MOVEMENT_CONSTANT;
+        double y_change = cos(angle_radians) * MOVEMENT_CONSTANT;
+
+        move_observer(maze, x_change, y_change);
+    }
+    if (key_is_pressed(sfKeyE)) {
+        double angle_radians = fit_angle(maze->observer_angle + 90.0) / RADIAN_CONSTANT;
+        double x_change = sin(angle_radians) * MOVEMENT_CONSTANT;
+        double y_change = cos(angle_radians) * MOVEMENT_CONSTANT;
+
+        move_observer(maze, x_change, y_change);
+    }
+    if (key_is_pressed(sfKeyA)) {
+        rotate_observer(maze, -1.8);
+    }
+    if (key_is_pressed(sfKeyD)) {
+        rotate_observer(maze, 1.8);
+    }
+}
+
+static void main_render_loop() {
+    fill_in_background();
 
     sfVideoMode videoMode;
-    videoMode.width = window_width;
-    videoMode.height = window_height;
+    videoMode.width = VIEWPORT_WIDTH;
+    videoMode.height = VIEWPORT_HEIGHT;
     videoMode.bitsPerPixel = 32;
 
     sfRenderWindow * window = sfRenderWindow_create(videoMode, "Raycaster", sfResize | sfClose, NULL);
-    sfRenderWindow_setFramerateLimit(window, max_fps);
+    sfRenderWindow_setFramerateLimit(window, MAX_FPS);
 
-    sfTexture * texture = sfTexture_create(window_width, window_height);
+    sfTexture * texture = sfTexture_create(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
     sfSprite * sprite = sfSprite_create();
     sfSprite_setTexture(sprite, texture, sfFalse);
 
@@ -288,51 +323,11 @@ static void main_render_loop(maze_t * maze, unsigned int window_width, unsigned 
     renderStates.texture = texture;
     renderStates.shader = NULL;
 
-    sfKeyCode keys_pressed[MAX_KEYS_PRESSED];
-    unsigned char keys_pressed_count = 0;
-
     while (sfRenderWindow_isOpen(window)) {
-        if (key_is_pressed(keys_pressed, keys_pressed_count, sfKeyW)) {
-            double angle_radians = maze->observer_angle / RADIAN_CONSTANT;
-            double hypotenuse = 0.095;
-            double x_change = sin(angle_radians) * hypotenuse;
-            double y_change = cos(angle_radians) * hypotenuse;
+        update_observer_state();
 
-            move_observer(maze, x_change, y_change);
-        }
-        if (key_is_pressed(keys_pressed, keys_pressed_count, sfKeyS)) {
-            double angle_radians = maze->observer_angle / RADIAN_CONSTANT;
-            double hypotenuse = 0.095;
-            double x_change = sin(angle_radians) * hypotenuse;
-            double y_change = cos(angle_radians) * hypotenuse;
-
-            move_observer(maze, -x_change, -y_change);
-        }
-        if (key_is_pressed(keys_pressed, keys_pressed_count, sfKeyQ)) {
-            double angle_radians = fit_angle(maze->observer_angle + 270.0) / RADIAN_CONSTANT;
-            double hypotenuse = 0.095;
-            double x_change = sin(angle_radians) * hypotenuse;
-            double y_change = cos(angle_radians) * hypotenuse;
-
-            move_observer(maze, x_change, y_change);
-        }
-        if (key_is_pressed(keys_pressed, keys_pressed_count, sfKeyE)) {
-            double angle_radians = fit_angle(maze->observer_angle + 90.0) / RADIAN_CONSTANT;
-            double hypotenuse = 0.095;
-            double x_change = sin(angle_radians) * hypotenuse;
-            double y_change = cos(angle_radians) * hypotenuse;
-
-            move_observer(maze, x_change, y_change);
-        }
-        if (key_is_pressed(keys_pressed, keys_pressed_count, sfKeyA)) {
-            maze->observer_angle = fit_angle(maze->observer_angle - 1.8);
-        }
-        if (key_is_pressed(keys_pressed, keys_pressed_count, sfKeyD)) {
-            maze->observer_angle = fit_angle(maze->observer_angle + 1.8);
-        }
-
-        clone_painting(image, horizon);
-        paint_maze(image, maze);
+        copy_bg_to_fg();
+        paint_maze(maze);
 
         while (sfRenderWindow_pollEvent(window, &event) == sfTrue) {
             if (event.type == sfEvtClosed) {
@@ -344,26 +339,26 @@ static void main_render_loop(maze_t * maze, unsigned int window_width, unsigned 
                     sfRenderWindow_close(window);
                 }
 
-                keys_pressed_count = add_key_pressed(keys_pressed, keys_pressed_count, code);
+                add_key_pressed(code);
             } else if (event.type == sfEvtKeyReleased) {
                 sfKeyCode code = ((sfKeyEvent *)&event)->code;
 
-                keys_pressed_count = remove_key_pressed(keys_pressed, keys_pressed_count, code);
+                remove_key_pressed(code);
             }
         }
 
-        sfTexture_updateFromPixels(texture, (sfUint8 *)image->data, window_width, window_height, 0, 0);
+        sfTexture_updateFromPixels(texture, (sfUint8 *)fg_buffer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 0, 0);
         sfRenderWindow_drawSprite(window, sprite, &renderStates);
         sfRenderWindow_display(window);
     }
 }
 
-int main(int argc, char * argv[]) {
+int main() {
     srand((unsigned int)getpid());
 
-    maze_t * maze = create_maze(20, 20);
-    randomize_maze(maze);
+    maze = create_maze(20, 20);
+    randomize_maze();
 
-    main_render_loop(maze, 800, 600, 60);
+    main_render_loop();
     return EXIT_SUCCESS;
 }
