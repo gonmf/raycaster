@@ -18,3 +18,5 @@ Compile by running `make`.
 ## Playing around
 
 Use key `Q` to close the window and `WASD` to move and rotate the camera.
+
+![Screenshot](https://user-images.githubusercontent.com/5512054/139693715-6d420fab-3479-4e8e-871b-1a2b04de9152.png)
