@@ -265,6 +265,25 @@ static int key_is_pressed(const sfKeyCode * keys_pressed, unsigned char keys_pre
     return 0;
 }
 
+static void move_observer(maze_t * maze, double x_change, double y_change) {
+    double new_x = maze->observer_x + x_change;
+    double new_y = maze->observer_y + y_change;
+
+    unsigned int rounded_x = (unsigned int)(new_x + 0.5);
+    unsigned int rounded_y = (unsigned int)(new_y + 0.5);
+
+    if (rounded_x >= maze->width || rounded_y >= maze->height) {
+        return;
+    }
+
+    if (maze->contents[rounded_x + rounded_y * maze->width] == MAZE_BLOCK) {
+        return;
+    }
+
+    maze->observer_x = new_x;
+    maze->observer_y = new_y;
+}
+
 static void maze_render_cycle(maze_t * maze, unsigned int window_width, unsigned int window_height, unsigned int max_fps) {
     image_t * image = create_image(window_width, window_height);
     image_t * horizon = create_image(window_width, window_height);
@@ -302,8 +321,7 @@ static void maze_render_cycle(maze_t * maze, unsigned int window_width, unsigned
             double x_change = sin(angle_radians) * hypotenuse;
             double y_change = cos(angle_radians) * hypotenuse;
 
-            maze->observer_x += x_change;
-            maze->observer_y += y_change;
+            move_observer(maze, x_change, y_change);
         }
         if (key_is_pressed(keys_pressed, keys_pressed_count, sfKeyS)) {
             double angle_radians = maze->observer_angle / 57.2957795131; // 180 / Pi
@@ -311,8 +329,7 @@ static void maze_render_cycle(maze_t * maze, unsigned int window_width, unsigned
             double x_change = sin(angle_radians) * hypotenuse;
             double y_change = cos(angle_radians) * hypotenuse;
 
-            maze->observer_x -= x_change;
-            maze->observer_y -= y_change;
+            move_observer(maze, -x_change, -y_change);
         }
         if (key_is_pressed(keys_pressed, keys_pressed_count, sfKeyA)) {
             maze->observer_angle = fit_angle(maze->observer_angle - 1.8);
