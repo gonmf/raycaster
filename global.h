@@ -9,6 +9,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <math.h>
+#include <limits.h>
 
 typedef struct  __attribute__((__packed__)) __pixel_ {
     unsigned char red;

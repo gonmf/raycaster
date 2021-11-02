@@ -78,7 +78,7 @@ static void randomize_maze() {
         for (unsigned int x = 0; x < maze->width; ++x) {
             double r = ((double)rand()) / RAND_MAX;
 
-            if (r < 0.1) {
+            if (r < 0.08) {
                 maze->contents[x + y * maze->width] = MAZE_BLOCK;
             }
         }
@@ -121,9 +121,41 @@ static unsigned int cast_ray(const maze_t * maze, double angle, double * hit_ang
 
             curr_x -= x_change / 2.0;
             curr_y -= y_change / 2.0;
-            double distance_from_surface_to_center = sqrt((curr_x - ((double)rounded_x)) * (curr_x - ((double)rounded_x)) + (curr_y - ((double)rounded_y)) * (curr_y - ((double)rounded_y)));
-            angle = (((distance_from_surface_to_center - 0.5) + 0.20710678118) / 2.0) / 0.20710678118;
-            *hit_angle = MIN(MAX(angle, 0.0), 1.0);
+            double hangle;
+
+            double vertice_x[4];
+            double vertice_y[4];
+            vertice_x[0] = ((double)rounded_x) + 0.5;
+            vertice_y[0] = ((double)rounded_y) + 0.5;
+            vertice_x[1] = ((double)rounded_x) + 0.5;
+            vertice_y[1] = ((double)rounded_y) - 0.5;
+            vertice_x[2] = ((double)rounded_x) - 0.5;
+            vertice_y[2] = ((double)rounded_y) - 0.5;
+            vertice_x[3] = ((double)rounded_x) - 0.5;
+            vertice_y[3] = ((double)rounded_y) + 0.5;
+            int closest_vertice = -1;
+            double min_distance = 0.0;
+            for (int i = 0; i < 4; ++i) {
+                double distance = sqrt((vertice_x[i] - maze->observer_x) * (vertice_x[i] - maze->observer_x) + (vertice_y[i] - maze->observer_y) * (vertice_y[i] - maze->observer_y));
+                if ((closest_vertice == -1) || (min_distance > distance)) {
+                    closest_vertice = i;
+                    min_distance = distance;
+                }
+            }
+
+            int left_vertice = (closest_vertice + 4 - 1) % 4;
+            int right_vertice = (closest_vertice + 1) % 4;
+
+            hangle = sqrt((vertice_x[closest_vertice] - curr_x) * (vertice_x[closest_vertice] - curr_x) + (vertice_y[closest_vertice] - curr_y) * (vertice_y[closest_vertice] - curr_y));
+
+            double distance_left = sqrt((vertice_x[left_vertice] - curr_x) * (vertice_x[left_vertice] - curr_x) + (vertice_y[left_vertice] - curr_y) * (vertice_y[left_vertice] - curr_y));
+            double distance_right = sqrt((vertice_x[right_vertice] - curr_x) * (vertice_x[right_vertice] - curr_x) + (vertice_y[right_vertice] - curr_y) * (vertice_y[right_vertice] - curr_y));
+
+            if (distance_left > distance_right) {
+                hangle = 1.0 - hangle;
+            }
+
+            *hit_angle = MIN(MAX(hangle, 0.0), 1.0);
             return steps;
         }
     }
@@ -368,7 +400,7 @@ static void load_textures() {
     unsigned int texture_pack_height = 19;
     pixel_t * sprite_pack = calloc(SPRITE_WIDTH * texture_pack_width * SPRITE_HEIGHT * texture_pack_height, sizeof(pixel_t));
     read_sprite_pack(sprite_pack, "wall_textures", texture_pack_width, texture_pack_height);
-    read_subsprite(wall_texture, sprite_pack, texture_pack_width, texture_pack_height, 4, 1);
+    read_subsprite(wall_texture, sprite_pack, texture_pack_width, texture_pack_height, 2, 5);
     free(sprite_pack);
 
 #if DEBUG
