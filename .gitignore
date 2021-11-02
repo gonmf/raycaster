@@ -1,4 +1,5 @@
 raycaster
+*.ppm
 
 # Prerequisites
 *.d

@@ -1,42 +1,4 @@
-#include <SFML/Graphics.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
-#include <stdlib.h>
-#include <math.h>
-
-typedef struct  __attribute__((__packed__)) __pixel_ {
-    unsigned char red;
-    unsigned char green;
-    unsigned char blue;
-    unsigned char alpha; // not used but present for performance
-} pixel_t;
-
-typedef struct  __attribute__((__packed__)) __maze_ {
-    unsigned int width;
-    unsigned int height;
-    double observer_x;
-    double observer_y;
-    double observer_angle;
-    unsigned char contents[];
-} maze_t;
-
-#define RADIAN_CONSTANT 57.2957795131 // equals 180 / Pi
-
-#define MAZE_EMPTY 0 
-#define MAZE_BLOCK 1
-#define KEYS_PRESSED_BUFFER_SIZE 16
-
-#define VIEWPORT_WIDTH 800
-#define VIEWPORT_HEIGHT 600
-#define MAX_FPS 60
-#define FIELD_OF_VIEW 72.0 // degrees
-
-// Voodoo:
-#define MOVEMENT_CONSTANT 0.095
-#define RAY_STEP_CONSTANT 0.0078125
+#include "global.h"
 
 static pixel_t bg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 static pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
@@ -44,6 +6,8 @@ static pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 static sfKeyCode keys_pressed[KEYS_PRESSED_BUFFER_SIZE];
 static unsigned char keys_pressed_count;
 static maze_t * maze;
+
+static pixel_t wall_texture[SPRITE_WIDTH * SPRITE_HEIGHT];
 
 static maze_t * create_maze(unsigned int width, unsigned int height) {
     unsigned int total_size = sizeof(int) * 2 + sizeof(double) * 3 + width * height;
@@ -54,9 +18,9 @@ static maze_t * create_maze(unsigned int width, unsigned int height) {
     ret->height = height;
     ret->observer_x = width / 2.0;
     ret->observer_y = height / 2.0;
-    ret->observer_angle = 30.0;
+    ret->observer_angle = 45.0;
 
-    // Surround maze with blocks for performance
+    // surround maze with blocks for performance
     for (unsigned int i = 0; i < width; ++i) {
         ret->contents[i] = MAZE_BLOCK;
         ret->contents[i + (height - 1) * width] = MAZE_BLOCK;
@@ -135,7 +99,7 @@ static double fit_angle(double d) {
     return d;
 }
 
-static unsigned int cast_ray(const maze_t * maze, double angle) {
+static unsigned int cast_ray(const maze_t * maze, double angle, double * hit_angle, unsigned int * block_hit_x, unsigned int * block_hit_y) {
     double angle_radians = angle / RADIAN_CONSTANT;
     double x_change = sin(angle_radians) * RAY_STEP_CONSTANT;
     double y_change = cos(angle_radians) * RAY_STEP_CONSTANT;
@@ -152,6 +116,14 @@ static unsigned int cast_ray(const maze_t * maze, double angle) {
         unsigned int rounded_y = (unsigned int)(curr_y + 0.5);
 
         if (maze->contents[rounded_x + rounded_y * maze->width] == MAZE_BLOCK) {
+            *block_hit_x = rounded_x;
+            *block_hit_y = rounded_y;
+
+            curr_x -= x_change / 2.0;
+            curr_y -= y_change / 2.0;
+            double distance_from_surface_to_center = sqrt((curr_x - ((double)rounded_x)) * (curr_x - ((double)rounded_x)) + (curr_y - ((double)rounded_y)) * (curr_y - ((double)rounded_y)));
+            angle = (((distance_from_surface_to_center - 0.5) + 0.20710678118) / 2.0) / 0.20710678118;
+            *hit_angle = MIN(MAX(angle, 0.0), 1.0);
             return steps;
         }
     }
@@ -159,8 +131,15 @@ static unsigned int cast_ray(const maze_t * maze, double angle) {
     return 0;
 }
 
-static unsigned char block_color(unsigned char val, double factor) {
-    return (unsigned char)(val * factor);
+static void block_color(pixel_t * dst, double block_x, double block_y, double factor) {
+    factor = (2.0 + factor) / 3.0;
+
+    unsigned int x = (unsigned int)(SPRITE_WIDTH * block_x);
+    unsigned int y = (unsigned int)(SPRITE_HEIGHT * block_y);
+    pixel_t * src = &wall_texture[x + y * SPRITE_WIDTH];
+    dst->red = (unsigned int)MIN(MAX(0, src->red * factor), src->red);
+    dst->green = (unsigned int)MIN(MAX(0, src->green * factor), src->green);
+    dst->blue = (unsigned int)MIN(MAX(0, src->blue * factor), src->blue);
 }
 
 static void paint_maze(const maze_t * maze) {
@@ -171,30 +150,39 @@ static void paint_maze(const maze_t * maze) {
         double x_angle = (((double)x) / VIEWPORT_WIDTH);
         x_angle = fit_angle(min_angle + FIELD_OF_VIEW * x_angle);
 
+        unsigned int block_hit_x;
+        unsigned int block_hit_y;
+        double block_x;
 
-        unsigned int distance = cast_ray(maze, x_angle);
+        unsigned int distance = cast_ray(maze, x_angle, &block_x, &block_hit_x, &block_hit_y);
         if (min_distance == 0 || min_distance > distance) {
             min_distance = distance;
         }
 
         double block_size;
         block_size = 3.0 / (distance / 100.0);
-        if (block_size > 1.0) {
-            block_size = 1.0;
+
+        double block_y;
+        pixel_t * pixel;
+        unsigned int y;
+        unsigned int viewport_mid = VIEWPORT_HEIGHT / 2;
+        unsigned int end_y = (unsigned int)(block_size * viewport_mid);
+        unsigned int orig_end_y = end_y;
+        if (end_y > viewport_mid) {
+            end_y = viewport_mid;
         }
+        for (unsigned int mid_y = 0; mid_y < end_y; ++mid_y) {
+            // top part
+            y = viewport_mid - mid_y;
+            pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
+            block_y = ((orig_end_y - mid_y) * 1) / (VIEWPORT_HEIGHT * block_size);
+            block_color(pixel, block_x, block_y, block_size);
 
-        unsigned int mid = VIEWPORT_HEIGHT / 2;
-        for (unsigned int y = 0; y < (unsigned int)(mid * block_size); ++y) {
-            pixel_t * pixel;
-
-            pixel = &(fg_buffer[x + (y + mid) * VIEWPORT_WIDTH]);
-            pixel->red = block_color(61, block_size);
-            pixel->green = block_color(40, block_size);
-            pixel->blue = block_color(23, block_size);
-            pixel = &(fg_buffer[x + (mid - y) * VIEWPORT_WIDTH]);
-            pixel->red = block_color(61, block_size);
-            pixel->green = block_color(40, block_size);
-            pixel->blue = block_color(23, block_size);
+            // bottom part
+            y = viewport_mid + mid_y;
+            pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
+            block_y = (mid_y + VIEWPORT_HEIGHT * block_size * 0.5) / (VIEWPORT_HEIGHT * block_size);
+            block_color(pixel, block_x, block_y, block_size);
         }
     }
 }
@@ -277,7 +265,7 @@ static void update_observer_state() {
         move_observer(maze, -x_change, -y_change);
     }
     if (key_is_pressed(sfKeyQ)) {
-        double angle_radians = fit_angle(maze->observer_angle + 270.0) / RADIAN_CONSTANT;
+        double angle_radians = fit_angle(maze->observer_angle - 90.0) / RADIAN_CONSTANT;
         double x_change = sin(angle_radians) * MOVEMENT_CONSTANT;
         double y_change = cos(angle_radians) * MOVEMENT_CONSTANT;
 
@@ -353,8 +341,45 @@ static void main_render_loop() {
     }
 }
 
+#if DEBUG
+static void output_to_file(const char * filename, const pixel_t * image, unsigned int width, unsigned int height) {
+    FILE * file = fopen(filename, "w");
+
+    fprintf(file, "P3\n");
+    fprintf(file, "%u %u\n", width, height);
+    fprintf(file, "255\n");
+
+    for(unsigned int y = 0; y < height; ++y) {
+        for(unsigned int x = 0; x < width; ++x) {
+            const pixel_t * pixel = &(image[x + y * width]);
+
+            fprintf(file, "%u %u %u ", pixel->red, pixel->green, pixel->blue);
+        }
+
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+}
+#endif
+
+static void load_textures() {
+    unsigned int texture_pack_width = 6;
+    unsigned int texture_pack_height = 19;
+    pixel_t * sprite_pack = calloc(SPRITE_WIDTH * texture_pack_width * SPRITE_HEIGHT * texture_pack_height, sizeof(pixel_t));
+    read_sprite_pack(sprite_pack, "wall_textures", texture_pack_width, texture_pack_height);
+    read_subsprite(wall_texture, sprite_pack, texture_pack_width, texture_pack_height, 4, 1);
+    free(sprite_pack);
+
+#if DEBUG
+    output_to_file("sprite.ppm", wall_texture, SPRITE_WIDTH, SPRITE_HEIGHT);
+#endif
+}
+
 int main() {
     srand((unsigned int)getpid());
+
+    load_textures();
 
     maze = create_maze(20, 20);
     randomize_maze();
