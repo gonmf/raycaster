@@ -20,4 +20,4 @@ Compile by running `make`.
 Use key `Escape` to close the window and `WASD` to move and rotate the camera.
 Keys `QE` can be used to strafe left and right.
 
-![Screenshot](https://user-images.githubusercontent.com/5512054/139693715-6d420fab-3479-4e8e-871b-1a2b04de9152.png)
+![Screenshot](https://user-images.githubusercontent.com/5512054/139965678-059558f5-756f-4eab-a4c7-941fe170dbe2.png)
