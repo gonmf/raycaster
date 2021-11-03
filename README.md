@@ -25,8 +25,7 @@ Compile by running `make`.
 
 ## Controls
 
-Use key `Escape` to close the window and `WASD` to move and rotate the camera.
-Keys `QE` can be used to strafe left and right.
+Use `WASD` to move and your mouse to look around. Pause the game with `P` and quit with `Escape`.
 
 ## Screenshots
 

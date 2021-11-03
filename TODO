@@ -1,4 +1,3 @@
 - Allow saving and loading ongoing levels
-- Allow mouse control
 - Allow moving slowly past walls when partially blocked
-- Movement rate limiting
+- Solve fish eye anomaly

@@ -3,10 +3,17 @@
 static pixel_t bg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 static pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
+static sfRenderWindow * window;
+static sfSprite * sprite;
+static sfTexture * texture;
+static sfRenderStates renderStates;
 
 static level_t * level;
 
 static pixel_t wall_textures[TEXTURE_PACK_WIDTH][TEXTURE_PACK_HEIGHT][SPRITE_WIDTH * SPRITE_HEIGHT];
+
+static int paused_pressed;
+static int paused;
 
 static double horizon_distance(unsigned int x, unsigned int y) {
     if (x < VIEWPORT_WIDTH / 2) {
@@ -164,14 +171,17 @@ static void paint_scene() {
         double block_x;
         double x_angle, distance, block_size;
 
-#if 1
+#if 0
         x_angle = fit_angle(fish_eye_table[x] + level->observer_angle);
         distance = cast_ray(x_angle, &block_x, &block_hit_x, &block_hit_y);
         block_size = (3.0 / distance);
 #else
         x_angle = (((double)x) / (VIEWPORT_WIDTH / 2.0) - 1.0) * FIELD_OF_VIEW / 2.0 + level->observer_angle;
+        // x_angle = fit_angle(fish_eye_table[x] + level->observer_angle);
         distance = cast_ray(x_angle, &block_x, &block_hit_x, &block_hit_y);
+#if 0
         distance *= cos((x_angle - level->observer_angle) / RADIAN_CONSTANT);
+#endif
         distance = MAX(distance, 0.0);
         block_size = (1.8 / distance);
 #endif
@@ -226,49 +236,96 @@ static void move_observer(double x_change, double y_change) {
     level->observer_y = new_y;
 }
 
-static void rotate_observer(double degrees) {
-    level->observer_angle = fit_angle(level->observer_angle + degrees);
+static int update_observer_state() {
+    int needs_refresh = 0;
+
+    if (!paused) {
+        int keyW = key_is_pressed(sfKeyW);
+        int keyS = key_is_pressed(sfKeyS);
+        int keyA = key_is_pressed(sfKeyA);
+        int keyD = key_is_pressed(sfKeyD);
+
+        if (keyW && keyS) {
+            keyW = keyS = 0;
+        }
+        if (keyA && keyD) {
+            keyA = keyD = 0;
+        }
+
+        double mov_value = MOVEMENT_CONSTANT;
+
+        if ((keyW || keyS) && (keyA || keyD)) {
+            mov_value *=  0.70710678118;
+        }
+
+        if (keyW) {
+            double angle_radians = level->observer_angle / RADIAN_CONSTANT;
+            double x_change = sin(angle_radians) * mov_value;
+            double y_change = cos(angle_radians) * mov_value;
+
+            move_observer(x_change, y_change);
+            needs_refresh = 1;
+        }
+        if (keyS) {
+            double angle_radians = level->observer_angle / RADIAN_CONSTANT;
+            double x_change = sin(angle_radians) * mov_value;
+            double y_change = cos(angle_radians) * mov_value;
+
+            move_observer(-x_change, -y_change);
+            needs_refresh = 1;
+        }
+        if (keyA) {
+            double angle_radians = fit_angle(level->observer_angle - 90.0) / RADIAN_CONSTANT;
+            double x_change = sin(angle_radians) * (mov_value / 1.0);
+            double y_change = cos(angle_radians) * (mov_value / 1.0);
+
+            move_observer(x_change, y_change);
+            needs_refresh = 1;
+        }
+        if (keyD) {
+            double angle_radians = fit_angle(level->observer_angle + 90.0) / RADIAN_CONSTANT;
+            double x_change = sin(angle_radians) * (mov_value / 1.0);
+            double y_change = cos(angle_radians) * (mov_value / 1.0);
+
+            move_observer(x_change, y_change);
+            needs_refresh = 1;
+        }
+    }
+    if (key_is_pressed(sfKeyP)) {
+        paused_pressed = 1;
+    } else {
+        if (paused_pressed) {
+            paused = !paused;
+            if (paused) {
+                for (int i = 0; i < VIEWPORT_WIDTH * VIEWPORT_HEIGHT; ++i) {
+                    fg_buffer[i].red = (unsigned int)(fg_buffer[i].red / 2.0);
+                    fg_buffer[i].green = (unsigned int)(fg_buffer[i].green / 2.0);
+                    fg_buffer[i].blue = (unsigned int)(fg_buffer[i].blue / 2.0);
+                }
+
+                sfTexture_updateFromPixels(texture, (sfUint8 *)fg_buffer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 0, 0);
+                sfRenderWindow_drawSprite(window, sprite, &renderStates);
+                sfRenderWindow_display(window);
+                sfRenderWindow_setMouseCursorVisible(window, sfTrue);
+            } else {
+                sfRenderWindow_setMouseCursorVisible(window, sfFalse);
+            }
+            paused_pressed = 0;
+        }
+    }
+
+    return needs_refresh;
 }
 
-static void update_observer_state() {
-    if (key_is_pressed(sfKeyW)) {
-        double angle_radians = level->observer_angle / RADIAN_CONSTANT;
-        double x_change = sin(angle_radians) * MOVEMENT_CONSTANT;
-        double y_change = cos(angle_radians) * MOVEMENT_CONSTANT;
-
-        move_observer(x_change, y_change);
-    }
-    if (key_is_pressed(sfKeyS)) {
-        double angle_radians = level->observer_angle / RADIAN_CONSTANT;
-        double x_change = sin(angle_radians) * MOVEMENT_CONSTANT;
-        double y_change = cos(angle_radians) * MOVEMENT_CONSTANT;
-
-        move_observer(-x_change, -y_change);
-    }
-    if (key_is_pressed(sfKeyQ)) {
-        double angle_radians = fit_angle(level->observer_angle - 90.0) / RADIAN_CONSTANT;
-        double x_change = sin(angle_radians) * MOVEMENT_CONSTANT;
-        double y_change = cos(angle_radians) * MOVEMENT_CONSTANT;
-
-        move_observer(x_change, y_change);
-    }
-    if (key_is_pressed(sfKeyE)) {
-        double angle_radians = fit_angle(level->observer_angle + 90.0) / RADIAN_CONSTANT;
-        double x_change = sin(angle_radians) * MOVEMENT_CONSTANT;
-        double y_change = cos(angle_radians) * MOVEMENT_CONSTANT;
-
-        move_observer(x_change, y_change);
-    }
-    if (key_is_pressed(sfKeyA)) {
-        rotate_observer(-ROTATION_CONSTANT);
-    }
-    if (key_is_pressed(sfKeyD)) {
-        rotate_observer(ROTATION_CONSTANT);
-    }
+static void center_mouse() {
+    sfVector2i position;
+    position.x = VIEWPORT_WIDTH / 2;
+    position.y = VIEWPORT_HEIGHT / 2;
+    sfMouse_setPositionRenderWindow(position, window);
 }
 
 static void main_render_loop() {
-    printf("Level start\n");
+    printf("Level start - press P to pause and Esc to quit\n");
     fill_in_background();
 
     sfVideoMode videoMode;
@@ -276,18 +333,26 @@ static void main_render_loop() {
     videoMode.height = VIEWPORT_HEIGHT;
     videoMode.bitsPerPixel = 32;
 
-    sfRenderWindow * window = sfRenderWindow_create(videoMode, "Raycaster", sfResize | sfClose, NULL);
+    window = sfRenderWindow_create(videoMode, "Raycaster", sfResize | sfClose, NULL);
     sfRenderWindow_setFramerateLimit(window, MAX_FPS);
 
-    sfTexture * texture = sfTexture_create(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
-    sfSprite * sprite = sfSprite_create();
+    videoMode = sfVideoMode_getDesktopMode();
+    sfVector2i position;
+    position.x = videoMode.width / 2 - VIEWPORT_WIDTH / 2;
+    position.y = videoMode.height / 2 - VIEWPORT_HEIGHT / 2;
+
+    sfRenderWindow_setPosition(window, position);
+    sfRenderWindow_setMouseCursorVisible(window, sfFalse);
+    center_mouse();
+
+    texture = sfTexture_create(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+    sprite = sfSprite_create();
     sfSprite_setTexture(sprite, texture, sfFalse);
 
     sfColor bgColor;
     memset(&bgColor, 0, sizeof(bgColor));
 
     sfEvent event;
-    sfRenderStates renderStates;
     renderStates.blendMode = sfBlendNone;
     renderStates.transform = sfTransform_Identity;
     renderStates.texture = texture;
@@ -296,24 +361,31 @@ static void main_render_loop() {
     unsigned int frames_second = 1;
     long unsigned int last_ms = 0;
     struct timespec spec;
+    int needs_refresh = 1;
 
     while (sfRenderWindow_isOpen(window)) {
-        clock_gettime(CLOCK_REALTIME, &spec);
-        long unsigned int ms = spec.tv_nsec / 1000000;
+        if (!paused) {
+            clock_gettime(CLOCK_REALTIME, &spec);
+            long unsigned int ms = spec.tv_nsec / 1000000;
 
-        if (last_ms > ms) {
-            printf("   \rFPS=%d", frames_second);
-            fflush(stdout);
-            frames_second = 1;
+            if (last_ms > ms) {
+                printf("   \rFPS=%d", frames_second);
+                fflush(stdout);
+                frames_second = 1;
+            }
+
+            frames_second += 1;
+            last_ms = ms;
         }
 
-        frames_second += 1;
-        last_ms = ms;
+        if (update_observer_state()) {
+            needs_refresh = 1;
+        }
 
-        update_observer_state();
-
-        copy_bg_to_fg();
-        paint_scene();
+        if (!paused) {
+            copy_bg_to_fg();
+            paint_scene();
+        }
 
         while (sfRenderWindow_pollEvent(window, &event) == sfTrue) {
             if (event.type == sfEvtClosed) {
@@ -330,16 +402,34 @@ static void main_render_loop() {
                 sfKeyCode code = ((sfKeyEvent *)&event)->code;
 
                 remove_key_pressed(code);
+            } else if (event.type == sfEvtMouseMoved) {
+                int move_x = ((sfMouseMoveEvent *)&event)->x - VIEWPORT_WIDTH / 2;
+
+                if (move_x) {
+                    if (!paused) {
+                        double angle_change = ((double)move_x) * ROTATION_CONSTANT / (VIEWPORT_WIDTH / 16);
+                        level->observer_angle += angle_change;
+                        needs_refresh = 1;
+                    }
+                }
             }
         }
 
-        sfTexture_updateFromPixels(texture, (sfUint8 *)fg_buffer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 0, 0);
-        sfRenderWindow_drawSprite(window, sprite, &renderStates);
-        sfRenderWindow_display(window);
+        if (paused) {
+
+        } else {
+            if (needs_refresh) {
+                center_mouse();
+                sfTexture_updateFromPixels(texture, (sfUint8 *)fg_buffer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 0, 0);
+                sfRenderWindow_drawSprite(window, sprite, &renderStates);
+                needs_refresh = 0;
+            }
+            sfRenderWindow_display(window);
+        }
     }
 
     printf("\r        \r"); // clear FPS
-    printf("Level end\n");
+    printf("Level closed\n");
 }
 
 static void load_textures() {

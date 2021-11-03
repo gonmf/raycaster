@@ -60,8 +60,8 @@ typedef struct  __attribute__((__packed__)) __level_ {
 #define SAFETY_BARRIER_BLOCK (0 + 7 * TEXTURE_PACK_WIDTH)
 
 // Voodoo:
-#define MOVEMENT_CONSTANT 0.1
-#define ROTATION_CONSTANT 0.9
+#define MOVEMENT_CONSTANT 0.07
+#define ROTATION_CONSTANT 1.0
 #define RAY_STEP_CONSTANT 0.0078125
 
 void read_sprite_pack(
