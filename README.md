@@ -17,6 +17,12 @@ Install package `libcsfml-dev`.
 
 Compile by running `make`.
 
+### MacOS
+
+First install `homebrew`, and then package `csfml` and the C compiler of your choice.
+
+Compile by running `make`.
+
 ## Controls
 
 Use key `Escape` to close the window and `WASD` to move and rotate the camera.
