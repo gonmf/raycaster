@@ -4,13 +4,17 @@ void read_sprite_pack(
     pixel_t * dst, const char * filename,
     unsigned int pack_width, unsigned int pack_height
 ) {
-    char * buffer = malloc(2 * 1024 * 1024);
+    char * buffer = malloc(MAX_SPRITES_FILE_SIZE);
     sprintf(buffer, "./sprites/%s.bmp", filename);
-    printf("Opening %s\n", buffer);
-    fflush(stdout);
 
     FILE * file = fopen(buffer, "rb");
-    size_t read = fread(buffer, 1, 2 * 1024 * 1024, file);
+    if (file == NULL) {
+        sprintf(buffer, "Could not open file \"./sprites/%s.bmp\"", filename);
+        error(buffer);
+    }
+    printf( "Opening \"./sprites/%s.bmp\"\n", filename);
+
+    size_t read = fread(buffer, 1, MAX_SPRITES_FILE_SIZE, file);
     fclose(file);
 
     buffer[read] = 0;

@@ -1,6 +1,8 @@
 # Ray casting experiment
 
-Experiment with ray casted 2.5D graphics using direct pixel painting.
+I've been meaning to write my own 3D graphics engine, so here it is.
+It currently uses raycasting for a 2.5D effect. As a demo I've rendered
+something akin to the first Wolfenstein game.
 
 Since direct frame buffer access is not possible anymore, I've used CSFML.
 
