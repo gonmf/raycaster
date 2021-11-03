@@ -1,7 +1,10 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#define _POSIX_C_SOURCE 200809L
+
 #include <SFML/Graphics.h>
+#include <inttypes.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <dirent.h>
@@ -39,8 +42,8 @@ typedef struct  __attribute__((__packed__)) __level_ {
 
 #define VIEWPORT_WIDTH 912
 #define VIEWPORT_HEIGHT 456
-#define MAX_FPS 60
-#define FIELD_OF_VIEW 72.0 // degrees
+#define MAX_FPS 120
+#define FIELD_OF_VIEW 72 // degrees
 
 #define SPRITE_WIDTH 64
 #define SPRITE_HEIGHT 64
@@ -57,7 +60,8 @@ typedef struct  __attribute__((__packed__)) __level_ {
 #define SAFETY_BARRIER_BLOCK (0 + 7 * TEXTURE_PACK_WIDTH)
 
 // Voodoo:
-#define MOVEMENT_CONSTANT 0.095
+#define MOVEMENT_CONSTANT 0.1
+#define ROTATION_CONSTANT 0.9
 #define RAY_STEP_CONSTANT 0.0078125
 
 void read_sprite_pack(
@@ -76,5 +80,9 @@ level_t * read_level_info(const char * filename);
 
 void error(const char * s);
 void error_w_line(const char * s, unsigned int line);
+
+void add_key_pressed(sfKeyCode code);
+void remove_key_pressed(sfKeyCode code);
+int key_is_pressed(sfKeyCode code);
 
 #endif

@@ -1,5 +1,4 @@
 - Allow saving and loading ongoing levels
 - Allow mouse control
-- Reduce proximity effect
 - Allow moving slowly past walls when partially blocked
 - Movement rate limiting

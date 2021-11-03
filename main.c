@@ -3,8 +3,6 @@
 static pixel_t bg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 static pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
-static sfKeyCode keys_pressed[KEYS_PRESSED_BUFFER_SIZE];
-static unsigned char keys_pressed_count;
 
 static level_t * level;
 
@@ -22,6 +20,28 @@ static double horizon_distance(unsigned int x, unsigned int y) {
     double max = sqrt(w2 * w2 + h2 * h2);
     double dst_to_max = 1.0 - sqrt(((double)x) * x + ((double)y) * y) / max;
     return (dst_to_max + 2.0) / 3.0;
+}
+
+static double fish_eye_table[VIEWPORT_WIDTH];
+
+static void init_fish_eye_table() {
+    double half_fov = FIELD_OF_VIEW / 2.0;
+
+    int center_x = VIEWPORT_WIDTH / 2;
+
+    double plane_min_x = tan((-(90.0 - half_fov)) / RADIAN_CONSTANT) * ((double)(-center_x));
+    double plane_max_x = tan(((90.0 - half_fov)) / RADIAN_CONSTANT) * ((double)(center_x));
+
+    for (int x = 0; x < center_x; ++x) {
+        double arg = plane_min_x / ((double)(center_x - x));
+        double angle = atan(arg) * RADIAN_CONSTANT - 90.0;
+        fish_eye_table[x] = angle / 2.0;
+    }
+    for (int x = center_x; x < VIEWPORT_WIDTH; ++x) {
+        double arg = plane_max_x / ((double)(x - center_x));
+        double angle = 90.0 - atan(arg) * RADIAN_CONSTANT;
+        fish_eye_table[x] = angle / 2.0;
+    }
 }
 
 static void fill_in_background() {
@@ -59,7 +79,7 @@ static double fit_angle(double d) {
     return d;
 }
 
-static unsigned int cast_ray(double angle, double * hit_angle, unsigned int * block_hit_x, unsigned int * block_hit_y) {
+static double cast_ray(double angle, double * hit_angle, unsigned int * block_hit_x, unsigned int * block_hit_y) {
     double angle_radians = angle / RADIAN_CONSTANT;
     double x_change = sin(angle_radians) * RAY_STEP_CONSTANT;
     double y_change = cos(angle_radians) * RAY_STEP_CONSTANT;
@@ -116,7 +136,7 @@ static unsigned int cast_ray(double angle, double * hit_angle, unsigned int * bl
             }
 
             *hit_angle = MIN(MAX(hangle, 0.0), 1.0);
-            return steps;
+            return steps * RAY_STEP_CONSTANT;
         }
     }
 
@@ -137,25 +157,25 @@ static void block_color(pixel_t * dst, double block_x, double block_y, double fa
     dst->blue = (unsigned int)MIN(MAX(0, src->blue * factor), src->blue);
 }
 
-static void paint_level() {
-    double min_angle = fit_angle(level->observer_angle - FIELD_OF_VIEW / 2.0);
-    unsigned int min_distance = 0;
-
+static void paint_scene() {
     for (unsigned int x = 0 ; x < VIEWPORT_WIDTH; ++x) {
-        double x_angle = (((double)x) / VIEWPORT_WIDTH);
-        x_angle = fit_angle(min_angle + FIELD_OF_VIEW * x_angle);
-
         unsigned int block_hit_x;
         unsigned int block_hit_y;
         double block_x;
+        double x_angle, distance, block_size;
 
-        unsigned int distance = cast_ray(x_angle, &block_x, &block_hit_x, &block_hit_y);
-        if (min_distance == 0 || min_distance > distance) {
-            min_distance = distance;
-        }
+#if 1
+        x_angle = fit_angle(fish_eye_table[x] + level->observer_angle);
+        distance = cast_ray(x_angle, &block_x, &block_hit_x, &block_hit_y);
+        block_size = (3.0 / distance);
+#else
+        x_angle = (((double)x) / (VIEWPORT_WIDTH / 2.0) - 1.0) * FIELD_OF_VIEW / 2.0 + level->observer_angle;
+        distance = cast_ray(x_angle, &block_x, &block_hit_x, &block_hit_y);
+        distance *= cos((x_angle - level->observer_angle) / RADIAN_CONSTANT);
+        distance = MAX(distance, 0.0);
+        block_size = (1.8 / distance);
+#endif
 
-        double block_size;
-        block_size = 3.0 / (distance / 100.0);
         unsigned char block_type = level->contents[block_hit_x + block_hit_y * level->width] - 1;
 
         double block_y;
@@ -185,41 +205,6 @@ static void paint_level() {
 
 static void copy_bg_to_fg() {
     memcpy(fg_buffer, bg_buffer, sizeof(pixel_t) * VIEWPORT_WIDTH * VIEWPORT_HEIGHT);
-}
-
-static void add_key_pressed(sfKeyCode code) {
-    if (keys_pressed_count == KEYS_PRESSED_BUFFER_SIZE) {
-        return;
-    }
-
-    for (int i = 0; i < keys_pressed_count; ++i) {
-        if (keys_pressed[i] == code) {
-            return;
-        }
-    }
-
-    keys_pressed[keys_pressed_count] = code;
-    keys_pressed_count += 1;
-}
-
-static void remove_key_pressed(sfKeyCode code) {
-    for (int i = 0; i < keys_pressed_count; ++i) {
-        if (keys_pressed[i] == code) {
-            keys_pressed[i] = keys_pressed[keys_pressed_count - 1];
-            keys_pressed_count -= 1;
-            return;
-        }
-    }
-}
-
-static int key_is_pressed(sfKeyCode code) {
-    for (int i = 0; i < keys_pressed_count; ++i) {
-        if (keys_pressed[i] == code) {
-            return 1;
-        }
-    }
-
-    return 0;
 }
 
 static void move_observer(double x_change, double y_change) {
@@ -275,10 +260,10 @@ static void update_observer_state() {
         move_observer(x_change, y_change);
     }
     if (key_is_pressed(sfKeyA)) {
-        rotate_observer(-1.8);
+        rotate_observer(-ROTATION_CONSTANT);
     }
     if (key_is_pressed(sfKeyD)) {
-        rotate_observer(1.8);
+        rotate_observer(ROTATION_CONSTANT);
     }
 }
 
@@ -308,11 +293,27 @@ static void main_render_loop() {
     renderStates.texture = texture;
     renderStates.shader = NULL;
 
+    unsigned int frames_second = 1;
+    long unsigned int last_ms = 0;
+    struct timespec spec;
+
     while (sfRenderWindow_isOpen(window)) {
+        clock_gettime(CLOCK_REALTIME, &spec);
+        long unsigned int ms = spec.tv_nsec / 1000000;
+
+        if (last_ms > ms) {
+            printf("   \rFPS=%d", frames_second);
+            fflush(stdout);
+            frames_second = 1;
+        }
+
+        frames_second += 1;
+        last_ms = ms;
+
         update_observer_state();
 
         copy_bg_to_fg();
-        paint_level();
+        paint_scene();
 
         while (sfRenderWindow_pollEvent(window, &event) == sfTrue) {
             if (event.type == sfEvtClosed) {
@@ -337,6 +338,7 @@ static void main_render_loop() {
         sfRenderWindow_display(window);
     }
 
+    printf("\r        \r"); // clear FPS
     printf("Level end\n");
 }
 
@@ -391,6 +393,7 @@ static level_t * select_level() {
 }
 
 int main() {
+    init_fish_eye_table();
     load_textures();
 
     level = select_level();
