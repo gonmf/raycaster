@@ -11,7 +11,7 @@ const pixel_t * foreground_buffer() {
 }
 
 void color_filter(double factor) {
-    for (int i = 0; i < VIEWPORT_WIDTH * VIEWPORT_HEIGHT; ++i) {
+    for (unsigned int i = 0; i < VIEWPORT_WIDTH * VIEWPORT_HEIGHT; ++i) {
         fg_buffer[i].red = (unsigned int)(MIN(MAX(fg_buffer[i].red * factor, 0.0), 255.0));
         fg_buffer[i].green = (unsigned int)(MIN(MAX(fg_buffer[i].green * factor, 0.0), 255.0));
         fg_buffer[i].blue = (unsigned int)(MIN(MAX(fg_buffer[i].blue * factor, 0.0), 255.0));
@@ -35,17 +35,17 @@ static double horizon_distance(unsigned int x, unsigned int y) {
 void init_fish_eye_table() {
     double half_fov = FIELD_OF_VIEW / 2.0;
 
-    int center_x = VIEWPORT_WIDTH / 2;
+    unsigned int center_x = VIEWPORT_WIDTH / 2;
 
-    double plane_min_x = tan((-(90.0 - half_fov)) / RADIAN_CONSTANT) * ((double)(-center_x));
-    double plane_max_x = tan(((90.0 - half_fov)) / RADIAN_CONSTANT) * ((double)(center_x));
+    double plane_min_x = tan((-(90.0 - half_fov)) / RADIAN_CONSTANT) * ((double)center_x) * -1.0;
+    double plane_max_x = tan(((90.0 - half_fov)) / RADIAN_CONSTANT) * ((double)center_x);
 
-    for (int x = 0; x < center_x; ++x) {
+    for (unsigned int x = 0; x < center_x; ++x) {
         double arg = plane_min_x / ((double)(center_x - x));
         double angle = atan(arg) * RADIAN_CONSTANT - 90.0;
         fish_eye_table[x] = angle;
     }
-    for (int x = center_x; x < VIEWPORT_WIDTH; ++x) {
+    for (unsigned int x = center_x; x < VIEWPORT_WIDTH; ++x) {
         double arg = plane_max_x / ((double)(x - center_x));
         double angle = 90.0 - atan(arg) * RADIAN_CONSTANT;
         fish_eye_table[x] = angle;
@@ -138,8 +138,6 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
             return steps * RAY_STEP_CONSTANT;
         }
     }
-
-    return 0;
 }
 
 static void block_color(pixel_t * dst, double block_x, double block_y, double factor, unsigned char block_type) {

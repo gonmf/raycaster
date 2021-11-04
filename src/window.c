@@ -12,8 +12,8 @@ void window_center_mouse() {
     sfMouse_setPositionRenderWindow(position, window);
 }
 
-void set_cursor_visible(int visible) {
-    sfRenderWindow_setMouseCursorVisible(window, visible ? sfTrue : sfFalse);
+void set_cursor_visible(bool visible) {
+    sfRenderWindow_setMouseCursorVisible(window, visible);
 }
 
 void window_start() {
@@ -36,7 +36,7 @@ void window_start() {
     position.y = videoMode.height / 2 - VIEWPORT_HEIGHT / 2;
 
     sfRenderWindow_setPosition(window, position);
-    set_cursor_visible(0);
+    set_cursor_visible(false);
     window_center_mouse();
 
     texture = sfTexture_create(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
@@ -57,7 +57,7 @@ void window_close() {
     window = NULL;
 }
 
-int window_is_open() {
+bool window_is_open() {
     return window && sfRenderWindow_isOpen(window);
 }
 
@@ -70,6 +70,6 @@ void window_refresh() {
     sfRenderWindow_display(window);
 }
 
-int window_poll_event(sfEvent * event) {
-    return sfRenderWindow_pollEvent(window, event) == sfTrue;
+bool window_poll_event(sfEvent * event) {
+    return sfRenderWindow_pollEvent(window, event);
 }

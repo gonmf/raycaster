@@ -1,18 +1,17 @@
 #include "global.h"
 
-static int valid_command(const char * s) {
-    if (strcmp(s, "ceil_color") == 0) return 1;
-    if (strcmp(s, "floor_color") == 0) return 1;
-    if (start_with(s, "wall_type_")) return 1;
-    if (strcmp(s, "map_layout") == 0) return 1;
-    if (strcmp(s, "map_layout_end") == 0) return 1;
-    if (strcmp(s, "player_start_angle") == 0) return 1;
-    return 0;
+static bool valid_command(const char * s) {
+    if (strcmp(s, "CEIL_COLOR") == 0) return true;
+    if (strcmp(s, "FLOOR_COLOR") == 0) return true;
+    if (start_with(s, "WALL_TYPE_")) return true;
+    if (strcmp(s, "MAP_LAYOUT") == 0) return true;
+    if (strcmp(s, "PLAYER_START_ANGLE") == 0) return true;
+    return false;
 }
 
 static void validate_scalar(int val, int min, int max, unsigned int line) {
     if (val < min || val > max) {
-        error_w_line("Invalid scalar value", line);
+        error_w_line("invalid scalar value", line);
     }
 }
 
@@ -35,6 +34,56 @@ static void surround_w_safety_walls(level_t * level) {
     }
 }
 
+static void scan_map_size(const char * buffer, int * width, int * height) {
+    char c;
+    int map_layout_found = 0;
+    int map_size_w = -1;
+    int map_size_h = 0;
+    char line_buffer[80];
+    line_buffer[0] = 0;
+    unsigned int line_pos = 0;
+    unsigned int line = 1;
+
+    while ((c = buffer[0])) {
+        if (c == '\n') {
+            if (line_buffer[0]) {
+                if (line_buffer[0] == '#') {
+                    // skip line
+                } else if (valid_command(line_buffer)) {
+                    if (map_layout_found) {
+                        break;
+                    }
+                    map_layout_found = strcmp(line_buffer, "MAP_LAYOUT") == 0;
+                } else {
+                    if (map_layout_found) {
+                        int size_w = strlen(line_buffer);
+                        map_size_w = MAX(map_size_w, size_w);
+                        map_size_h++;
+                    }
+                }
+
+                line_pos = 0;
+                line_buffer[line_pos] = 0;
+            }
+
+            line++;
+        } else if (c != '\r') {
+            line_buffer[line_pos] = c;
+            line_pos++;
+            line_buffer[line_pos] = 0;
+        }
+
+        buffer++;
+    }
+
+    if (map_size_w > 2 && map_size_h > 2) {
+        *width = map_size_w;
+        *height = map_size_h;
+    } else {
+        error_w_line("invalid map definition - too small", line);
+    }
+}
+
 level_t * read_level_info(const char * filename) {
     char * str_buf = malloc(MAX_FILE_NAME_SIZ);
     snprintf(str_buf, MAX_FILE_NAME_SIZ, "./levels/%s", filename);
@@ -44,6 +93,8 @@ level_t * read_level_info(const char * filename) {
 
     int map_size_w = -1;
     int map_size_h = 0;
+    scan_map_size(buffer, &map_size_w, &map_size_h);
+
     int ceil_color_r = -1;
     int ceil_color_g = -1;
     int ceil_color_b = -1;
@@ -77,18 +128,13 @@ level_t * read_level_info(const char * filename) {
                 if (line_buffer[0] == '#') {
                     // skip line
                 } else if (valid_command(line_buffer)) {
-                    if (last_command_set) {
-                        if (strcmp(last_command, "map_layout") != 0) {
-                            error_w_line("unexpected command; expected argument", line);
-                        }
-                    }
                     strncpy(last_command, line_buffer, 80);
                     last_command_set = 1;
                     last_command_uses = 0;
                 } else if (!last_command_set) {
                     error_w_line("unexpected argument; expected command", line);
                 } else {
-                    if (strcmp(last_command, "ceil_color") == 0) {
+                    if (strcmp(last_command, "CEIL_COLOR") == 0) {
                         if (last_command_uses == 0) {
                             ceil_color_r = atoi(line_buffer);
                             validate_scalar(ceil_color_r, 0, 255, line);
@@ -102,7 +148,7 @@ level_t * read_level_info(const char * filename) {
                             validate_scalar(ceil_color_b, 0, 255, line);
                             last_command_set = 0;
                         }
-                    } else if (strcmp(last_command, "floor_color") == 0) {
+                    } else if (strcmp(last_command, "FLOOR_COLOR") == 0) {
                         if (last_command_uses == 0) {
                             floor_color_r = atoi(line_buffer);
                             validate_scalar(floor_color_r, 0, 255, line);
@@ -116,9 +162,9 @@ level_t * read_level_info(const char * filename) {
                             validate_scalar(floor_color_b, 0, 255, line);
                             last_command_set = 0;
                         }
-                    } else if (start_with(last_command, "wall_type_")) {
+                    } else if (start_with(last_command, "WALL_TYPE_")) {
                         if (last_command_uses == 0) {
-                            wall_type_nr = atoi(last_command + strlen("wall_type_"));
+                            wall_type_nr = atoi(last_command + strlen("WALL_TYPE_"));
                             validate_scalar(wall_type_nr, 0, MAX_LEVEL_WALL_TYPES, line);
                             if (wall_types_x[wall_type_nr] != -1) {
                                 error_w_line("duplicated wall type definition", line - 1);
@@ -131,24 +177,19 @@ level_t * read_level_info(const char * filename) {
                             validate_scalar(wall_types_y[wall_type_nr], 0, TEXTURE_PACK_HEIGHT - 1, line);
                             last_command_set = 0;
                         }
-                    } else if (strcmp(last_command, "map_layout") == 0) {
+                    } else if (strcmp(last_command, "MAP_LAYOUT") == 0) {
                         int size_w = strlen(line_buffer);
-                        if (map_size_w == -1) {
-                            map_size_w = size_w;
-                        } else if (map_size_w < size_w) {
-                            error_w_line("inconstant map size - first line must have max width", line);
-                        }
 
                         for (int i = 0; i < map_size_w; ++i) {
-                            char d = i < size_w ? line_buffer[i] : '.';
+                            char d = i < size_w ? line_buffer[i] : ' ';
                             if (d == 'S') {
-                                if (player_start_x >= 0) {
+                                if (player_start_x != -1) {
                                     error_w_line("multiple player start (S) definitions", line);
                                 }
                                 player_start_x = map_layout_idx % map_size_w;
-                                player_start_y = map_layout_idx / map_size_w;
+                                player_start_y = map_size_h - (map_layout_idx / map_size_w) - 1;
                                 map_layout[map_layout_idx++] = 0;
-                            } else if (d == '.' || d == ' ') {
+                            } else if (d == ' ') {
                                 map_layout[map_layout_idx++] = 0;
                             } else if ((d - '0') >= 0 && (d - '0') < MAX_LEVEL_WALL_TYPES) {
                                 unsigned char block_id = d - '0';
@@ -161,9 +202,7 @@ level_t * read_level_info(const char * filename) {
                                 error_w_line("invalid map layout", line);
                             }
                         }
-
-                        map_size_h++;
-                    } else if (strcmp(last_command, "player_start_angle") == 0) {
+                    } else if (strcmp(last_command, "PLAYER_START_ANGLE") == 0) {
                         if (last_command_uses == 0) {
                             player_start_angle = atoi(line_buffer);
                             validate_scalar(player_start_angle, -359, 359, line);
@@ -177,9 +216,8 @@ level_t * read_level_info(const char * filename) {
                 line_pos = 0;
                 line_buffer[line_pos] = 0;
             }
-            if (c == '\n') {
-                line++;
-            }
+
+            line++;
         } else if (c != '\r') {
             line_buffer[line_pos] = c;
             line_pos++;
@@ -227,8 +265,11 @@ level_t * read_level_info(const char * filename) {
     ret->floor_color.blue = floor_color_b;
     ret->floor_color.alpha = 0;
 
-    for (int i = 0; i < map_size_w * map_size_h; ++i) {
-        ret->contents[i] = map_layout[i];
+    for (unsigned int y = 0; y < ret->height; ++y) {
+        for (unsigned int x = 0; x < ret->width; ++x) {
+            unsigned y2 = ret->height - y - 1;
+            ret->contents[x + y2 * ret->width] = map_layout[x + y * ret->width];
+        }
     }
 
     free(map_layout);

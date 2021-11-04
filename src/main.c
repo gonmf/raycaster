@@ -2,43 +2,53 @@
 
 static level_t * level;
 
-static int paused_pressed;
-static int paused;
+static bool paused_pressed = false;
+static bool paused = false;
 
 static void move_observer(double x_change, double y_change) {
-    // 4.0 so we don't get too close to the block
-    double test_x = level->observer_x + x_change * 4.0;
-    double test_y = level->observer_y + y_change * 4.0;
-    unsigned int rounded_x = (unsigned int)(test_x + 0.5);
-    unsigned int rounded_y = (unsigned int)(test_y + 0.5);
+    double new_x = level->observer_x + x_change;
+    double new_y = level->observer_y + y_change;
+    unsigned int rounded_x, rounded_y;
 
-    if (rounded_x >= level->width || rounded_y >= level->height) {
+    rounded_x = (unsigned int)(new_x + 0.5 + 0.2);
+    rounded_y = (unsigned int)(new_y + 0.5);
+    if (level->contents[rounded_x + rounded_y * level->width]) {
         return;
     }
+    rounded_x = (unsigned int)(new_x + 0.5 - 0.2);
+    rounded_y = (unsigned int)(new_y + 0.5);
+    if (level->contents[rounded_x + rounded_y * level->width]) {
+        return;
+    }
+    rounded_x = (unsigned int)(new_x + 0.5);
+    rounded_y = (unsigned int)(new_y + 0.5 + 0.2);
+    if (level->contents[rounded_x + rounded_y * level->width]) {
+        return;
+    }
+    rounded_x = (unsigned int)(new_x + 0.5);
+    rounded_y = (unsigned int)(new_y + 0.5 - 0.2);
     if (level->contents[rounded_x + rounded_y * level->width]) {
         return;
     }
 
-    double new_x = level->observer_x + x_change;
-    double new_y = level->observer_y + y_change;
     level->observer_x = new_x;
     level->observer_y = new_y;
 }
 
-static int update_observer_state() {
-    int needs_refresh = 0;
+static bool update_observer_state() {
+    bool needs_refresh = false;
 
     if (!paused) {
-        int keyW = key_is_pressed(sfKeyW);
-        int keyS = key_is_pressed(sfKeyS);
-        int keyA = key_is_pressed(sfKeyA);
-        int keyD = key_is_pressed(sfKeyD);
+        bool keyW = key_is_pressed(sfKeyW);
+        bool keyS = key_is_pressed(sfKeyS);
+        bool keyA = key_is_pressed(sfKeyA);
+        bool keyD = key_is_pressed(sfKeyD);
 
         if (keyW && keyS) {
-            keyW = keyS = 0;
+            keyW = keyS = false;
         }
         if (keyA && keyD) {
-            keyA = keyD = 0;
+            keyA = keyD = false;
         }
 
         double mov_value = MOVEMENT_CONSTANT;
@@ -53,7 +63,7 @@ static int update_observer_state() {
             double y_change = cos(angle_radians) * mov_value;
 
             move_observer(x_change, y_change);
-            needs_refresh = 1;
+            needs_refresh = true;
         }
         if (keyS) {
             double angle_radians = level->observer_angle / RADIAN_CONSTANT;
@@ -61,7 +71,7 @@ static int update_observer_state() {
             double y_change = cos(angle_radians) * mov_value;
 
             move_observer(-x_change, -y_change);
-            needs_refresh = 1;
+            needs_refresh = true;
         }
         if (keyA) {
             double angle_radians = fit_angle(level->observer_angle - 90.0) / RADIAN_CONSTANT;
@@ -69,7 +79,7 @@ static int update_observer_state() {
             double y_change = cos(angle_radians) * (mov_value / 1.0);
 
             move_observer(x_change, y_change);
-            needs_refresh = 1;
+            needs_refresh = true;
         }
         if (keyD) {
             double angle_radians = fit_angle(level->observer_angle + 90.0) / RADIAN_CONSTANT;
@@ -77,12 +87,12 @@ static int update_observer_state() {
             double y_change = cos(angle_radians) * (mov_value / 1.0);
 
             move_observer(x_change, y_change);
-            needs_refresh = 1;
+            needs_refresh = true;
         }
     }
 
     if (key_is_pressed(sfKeyP)) {
-        paused_pressed = 1;
+        paused_pressed = true;
     } else {
         if (paused_pressed) {
             paused = !paused;
@@ -90,11 +100,11 @@ static int update_observer_state() {
                 color_filter(0.5);
                 window_update_pixels(foreground_buffer());
                 window_refresh();
-                set_cursor_visible(1);
+                set_cursor_visible(true);
             } else {
-                set_cursor_visible(0);
+                set_cursor_visible(false);
             }
-            paused_pressed = 0;
+            paused_pressed = false;
         }
     }
 
@@ -105,7 +115,7 @@ static void main_render_loop() {
     unsigned int frames_second = 1;
     long unsigned int last_ms = 0;
     struct timespec spec;
-    int needs_refresh = 1;
+    bool needs_refresh = true;
 
     while (window_is_open()) {
         if (!paused) {
@@ -123,7 +133,7 @@ static void main_render_loop() {
         }
 
         if (update_observer_state()) {
-            needs_refresh = 1;
+            needs_refresh = true;
         }
 
         if (!paused) {
@@ -155,7 +165,7 @@ static void main_render_loop() {
                     if (!paused) {
                         double angle_change = ((double)move_x) * ROTATION_CONSTANT / (VIEWPORT_WIDTH / 16);
                         level->observer_angle += angle_change;
-                        needs_refresh = 1;
+                        needs_refresh = true;
                     }
                 }
             }
@@ -165,7 +175,7 @@ static void main_render_loop() {
             if (needs_refresh) {
                 window_center_mouse();
                 window_update_pixels(foreground_buffer());
-                needs_refresh = 0;
+                needs_refresh = false;
             }
             window_refresh();
         }

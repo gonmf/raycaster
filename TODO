@@ -1,5 +1,4 @@
 - Allow saving and loading ongoing levels
 - Allow moving slowly past walls when partially blocked
-- Prevent player getting too close to blocks
-- Add bool type
 - Allow looking up and down a bit
+- Doors

@@ -1,14 +1,14 @@
 #include "global.h"
 
 static sfKeyCode keys_pressed[KEYS_PRESSED_BUFFER_SIZE];
-static unsigned char keys_pressed_count;
+static unsigned int keys_pressed_count;
 
 void add_key_pressed(sfKeyCode code) {
     if (keys_pressed_count == KEYS_PRESSED_BUFFER_SIZE) {
         return;
     }
 
-    for (int i = 0; i < keys_pressed_count; ++i) {
+    for (unsigned int i = 0; i < keys_pressed_count; ++i) {
         if (keys_pressed[i] == code) {
             return;
         }
@@ -19,7 +19,7 @@ void add_key_pressed(sfKeyCode code) {
 }
 
 void remove_key_pressed(sfKeyCode code) {
-    for (int i = 0; i < keys_pressed_count; ++i) {
+    for (unsigned int i = 0; i < keys_pressed_count; ++i) {
         if (keys_pressed[i] == code) {
             keys_pressed[i] = keys_pressed[keys_pressed_count - 1];
             keys_pressed_count -= 1;
@@ -28,12 +28,12 @@ void remove_key_pressed(sfKeyCode code) {
     }
 }
 
-int key_is_pressed(sfKeyCode code) {
-    for (int i = 0; i < keys_pressed_count; ++i) {
+bool key_is_pressed(sfKeyCode code) {
+    for (unsigned int i = 0; i < keys_pressed_count; ++i) {
         if (keys_pressed[i] == code) {
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }

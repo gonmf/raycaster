@@ -33,6 +33,10 @@ typedef struct  __attribute__((__packed__)) __level_ {
     unsigned char contents[];
 } level_t;
 
+#define true sfTrue
+#define false sfFalse
+typedef sfBool bool;
+
 #define MAX(X, Y) (X > Y ? X : Y)
 #define MIN(X, Y) (X < Y ? X : Y)
 
@@ -86,7 +90,7 @@ void error_w_line(const char * s, unsigned int line);
 // keyboard.c
 void add_key_pressed(sfKeyCode code);
 void remove_key_pressed(sfKeyCode code);
-int key_is_pressed(sfKeyCode code);
+bool key_is_pressed(sfKeyCode code);
 
 // file_io.c
 char * file_read(const char * filename);
@@ -95,17 +99,17 @@ char * file_read(const char * filename);
 double fit_angle(double d);
 
 // string.c
-int start_with(const char * s, const char * prefix);
+bool start_with(const char * s, const char * prefix);
 
 // window.c
 void window_center_mouse();
-void set_cursor_visible(int visible);
+void set_cursor_visible(bool visible);
 void window_start();
 void window_close();
-int window_is_open();
+bool window_is_open();
 void window_update_pixels(const pixel_t * pixels);
 void window_refresh();
-int window_poll_event(sfEvent * event);
+bool window_poll_event(sfEvent * event);
 
 // raycaster.c
 void color_filter(double factor);
