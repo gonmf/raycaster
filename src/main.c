@@ -5,34 +5,37 @@ static level_t * level;
 static bool paused_pressed = false;
 static bool paused = false;
 
-static void move_observer(double x_change, double y_change) {
+static void move_observer2(double x_change, double y_change) {
     double new_x = level->observer_x + x_change;
     double new_y = level->observer_y + y_change;
     unsigned int rounded_x, rounded_y;
 
-    rounded_x = (unsigned int)(new_x + 0.5 + 0.2);
+    rounded_x = (unsigned int)(new_x + 0.5 + 0.22);
     rounded_y = (unsigned int)(new_y + 0.5);
     if (level->contents[rounded_x + rounded_y * level->width]) {
         return;
     }
-    rounded_x = (unsigned int)(new_x + 0.5 - 0.2);
-    rounded_y = (unsigned int)(new_y + 0.5);
+    rounded_x = (unsigned int)(new_x + 0.5 - 0.22);
     if (level->contents[rounded_x + rounded_y * level->width]) {
         return;
     }
     rounded_x = (unsigned int)(new_x + 0.5);
-    rounded_y = (unsigned int)(new_y + 0.5 + 0.2);
+    rounded_y = (unsigned int)(new_y + 0.5 + 0.22);
     if (level->contents[rounded_x + rounded_y * level->width]) {
         return;
     }
-    rounded_x = (unsigned int)(new_x + 0.5);
-    rounded_y = (unsigned int)(new_y + 0.5 - 0.2);
+    rounded_y = (unsigned int)(new_y + 0.5 - 0.22);
     if (level->contents[rounded_x + rounded_y * level->width]) {
         return;
     }
 
     level->observer_x = new_x;
     level->observer_y = new_y;
+}
+
+static void move_observer(double x_change, double y_change) {
+    move_observer2(x_change, 0.0);
+    move_observer2(0.0, y_change);
 }
 
 static bool update_observer_state() {
