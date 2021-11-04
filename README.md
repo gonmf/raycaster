@@ -29,8 +29,9 @@ Use `WASD` to move and your mouse to look around. Pause the game with `P` and qu
 
 ## Screenshots
 
-![Screenshot2](https://user-images.githubusercontent.com/5512054/140052580-0562dcc8-d3f2-494c-9cfd-3b9faf2b554c.png)
-![Screenshot1](https://user-images.githubusercontent.com/5512054/139965678-059558f5-756f-4eab-a4c7-941fe170dbe2.png)
+![Screenshot](https://user-images.githubusercontent.com/5512054/140237995-d1e3e8e4-cd5d-4cf7-ae04-3d9a8611e80a.png)
+![Screenshot2](https://user-images.githubusercontent.com/5512054/140237997-81e13fae-8869-4ef8-869b-5dc5a2cf1be2.png)
+
 
 ---
 
