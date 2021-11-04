@@ -126,7 +126,7 @@ static void main_render_loop() {
             long unsigned int ms = spec.tv_nsec / 1000000;
 
             if (last_ms > ms) {
-                printf("   \rFPS=%d", frames_second);
+                printf("FPS=%u   \r", frames_second);
                 fflush(stdout);
                 frames_second = 1;
             }
@@ -163,11 +163,18 @@ static void main_render_loop() {
                 remove_key_pressed(code);
             } else if (event.type == sfEvtMouseMoved) {
                 int move_x = ((sfMouseMoveEvent *)&event)->x - VIEWPORT_WIDTH / 2;
+                int move_y = ((sfMouseMoveEvent *)&event)->y - VIEWPORT_HEIGHT / 2;
 
-                if (move_x) {
-                    if (!paused) {
-                        double angle_change = ((double)move_x) * ROTATION_CONSTANT / (VIEWPORT_WIDTH / 16);
+                if (!paused) {
+                    if (move_x) {
+                        double angle_change = ((double)move_x) * HORIZONTAL_ROTATION_CONSTANT / VIEWPORT_WIDTH;
                         level->observer_angle += angle_change;
+                        needs_refresh = true;
+                    }
+
+                    if (move_y) {
+                        double angle_change = ((double)move_y) * VERTICAL_ROTATION_CONSTANT / VIEWPORT_HEIGHT;
+                        level->observer_angle2 = MIN(MAX(level->observer_angle2 - angle_change, 1.0), 179.0);
                         needs_refresh = true;
                     }
                 }
@@ -187,13 +194,12 @@ static void main_render_loop() {
 
 static void open_level() {
     printf("Level start - press P to pause and Esc to quit\n");
-    paint_scene_first_time(level);
+    paint_scene(level);
 
     window_start();
 
     main_render_loop();
 
-    printf("\r        \r"); // clear FPS
     printf("Level closed\n");
 }
 

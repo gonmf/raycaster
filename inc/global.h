@@ -30,6 +30,7 @@ typedef struct  __attribute__((__packed__)) __level_ {
     double observer_x;
     double observer_y;
     double observer_angle;
+    double observer_angle2;
     unsigned char contents[];
 } level_t;
 
@@ -44,8 +45,8 @@ typedef sfBool bool;
 
 #define KEYS_PRESSED_BUFFER_SIZE 16
 
-#define VIEWPORT_WIDTH 912
-#define VIEWPORT_HEIGHT 456
+#define VIEWPORT_WIDTH 1200
+#define VIEWPORT_HEIGHT 600
 #define MAX_FPS 120
 #define FIELD_OF_VIEW 72 // degrees
 
@@ -64,7 +65,8 @@ typedef sfBool bool;
 
 // Voodoo:
 #define MOVEMENT_CONSTANT 0.07
-#define ROTATION_CONSTANT 1.0
+#define HORIZONTAL_ROTATION_CONSTANT 16.0
+#define VERTICAL_ROTATION_CONSTANT 32.0
 #define RAY_STEP_CONSTANT 0.0078125
 
 // sprites.c
@@ -116,7 +118,6 @@ void color_filter(double factor);
 const pixel_t * foreground_buffer();
 void init_fish_eye_table();
 void load_textures();
-void paint_scene_first_time(const level_t * level);
 void paint_scene(const level_t * level);
 
 #endif

@@ -256,6 +256,7 @@ level_t * read_level_info(const char * filename) {
     ret->observer_x = player_start_x;
     ret->observer_y = player_start_y;
     ret->observer_angle = fit_angle((double)player_start_angle);
+    ret->observer_angle2 = 90.0;
     ret->ceil_color.red = ceil_color_r;
     ret->ceil_color.green = ceil_color_g;
     ret->ceil_color.blue = ceil_color_b;

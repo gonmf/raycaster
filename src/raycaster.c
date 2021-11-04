@@ -1,13 +1,16 @@
 #include "global.h"
 
 static double fish_eye_table[VIEWPORT_WIDTH];
-
-static pixel_t bg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 static pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 static pixel_t wall_textures[TEXTURE_PACK_WIDTH][TEXTURE_PACK_HEIGHT][SPRITE_WIDTH * SPRITE_HEIGHT];
 
 const pixel_t * foreground_buffer() {
     return fg_buffer;
+}
+
+static unsigned int horizon_offset(const level_t * level) {
+    double vertical_multiplier = level->observer_angle2 / 90.0;
+    return (unsigned int)((VIEWPORT_HEIGHT / 2) * vertical_multiplier);
 }
 
 void color_filter(double factor) {
@@ -16,20 +19,6 @@ void color_filter(double factor) {
         fg_buffer[i].green = (unsigned int)(MIN(MAX(fg_buffer[i].green * factor, 0.0), 255.0));
         fg_buffer[i].blue = (unsigned int)(MIN(MAX(fg_buffer[i].blue * factor, 0.0), 255.0));
     }
-}
-
-static double horizon_distance(unsigned int x, unsigned int y) {
-    if (x < VIEWPORT_WIDTH / 2) {
-        x = VIEWPORT_WIDTH / 2 - x;
-    } else {
-        x = x - VIEWPORT_WIDTH / 2;
-    }
-
-    double w2 = (double)(VIEWPORT_WIDTH / 2);
-    double h2 = (double)(VIEWPORT_HEIGHT / 2);
-    double max = sqrt(w2 * w2 + h2 * h2);
-    double dst_to_max = 1.0 - sqrt(((double)x) * x + ((double)y) * y) / max;
-    return (dst_to_max + 2.0) / 3.0;
 }
 
 void init_fish_eye_table() {
@@ -53,27 +42,17 @@ void init_fish_eye_table() {
 }
 
 static void fill_in_background(const level_t * level) {
+    unsigned int viewport_mid = horizon_offset(level);
+
     for (unsigned int y = 0; y < VIEWPORT_HEIGHT; ++y) {
         for (unsigned int x = 0; x < VIEWPORT_WIDTH; ++x) {
-            double r, g, b, factor;
+            pixel_t * pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
 
-            if (y < VIEWPORT_HEIGHT / 2) { // sky
-                factor = horizon_distance(x, y);
-
-                r = level->ceil_color.red * factor;
-                g = level->ceil_color.green * factor;
-                b = level->ceil_color.blue * factor;
+            if (y < viewport_mid) { // sky
+                *pixel = level->ceil_color;
             } else { // floor
-                factor = horizon_distance(x, VIEWPORT_HEIGHT - y - 1);
-                r = level->floor_color.red * factor;
-                g = level->floor_color.green * factor;
-                b = level->floor_color.blue * factor;
+                *pixel = level->floor_color;
             }
-
-            pixel_t * pixel = &(bg_buffer[x + y * VIEWPORT_WIDTH]);
-            pixel->red = (unsigned char)r;
-            pixel->green = (unsigned char)g;
-            pixel->blue = (unsigned char)b;
         }
     }
 }
@@ -167,12 +146,8 @@ void load_textures() {
     free(sprite_pack);
 }
 
-static void copy_bg_to_fg() {
-    memcpy(fg_buffer, bg_buffer, sizeof(pixel_t) * VIEWPORT_WIDTH * VIEWPORT_HEIGHT);
-}
-
 static void fill_in_walls(const level_t * level) {
-    for (unsigned int x = 0 ; x < VIEWPORT_WIDTH; ++x) {
+    for (unsigned int x = 0; x < VIEWPORT_WIDTH; ++x) {
         unsigned int block_hit_x;
         unsigned int block_hit_y;
         double block_x;
@@ -188,36 +163,33 @@ static void fill_in_walls(const level_t * level) {
         double block_y;
         pixel_t * pixel;
         unsigned int y;
-        unsigned int viewport_mid = VIEWPORT_HEIGHT / 2;
-        unsigned int end_y = (unsigned int)(block_size * viewport_mid);
-        unsigned int orig_end_y = end_y;
-        if (end_y > viewport_mid) {
-            end_y = viewport_mid;
-        }
+
+        unsigned int viewport_mid = horizon_offset(level);
+
+        unsigned int end_y = (unsigned int)(block_size * VIEWPORT_HEIGHT / 2.0);
+
         for (unsigned int mid_y = 0; mid_y < end_y; ++mid_y) {
             // top part
-            y = viewport_mid - mid_y;
-            pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
-            block_y = ((orig_end_y - mid_y) * 1) / (VIEWPORT_HEIGHT * block_size);
-            block_color(pixel, block_x, block_y, block_size, block_type);
+            if (viewport_mid >= mid_y) {
+                y = viewport_mid - mid_y;
+                pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
+                block_y = (end_y - mid_y) / (VIEWPORT_HEIGHT * block_size);
+                block_color(pixel, block_x, block_y, block_size, block_type);
+            }
 
             // bottom part
-            y = viewport_mid + mid_y;
-            pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
-            block_y = (mid_y + VIEWPORT_HEIGHT * block_size * 0.5) / (VIEWPORT_HEIGHT * block_size);
-            block_color(pixel, block_x, block_y, block_size, block_type);
+            if (viewport_mid + mid_y < VIEWPORT_HEIGHT) {
+                y = viewport_mid + mid_y;
+                pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
+                block_y = (mid_y + VIEWPORT_HEIGHT * block_size * 0.5) / (VIEWPORT_HEIGHT * block_size);
+                block_color(pixel, block_x, block_y, block_size, block_type);
+            }
         }
     }
 }
 
-void paint_scene_first_time(const level_t * level) {
-    fill_in_background(level);
-
-    fill_in_walls(level);
-}
-
 void paint_scene(const level_t * level) {
-    copy_bg_to_fg();
+    fill_in_background(level);
 
     fill_in_walls(level);
 }

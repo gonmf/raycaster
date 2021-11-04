@@ -17,25 +17,25 @@ void set_cursor_visible(bool visible) {
 }
 
 void window_start() {
-    renderStates.blendMode = sfBlendNone;
-    renderStates.transform = sfTransform_Identity;
-    renderStates.texture = texture;
-    renderStates.shader = NULL;
+    sfVideoMode screen_video_mode;
+    screen_video_mode = sfVideoMode_getDesktopMode();
+    if (screen_video_mode.width < VIEWPORT_WIDTH || screen_video_mode.height < VIEWPORT_HEIGHT) {
+        error("Screen resolution too small for viewport");
+    }
 
-    sfVideoMode videoMode;
-    videoMode.width = VIEWPORT_WIDTH;
-    videoMode.height = VIEWPORT_HEIGHT;
-    videoMode.bitsPerPixel = 32;
+    sfVideoMode desired_video_mode;
+    desired_video_mode.width = VIEWPORT_WIDTH;
+    desired_video_mode.height = VIEWPORT_HEIGHT;
+    desired_video_mode.bitsPerPixel = 32;
 
-    window = sfRenderWindow_create(videoMode, "Raycaster", sfResize | sfClose, NULL);
+    window = sfRenderWindow_create(desired_video_mode, "Raycaster", sfResize | sfClose, NULL);
     sfRenderWindow_setFramerateLimit(window, MAX_FPS);
 
-    videoMode = sfVideoMode_getDesktopMode();
     sfVector2i position;
-    position.x = videoMode.width / 2 - VIEWPORT_WIDTH / 2;
-    position.y = videoMode.height / 2 - VIEWPORT_HEIGHT / 2;
-
+    position.x = screen_video_mode.width / 2 - VIEWPORT_WIDTH / 2;
+    position.y = screen_video_mode.height / 2 - VIEWPORT_HEIGHT / 2;
     sfRenderWindow_setPosition(window, position);
+
     set_cursor_visible(false);
     window_center_mouse();
 
