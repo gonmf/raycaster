@@ -12,7 +12,7 @@ void read_sprite_pack(
         sprintf(buffer, "Could not open file \"./sprites/%s.bmp\"", filename);
         error(buffer);
     }
-    printf( "Opening \"./sprites/%s.bmp\"\n", filename);
+    printf( "Using \"./sprites/%s.bmp\"\n", filename);
 
     size_t read = fread(buffer, 1, MAX_SPRITES_FILE_SIZE, file);
     fclose(file);

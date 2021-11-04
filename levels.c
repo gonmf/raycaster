@@ -53,7 +53,7 @@ level_t * read_level_info(const char * filename) {
     unsigned int map_layout_idx = 0;
     int player_start_x = -1;
     int player_start_y = -1;
-    int player_start_angle = -1;
+    int player_start_angle = -36;
 
     int wall_type_nr = 0;
     char last_command[80];
@@ -65,9 +65,11 @@ level_t * read_level_info(const char * filename) {
     char c;
     unsigned int line = 1;
     while ((c = buffer[0])) {
-        if (c == '\n' || c == ',') {
+        if (c == '\n') {
             if (line_buffer[0]) {
-                if (valid_command(line_buffer)) {
+                if (line_buffer[0] == '#') {
+                    // skip line
+                } else if (valid_command(line_buffer)) {
                     if (last_command_set) {
                         if (strcmp(last_command, "map_layout") != 0) {
                             error_w_line("unexpected command; expected argument", line);
@@ -110,8 +112,7 @@ level_t * read_level_info(const char * filename) {
                     } else if (start_with(last_command, "wall_type_")) {
                         if (last_command_uses == 0) {
                             wall_type_nr = atoi(last_command + strlen("wall_type_"));
-                            --wall_type_nr;
-                            validate_scalar(wall_type_nr, 0, MAX_LEVEL_WALL_TYPES - 1, line);
+                            validate_scalar(wall_type_nr, 0, MAX_LEVEL_WALL_TYPES, line);
                             if (wall_types_x[wall_type_nr] != -1) {
                                 error_w_line("duplicated wall type definition", line - 1);
                             }
@@ -127,22 +128,25 @@ level_t * read_level_info(const char * filename) {
                         int size_w = strlen(line_buffer);
                         if (map_size_w == -1) {
                             map_size_w = size_w;
-                        } else if (map_size_w != size_w) {
-                            error_w_line("inconstant map size", line);
+                        } else if (map_size_w < size_w) {
+                            error_w_line("inconstant map size - first line must have max width", line);
                         }
 
                         for (int i = 0; i < map_size_w; ++i) {
-                            char d = line_buffer[i];
+                            char d = i < size_w ? line_buffer[i] : '.';
                             if (d == 'S') {
+                                if (player_start_x >= 0) {
+                                    error_w_line("multiple player start (S) definitions", line);
+                                }
                                 player_start_x = map_layout_idx % map_size_w;
                                 player_start_y = map_layout_idx / map_size_w;
                                 map_layout[map_layout_idx++] = 0;
-                            } else if (d == '.') {
+                            } else if (d == '.' || d == ' ') {
                                 map_layout[map_layout_idx++] = 0;
-                            } else if (/*d == 'E' || */((d - '1') >= 0 && (d - '1') < MAX_LEVEL_WALL_TYPES)) {
-                                unsigned char block_id = d - '1';
+                            } else if ((d - '0') >= 0 && (d - '0') < MAX_LEVEL_WALL_TYPES) {
+                                unsigned char block_id = d - '0';
                                 if (wall_types_x[block_id] == -1) {
-                                    error_w_line("wall type must be define prior", line);
+                                    error_w_line("wall type must be defined prior", line);
                                 }
 
                                 map_layout[map_layout_idx++] = wall_types_x[block_id] + wall_types_y[block_id] * TEXTURE_PACK_WIDTH + 1;
@@ -155,7 +159,7 @@ level_t * read_level_info(const char * filename) {
                     } else if (strcmp(last_command, "player_start_angle") == 0) {
                         if (last_command_uses == 0) {
                             player_start_angle = atoi(line_buffer);
-                            validate_scalar(player_start_angle, 0, 359, line);
+                            validate_scalar(player_start_angle, -359, 359, line);
                             last_command_set = 0;
                         }
                     } else {
@@ -180,7 +184,7 @@ level_t * read_level_info(const char * filename) {
 
 
     if (map_size_w < 0) {
-        error_w_line("end of file with map_size_w not defined", line);
+        error_w_line("end of file with map not defined", line);
     }
     if (map_size_w < 3 || map_size_h < 3) {
         error_w_line("map too small", line);
@@ -191,7 +195,7 @@ level_t * read_level_info(const char * filename) {
     if (floor_color_r < 0) {
         error_w_line("end of file with floor_color not defined", line);
     }
-    if (player_start_angle < 0) {
+    if (player_start_angle < -359) {
         error_w_line("end of file with player_start_angle not defined", line);
     }
     if (player_start_x < 0) {

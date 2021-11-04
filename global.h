@@ -49,7 +49,7 @@ typedef struct  __attribute__((__packed__)) __level_ {
 #define SPRITE_HEIGHT 64
 
 #define MAX_FILE_NAME_SIZ 1024
-#define MAX_LEVEL_WALL_TYPES 8
+#define MAX_LEVEL_WALL_TYPES 10
 
 #define MAX_LEVEL_FILE_SIZE (1024 * 1024)
 #define MAX_SPRITES_FILE_SIZE (4 * 1024 * 1024)

@@ -1,41 +1,72 @@
-ceil_color
-72,56,24
-floor_color
-106,106,106
+# red,green,blue
 
+ceil_color
+72
+56
+24
+
+floor_color
+106
+106
+106
+
+# may be defined out of order
+# the argument is the (x,y) coords of the subsprite of the texture pack
 wall_type_1
-2,11
+2
+11
 wall_type_2
-4,12
+4
+12
 wall_type_3
-0,14
+0
+14
 wall_type_4
-0,12
+0
+12
 wall_type_5
-1,17
+1
+17
 wall_type_6
-0,0
+0
+0
+wall_type_7
+2
+2
+wall_type_0
+2
+1
+wall_type_9
+4
+16
+wall_type_8
+2
+16
+
+# must appear after the used wall types are defined
+# does not need to be filled in but the first line must match the maximum width
 
 map_layout
-11131413111
-1.........1
-1.........1
-2.........2
-1.........1
-1.........1
-1.........1
-2.........2
-1.........1
-4....6....4
-1.........1
-2.........2
-1.........1
-1.........1
-1...S.....1
-2.........2
-1.........1
-1.........1
-11511211111
+ 113141311       1
+11S      11  77877
+1         1  7   7
+2         2977   0
+1                7
+1         1977   7
+1         3  7   0
+2    7    2  7   7
+1         1  7   7
+8         4  7   0
+1         1  7   7
+2    7    2  7   7
+1         1  7   0
+1         11 77877
+1          8
+2         28
+1         1
+11       11
+ 115121111
 
 player_start_angle
-330
+# must between [-359,359]
+37

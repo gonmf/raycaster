@@ -42,12 +42,12 @@ static void init_fish_eye_table() {
     for (int x = 0; x < center_x; ++x) {
         double arg = plane_min_x / ((double)(center_x - x));
         double angle = atan(arg) * RADIAN_CONSTANT - 90.0;
-        fish_eye_table[x] = angle / 2.0;
+        fish_eye_table[x] = angle;
     }
     for (int x = center_x; x < VIEWPORT_WIDTH; ++x) {
         double arg = plane_max_x / ((double)(x - center_x));
         double angle = 90.0 - atan(arg) * RADIAN_CONSTANT;
-        fish_eye_table[x] = angle / 2.0;
+        fish_eye_table[x] = angle;
     }
 }
 
@@ -169,22 +169,12 @@ static void paint_scene() {
         unsigned int block_hit_x;
         unsigned int block_hit_y;
         double block_x;
-        double x_angle, distance, block_size;
 
-#if 0
-        x_angle = fit_angle(fish_eye_table[x] + level->observer_angle);
-        distance = cast_ray(x_angle, &block_x, &block_hit_x, &block_hit_y);
-        block_size = (3.0 / distance);
-#else
-        x_angle = (((double)x) / (VIEWPORT_WIDTH / 2.0) - 1.0) * FIELD_OF_VIEW / 2.0 + level->observer_angle;
-        // x_angle = fit_angle(fish_eye_table[x] + level->observer_angle);
-        distance = cast_ray(x_angle, &block_x, &block_hit_x, &block_hit_y);
-#if 0
+        double x_angle = fit_angle(fish_eye_table[x] + level->observer_angle);
+        double distance = cast_ray(x_angle, &block_x, &block_hit_x, &block_hit_y);
         distance *= cos((x_angle - level->observer_angle) / RADIAN_CONSTANT);
-#endif
         distance = MAX(distance, 0.0);
-        block_size = (1.8 / distance);
-#endif
+        double block_size = (1.8 / distance);
 
         unsigned char block_type = level->contents[block_hit_x + block_hit_y * level->width] - 1;
 
@@ -218,20 +208,20 @@ static void copy_bg_to_fg() {
 }
 
 static void move_observer(double x_change, double y_change) {
-    double new_x = level->observer_x + x_change;
-    double new_y = level->observer_y + y_change;
-
-    unsigned int rounded_x = (unsigned int)(new_x + 0.5);
-    unsigned int rounded_y = (unsigned int)(new_y + 0.5);
+    double test_x = level->observer_x + x_change * 4.0;
+    double test_y = level->observer_y + y_change * 4.0;
+    unsigned int rounded_x = (unsigned int)(test_x + 0.5);
+    unsigned int rounded_y = (unsigned int)(test_y + 0.5);
 
     if (rounded_x >= level->width || rounded_y >= level->height) {
         return;
     }
-
     if (level->contents[rounded_x + rounded_y * level->width]) {
         return;
     }
 
+    double new_x = level->observer_x + x_change;
+    double new_y = level->observer_y + y_change;
     level->observer_x = new_x;
     level->observer_y = new_y;
 }
@@ -445,35 +435,76 @@ static void load_textures() {
     free(sprite_pack);
 }
 
-static level_t * select_level() {
-    DIR * d;
-    struct dirent * dir;
-    d = opendir("./levels");
+static int valid_level_file_name(const char * s) {
+    return !(s[0] == 0 || s[0] == '.' || s[0] == '/' || s[0] == '\\');
+}
 
-    if (!d) {
+static level_t * select_level() {
+    DIR * dir = opendir("./levels");
+    struct dirent * entry;
+
+    if (!dir) {
         error("Could not open directory \"./levels\"");
     }
 
-    printf("Select level:\n");
-    char * levels[128];
+    printf("\nLevels found:\n");
+    char * levels[99];
     unsigned int levels_listed = 0;
 
-    while ((dir = readdir(d)) != NULL) {
-        if (dir->d_name[0] != '.') {
+    while (levels_listed < 99 && (entry = readdir(dir)) != NULL) {
+        if (valid_level_file_name(entry->d_name)) {
             levels[levels_listed] = malloc(MAX_FILE_NAME_SIZ);
-            strncpy(levels[levels_listed], dir->d_name, MAX_FILE_NAME_SIZ);
+            strncpy(levels[levels_listed], entry->d_name, MAX_FILE_NAME_SIZ);
 
-            printf("%u - %s\n", levels_listed + 1, levels[levels_listed]);
+            printf("%3u - %s\n", levels_listed + 1, levels[levels_listed]);
 
             levels_listed++;
         }
     }
 
-    closedir(d);
+    closedir(dir);
 
-    // TODO: prompt user for level number
+    if (levels_listed == 0) {
+        error("No levels found");
+    }
 
-    level_t * ret = read_level_info(levels[0]);
+    printf("\nSelect level\n");
+
+    unsigned int selection = 0;
+
+    if (levels_listed > 1) {
+        unsigned int buf_idx;
+        char * buf = malloc(MAX_FILE_NAME_SIZ);
+
+        while(1) {
+            printf("> ");
+            fflush(stdout);
+
+            buf_idx = 0;
+            while (buf_idx < MAX_FILE_NAME_SIZ - 1) {
+                char c = getchar();
+
+                if (c == 0 || c == '\n') {
+                    break;
+                }
+                buf[buf_idx++] = c;
+            }
+            buf[buf_idx] = 0;
+
+            selection = (unsigned int)atoi(buf);
+            if (selection >= 1 && selection <= levels_listed) {
+                selection--;
+                break;
+            } else {
+                printf("Invalid input\n");
+            }
+        }
+        free(buf);
+    } else {
+        printf("> 1\n");
+    }
+
+    level_t * ret = read_level_info(levels[selection]);
 
     for (unsigned int i = 0; i < levels_listed; ++i) {
         free(levels[i]);
