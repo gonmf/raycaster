@@ -5,6 +5,6 @@ CFLAGS := -std=c99 -O2 -Wall -Wextra -Wformat=2 -pedantic-errors \
 LDFLAGS += -lm -lcsfml-graphics -lcsfml-window
 
 all:
-	$(CC) *.c -o raycaster $(CFLAGS) $(LDFLAGS)
+	$(CC) src/*.c -Iinc -o raycaster $(CFLAGS) $(LDFLAGS)
 clean:
 	$(RM) raycaster *.ppm

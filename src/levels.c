@@ -1,9 +1,5 @@
 #include "global.h"
 
-static int start_with(const char * s, const char * prefix) {
-    return strlen(prefix) < strlen(s) && strncmp(prefix, s, strlen(prefix)) == 0;
-}
-
 static int valid_command(const char * s) {
     if (strcmp(s, "ceil_color") == 0) return 1;
     if (strcmp(s, "floor_color") == 0) return 1;
@@ -20,20 +16,31 @@ static void validate_scalar(int val, int min, int max, unsigned int line) {
     }
 }
 
-level_t * read_level_info(const char * filename) {
-    char * buffer = malloc(MAX_LEVEL_FILE_SIZE);
-    char * orig_buffer = buffer;
-    snprintf(buffer, MAX_LEVEL_FILE_SIZE, "./levels/%s", filename);
-
-    FILE * file = fopen(buffer, "rb");
-    if (file == NULL) {
-        sprintf(buffer, "Could not open file \"./levels/%s\"", filename);
-        error(buffer);
+static void surround_w_safety_walls(level_t * level) {
+    for (unsigned int x = 0; x < level->width; ++x) {
+        if (!level->contents[x]) {
+            level->contents[x] = SAFETY_BARRIER_BLOCK + 1;
+        }
+    if (!level->contents[x + (level->height - 1) * level->width]) {
+            level->contents[x + (level->height - 1) * level->width] = SAFETY_BARRIER_BLOCK + 1;
+        }
     }
-    printf("Opening \"./levels/%s\"\n", filename);
+    for (unsigned int y = 0; y < level->height; ++y) {
+        if (!level->contents[y * level->width]) {
+            level->contents[y * level->width] = SAFETY_BARRIER_BLOCK + 1;
+        }
+        if (!level->contents[level->width - 1 + y * level->width]) {
+            level->contents[level->width - 1 + y * level->width] = SAFETY_BARRIER_BLOCK + 1;
+        }
+    }
+}
 
-    fread(buffer, 1, MAX_LEVEL_FILE_SIZE, file);
-    fclose(file);
+level_t * read_level_info(const char * filename) {
+    char * str_buf = malloc(MAX_FILE_NAME_SIZ);
+    snprintf(str_buf, MAX_FILE_NAME_SIZ, "./levels/%s", filename);
+    char * buffer = file_read(str_buf);
+    free(str_buf);
+    char * orig_buffer = buffer;
 
     int map_size_w = -1;
     int map_size_h = 0;
@@ -49,7 +56,7 @@ level_t * read_level_info(const char * filename) {
         wall_types_x[i] = -1;
         wall_types_y[i] = -1;
     }
-    unsigned char * map_layout = calloc(MAX_FILE_NAME_SIZ, 1);
+    unsigned char * map_layout = calloc(MAX_FILE_SIZE, 1);
     unsigned int map_layout_idx = 0;
     int player_start_x = -1;
     int player_start_y = -1;
@@ -210,7 +217,7 @@ level_t * read_level_info(const char * filename) {
     ret->height = map_size_h;
     ret->observer_x = player_start_x;
     ret->observer_y = player_start_y;
-    ret->observer_angle = (double)player_start_angle;
+    ret->observer_angle = fit_angle((double)player_start_angle);
     ret->ceil_color.red = ceil_color_r;
     ret->ceil_color.green = ceil_color_g;
     ret->ceil_color.blue = ceil_color_b;
@@ -226,23 +233,7 @@ level_t * read_level_info(const char * filename) {
 
     free(map_layout);
 
-    // surround level rectangle with blocks for performance
-    for (int i = 0; i < map_size_w; ++i) {
-        if (!ret->contents[i]) {
-            ret->contents[i] = SAFETY_BARRIER_BLOCK + 1;
-        }
-    if (!ret->contents[i + (map_size_h - 1) * map_size_w]) {
-            ret->contents[i + (map_size_h - 1) * map_size_w] = SAFETY_BARRIER_BLOCK + 1;
-        }
-    }
-    for (int i = 0; i < map_size_h; ++i) {
-        if (!ret->contents[i * map_size_w]) {
-            ret->contents[i * map_size_w] = SAFETY_BARRIER_BLOCK + 1;
-        }
-        if (!ret->contents[map_size_w - 1 + i * map_size_w]) {
-            ret->contents[map_size_w - 1 + i * map_size_w] = SAFETY_BARRIER_BLOCK + 1;
-        }
-    }
+    surround_w_safety_walls(ret);
 
     return ret;
 }

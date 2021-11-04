@@ -4,27 +4,14 @@ void read_sprite_pack(
     pixel_t * dst, const char * filename,
     unsigned int pack_width, unsigned int pack_height
 ) {
-    char * buffer = malloc(MAX_SPRITES_FILE_SIZE);
-    sprintf(buffer, "./sprites/%s.bmp", filename);
-
-    FILE * file = fopen(buffer, "rb");
-    if (file == NULL) {
-        sprintf(buffer, "Could not open file \"./sprites/%s.bmp\"", filename);
-        error(buffer);
-    }
-    printf( "Using \"./sprites/%s.bmp\"\n", filename);
-
-    size_t read = fread(buffer, 1, MAX_SPRITES_FILE_SIZE, file);
-    fclose(file);
-
-    buffer[read] = 0;
+    char * str_buf = malloc(MAX_FILE_NAME_SIZ);
+    snprintf(str_buf, MAX_FILE_NAME_SIZ, "./sprites/%s.bmp", filename);
+    char * buffer = file_read(str_buf);
+    free(str_buf);
 
     if (buffer[0] != 0x42 || buffer[1] != 0x4D) {
-        fprintf(stderr, "Not a Windows NT Bitmap (BM) file\n");
-        fflush(stderr);
-        exit(EXIT_FAILURE);
+        error("Not a Windows NT Bitmap (BM) file");
     }
-
 
     unsigned int data_offset = (((unsigned int)buffer[13]) << 24) + (((unsigned int)buffer[12]) << 16) + (((unsigned int)buffer[11]) << 8) + buffer[10];
     char * data = buffer + data_offset;
