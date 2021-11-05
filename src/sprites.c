@@ -6,16 +6,20 @@ void read_sprite_pack(
 ) {
     char * str_buf = malloc(MAX_FILE_NAME_SIZ);
     snprintf(str_buf, MAX_FILE_NAME_SIZ, "./sprites/%s.bmp", filename);
-    char * buffer = file_read(str_buf);
+    char * buffer = malloc(MAX_FILE_SIZE);
+    unsigned int read = file_read(buffer, MAX_FILE_SIZE, str_buf);
     free(str_buf);
 
     if (buffer[0] != 0x42 || buffer[1] != 0x4D) {
-        error("Not a Windows NT Bitmap (BM) file");
+        error("Not a Windows Bitmap (BM) file");
     }
 
     unsigned int data_offset = (((unsigned int)buffer[13]) << 24) + (((unsigned int)buffer[12]) << 16) + (((unsigned int)buffer[11]) << 8) + buffer[10];
-    char * data = buffer + data_offset;
+    if (read < data_offset) {
+        error("Not a valid Windows Bitmap file with 24pp");
+    }
 
+    char * data = buffer + data_offset;
     for (unsigned int y = 0; y < pack_height * SPRITE_HEIGHT; ++y) {
         for (unsigned int x = 0; x < pack_width * SPRITE_WIDTH; ++x) {
             unsigned int dst_idx = x + y * pack_width * SPRITE_WIDTH;

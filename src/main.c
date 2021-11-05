@@ -2,30 +2,42 @@
 
 static level_t * level;
 
-static bool paused_pressed = false;
+static bool pause_btn_pressed = false;
 static bool paused = false;
+static bool action_btn_pressed = false;
 
 static void move_observer2(double x_change, double y_change) {
     double new_x = level->observer_x + x_change;
     double new_y = level->observer_y + y_change;
-    unsigned int rounded_x, rounded_y;
+    unsigned int rounded_x = (unsigned int)(new_x + 0.5);
+    unsigned int rounded_y = (unsigned int)(new_y + 0.5);
+    unsigned char content_type;
+
+    unsigned int door_x;
+    unsigned int door_y;
+    double percentage_open;
+    bool door_is_opening = opening_door_transition(&percentage_open, &door_x, &door_y);
+    bool allow_enter_door = (door_is_opening && percentage_open > 0.75 && (door_x == rounded_x || door_y == rounded_y));
 
     rounded_x = (unsigned int)(new_x + 0.5 + 0.22);
-    rounded_y = (unsigned int)(new_y + 0.5);
-    if (level->contents[rounded_x + rounded_y * level->width]) {
+    content_type = level->content_type[rounded_x + rounded_y * level->width];
+    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_DOOR && !allow_enter_door)) {
         return;
     }
     rounded_x = (unsigned int)(new_x + 0.5 - 0.22);
-    if (level->contents[rounded_x + rounded_y * level->width]) {
+    content_type = level->content_type[rounded_x + rounded_y * level->width];
+    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_DOOR && !allow_enter_door)) {
         return;
     }
     rounded_x = (unsigned int)(new_x + 0.5);
     rounded_y = (unsigned int)(new_y + 0.5 + 0.22);
-    if (level->contents[rounded_x + rounded_y * level->width]) {
+    content_type = level->content_type[rounded_x + rounded_y * level->width];
+    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_DOOR && !allow_enter_door)) {
         return;
     }
     rounded_y = (unsigned int)(new_y + 0.5 - 0.22);
-    if (level->contents[rounded_x + rounded_y * level->width]) {
+    content_type = level->content_type[rounded_x + rounded_y * level->width];
+    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_DOOR && !allow_enter_door)) {
         return;
     }
 
@@ -95,9 +107,9 @@ static bool update_observer_state() {
     }
 
     if (key_is_pressed(sfKeyP)) {
-        paused_pressed = true;
+        pause_btn_pressed = true;
     } else {
-        if (paused_pressed) {
+        if (pause_btn_pressed) {
             paused = !paused;
             if (paused) {
                 color_filter(0.5);
@@ -107,7 +119,18 @@ static bool update_observer_state() {
             } else {
                 set_cursor_visible(false);
             }
-            paused_pressed = false;
+            pause_btn_pressed = false;
+        }
+    }
+
+    if (key_is_pressed(sfKeyE)) {
+        action_btn_pressed = true;
+    } else {
+        if (action_btn_pressed) {
+            if (open_door_in_front(level)) {
+                needs_refresh = true;
+            }
+            action_btn_pressed = false;
         }
     }
 
@@ -133,6 +156,10 @@ static void main_render_loop() {
 
             frames_second += 1;
             last_ms = ms;
+
+            if (transition_step(level)) {
+                needs_refresh = true;
+            }
         }
 
         if (update_observer_state()) {

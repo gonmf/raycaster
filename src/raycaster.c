@@ -61,8 +61,15 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
     double angle_radians = angle / RADIAN_CONSTANT;
     double x_change = sin(angle_radians) * RAY_STEP_CONSTANT;
     double y_change = cos(angle_radians) * RAY_STEP_CONSTANT;
+    unsigned int initial_x = (unsigned int)(level->observer_x + 0.5);
+    unsigned int initial_y = (unsigned int)(level->observer_y + 0.5);
     double curr_x = level->observer_x;
     double curr_y = level->observer_y;
+
+    unsigned int opening_door_x, opening_door_y;
+    double percentage_open;
+    bool opening_door = opening_door_transition(&percentage_open, &opening_door_x, &opening_door_y);
+    bool skipped_door = false;
 
     unsigned int steps = 0;
     while(1) {
@@ -73,7 +80,17 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
         unsigned int rounded_x = (unsigned int)(curr_x + 0.5);
         unsigned int rounded_y = (unsigned int)(curr_y + 0.5);
 
-        if (level->contents[rounded_x + rounded_y * level->width]) {
+        if (rounded_x == initial_x && rounded_y == initial_y) {
+            continue;
+        }
+
+        if (opening_door && opening_door_x == rounded_x && opening_door_y == rounded_y && skipped_door) {
+            continue;
+        }
+
+        unsigned char content_type = level->content_type[rounded_x + rounded_y * level->width];
+
+        if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR) {
             *block_hit_x = rounded_x;
             *block_hit_y = rounded_y;
 
@@ -113,7 +130,19 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
                 hangle = 1.0 - hangle;
             }
 
-            *hit_angle = MIN(MAX(hangle, 0.0), 1.0);
+            hangle = MIN(MAX(hangle, 0.0), 1.0);
+            if (opening_door && opening_door_x == rounded_x && opening_door_y == rounded_y) {
+                if (hangle < percentage_open) {
+                    skipped_door = true;
+                    curr_x += x_change / 2.0;
+                    curr_y += y_change / 2.0;
+                    continue;
+                } else {
+                    hangle = MAX(hangle - percentage_open, 0.0);
+                }
+            }
+
+            *hit_angle = hangle;
             return steps * RAY_STEP_CONSTANT;
         }
     }
@@ -156,9 +185,9 @@ static void fill_in_walls(const level_t * level) {
         double distance = cast_ray(level, x_angle, &block_x, &block_hit_x, &block_hit_y);
         distance *= cos((x_angle - level->observer_angle) / RADIAN_CONSTANT);
         distance = MAX(distance, 0.0);
-        double block_size = (1.8 / distance);
+        double block_size = (1.5 / distance);
 
-        unsigned char block_type = level->contents[block_hit_x + block_hit_y * level->width] - 1;
+        unsigned char wall_texture = level->texture[block_hit_x + block_hit_y * level->width];
 
         double block_y;
         pixel_t * pixel;
@@ -174,7 +203,7 @@ static void fill_in_walls(const level_t * level) {
                 y = viewport_mid - mid_y;
                 pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
                 block_y = (end_y - mid_y) / (VIEWPORT_HEIGHT * block_size);
-                block_color(pixel, block_x, block_y, block_size, block_type);
+                block_color(pixel, block_x, block_y, block_size, wall_texture);
             }
 
             // bottom part
@@ -182,7 +211,7 @@ static void fill_in_walls(const level_t * level) {
                 y = viewport_mid + mid_y;
                 pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
                 block_y = (mid_y + VIEWPORT_HEIGHT * block_size * 0.5) / (VIEWPORT_HEIGHT * block_size);
-                block_color(pixel, block_x, block_y, block_size, block_type);
+                block_color(pixel, block_x, block_y, block_size, wall_texture);
             }
         }
     }

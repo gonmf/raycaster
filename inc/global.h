@@ -31,12 +31,18 @@ typedef struct  __attribute__((__packed__)) __level_ {
     double observer_y;
     double observer_angle;
     double observer_angle2;
-    unsigned char contents[];
+    unsigned char * content_type;
+    unsigned char * texture;
+    unsigned char door_open_texture;
 } level_t;
 
 #define true sfTrue
 #define false sfFalse
 typedef sfBool bool;
+
+#define CONTENT_TYPE_EMPTY 1
+#define CONTENT_TYPE_WALL 2
+#define CONTENT_TYPE_DOOR 3
 
 #define MAX(X, Y) (X > Y ? X : Y)
 #define MIN(X, Y) (X < Y ? X : Y)
@@ -60,8 +66,10 @@ typedef sfBool bool;
 
 #define TEXTURE_PACK_NAME "wall_textures"
 #define TEXTURE_PACK_WIDTH 6
-#define TEXTURE_PACK_HEIGHT 19
-#define SAFETY_BARRIER_BLOCK (0 + 7 * TEXTURE_PACK_WIDTH)
+#define TEXTURE_PACK_HEIGHT 18
+#define SAFETY_WALL_TEXTURE 0
+
+#define DOOR_OPEN_SPEED 80
 
 // Voodoo:
 #define MOVEMENT_CONSTANT 0.07
@@ -82,7 +90,7 @@ void read_subsprite(
     unsigned int pack_x, unsigned int pack_y
 );
 
-// levels.c
+// map_format.c
 level_t * read_level_info(const char * filename);
 
 // utils.c
@@ -95,7 +103,7 @@ void remove_key_pressed(sfKeyCode code);
 bool key_is_pressed(sfKeyCode code);
 
 // file_io.c
-char * file_read(const char * filename);
+unsigned int file_read(char * dst, unsigned int max_size, const char * filename);
 
 // math.c
 double fit_angle(double d);
@@ -119,5 +127,10 @@ const pixel_t * foreground_buffer();
 void init_fish_eye_table();
 void load_textures();
 void paint_scene(const level_t * level);
+
+// actions.c
+bool transition_step(level_t * level);
+bool opening_door_transition(double * percentage_open, unsigned int * door_x, unsigned int * door_y);
+bool open_door_in_front(level_t * level);
 
 #endif

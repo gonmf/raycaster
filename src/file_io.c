@@ -1,19 +1,29 @@
 #include "global.h"
 
-char * file_read(const char * filename) {
-    char * buffer = malloc(MAX_FILE_SIZE);
+unsigned int file_read(char * dst, unsigned int max_size, const char * filename) {
     FILE * file = fopen(filename, "rb");
 
     if (file == NULL) {
-        sprintf(buffer, "Could not open file \"%s\"", filename);
-        error(buffer);
+        char * sb = malloc(MAX_FILE_NAME_SIZ);
+        sprintf(sb, "Could not open file \"%s\"", filename);
+        error(sb);
     }
 
-    printf("Read \"%s\"\n", filename);
+    unsigned int total_read = 0;
 
-    fread(buffer, 1, MAX_FILE_SIZE, file);
+    do {
+        total_read += fread(dst, 1, max_size, file);
+
+        if (ferror(file)) {
+            char * sb = malloc(MAX_FILE_NAME_SIZ);
+            sprintf(sb, "Error reading file \"%s\"", filename);
+            error(sb);
+        }
+    } while (!feof(file));
 
     fclose(file);
+
+    printf("Read \"%s\"\n", filename);
     
-    return buffer;
+    return total_read;
 }

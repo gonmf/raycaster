@@ -1,8 +1,8 @@
 - Allow saving and loading ongoing levels
 - Shading
-- Doors
-  - Not just "empty space or block" codification
-  - Transition
-  - Inner sprites for open door
 - Configurable viewport (not ratio)
-- Bug with proximity of camera to blocks when against the corner
+- Blitting
+- Show (revealed) level map
+
+Known Bugs
+- Camera is able to get too close against corners of blocks.
