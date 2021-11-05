@@ -1,16 +1,18 @@
-- Map design is becoming too complex:
-  - Add multiple views to map editor: walls/doors, placement of soldiers/objects/player/keys
-- Allow saving and loading ongoing levels
-- Configurable viewport (not ratio)
+- Add simple, unpassable objects to be blitted
 - Blitting
   - Size depending only on distance to center of image
   - Passable or impassable
+- Map design
+  - Add multiple views to map editor: walls/doors, placement of soldiers/objects/player/keys
+- Allow saving and loading ongoing levels
+- Configurable viewport (not ratio)
 - Show (revealed) level map
 - Enemies
   - Moving projectiles
 - Game UI
 - Different door types
   - Door keys
+- Config file for mouse sensitivity, resolution, FPS
 
 Known Bugs
 - Camera is able to get too close against corners of blocks.

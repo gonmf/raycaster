@@ -13,11 +13,19 @@ static unsigned int horizon_offset(const level_t * level) {
     return (unsigned int)((VIEWPORT_HEIGHT / 2) * vertical_multiplier);
 }
 
+static pixel_t darken_shading(pixel_t color, double factor) {
+    pixel_t ret = color;
+
+    ret.red = (unsigned int)(MIN(MAX(ret.red * factor, 0.0), ret.red));
+    ret.green = (unsigned int)(MIN(MAX(ret.green * factor, 0.0), ret.green));
+    ret.blue = (unsigned int)(MIN(MAX(ret.blue * factor, 0.0), ret.blue));
+
+    return ret;
+}
+
 void color_filter(double factor) {
     for (unsigned int i = 0; i < VIEWPORT_WIDTH * VIEWPORT_HEIGHT; ++i) {
-        fg_buffer[i].red = (unsigned int)(MIN(MAX(fg_buffer[i].red * factor, 0.0), 255.0));
-        fg_buffer[i].green = (unsigned int)(MIN(MAX(fg_buffer[i].green * factor, 0.0), 255.0));
-        fg_buffer[i].blue = (unsigned int)(MIN(MAX(fg_buffer[i].blue * factor, 0.0), 255.0));
+        fg_buffer[i] = darken_shading(fg_buffer[i], factor);
     }
 }
 
@@ -172,9 +180,7 @@ static void block_color(pixel_t * dst, double block_x, double block_y, double di
     unsigned char texture_x = block_type % TEXTURE_PACK_WIDTH;
     unsigned char texture_y = block_type / TEXTURE_PACK_WIDTH;
     pixel_t * src = &wall_textures[texture_x][texture_y][x + y * SPRITE_WIDTH];
-    dst->red = (unsigned int)MIN(MAX(0, src->red * intensity), src->red);
-    dst->green = (unsigned int)MIN(MAX(0, src->green * intensity), src->green);
-    dst->blue = (unsigned int)MIN(MAX(0, src->blue * intensity), src->blue);
+    *dst = darken_shading(*src, intensity);
 }
 
 void load_textures() {
