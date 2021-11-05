@@ -4,6 +4,7 @@
   - Passable or impassable
 - Map design
   - Add multiple views to map editor: walls/doors, placement of soldiers/objects/player/keys
+  - Allow raising canvas size to support 256x256 maps
 - Allow saving and loading ongoing levels
 - Configurable viewport (not ratio)
 - Show (revealed) level map

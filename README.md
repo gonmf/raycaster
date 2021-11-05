@@ -30,9 +30,11 @@ Use `WASD` to move and your mouse to look around. Pause the game with `P` and qu
 
 ## Screenshots
 
-![1](https://user-images.githubusercontent.com/5512054/140398798-80b76118-27dc-4fe0-b92a-db0558d9a11e.png)
-![2](https://user-images.githubusercontent.com/5512054/140398800-bcb72269-6cb0-4f5e-a6e8-c2a75149466f.png)
-![3](https://user-images.githubusercontent.com/5512054/140398804-f3bec682-3478-4ab2-a00f-ad4245de6e94.png)
+![1](https://user-images.githubusercontent.com/5512054/140586136-67068fab-ef16-4ff1-8235-09f4d0fd09c3.png)
+![2](https://user-images.githubusercontent.com/5512054/140586137-22eeef83-7fc1-4252-9f69-2b135652b6fc.png)
+
+Editor:
+
 ![editor](https://user-images.githubusercontent.com/5512054/140579835-f617973e-f796-4628-b049-6f834cf46e86.png)
 
 
