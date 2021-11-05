@@ -1,7 +1,8 @@
 # Ray casting experiment
 
-I've been meaning to write my own 3D graphics engine, so here it is. It has texture mapping, collision detection, vertical camera movement, etc.
-Some notable omissions for now are floor/ceiling texture mapping and floor height/altitude.
+I've been meaning to write my own 3D graphics engine from scratch, so here it is. It has texture mapping, collision detection, vertical camera movement, animation, etc.
+Some notable omissions for now are floor/ceiling texture mapping, floor height/altitude and blitting.
+
 As a demo I've rendered something akin to the first Wolfenstein game.
 
 Since direct frame buffer access is not possible anymore, I've used CSFML.

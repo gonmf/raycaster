@@ -49,6 +49,10 @@ WALL_TYPE_0
 # use "s" and "d" for start position and doors
 # to avoid having to fill walls and still not have the line
 # skipped, you can use dots as well as spaces
+
+# about doors: they will be silently replaced if placed in the edge,
+# otherwise must be placed between two walls and between other two
+# non-walls elements (empty or other doors)
 MAP_LAYOUT
             23
 .
@@ -56,20 +60,20 @@ MAP_LAYOUT
 .
       113141311
      11       11  77077
-     1         11 7   7
+     1         1  7   7
      2         2177   0
-     1    s     d     7
+     1    s    dd     7
      1         1177   7
      1         3  7   0
-    12    7    2  7   7
-   111         1  7   7
-    d          4  7   0
-   111         1  7   7
-    12    7    2  7   7
-     1         1  77 70
-     1         11177d77
+     2    7    2  7   7
+     1         1  7   7
+     d         4  7   0
+     1         1  7   7
+     2    7    2  7   7
+     1         1  77d70
+     1         11177 77
      1    .       11121 111
-d    2    .              d11
+d    2    .             d 1
      1    .     12112112111
      11       111
       115121111

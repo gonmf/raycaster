@@ -5,49 +5,86 @@
     <title>Map editor</title>
 </head>
 <body>
+    Select tool:
     <select id="wallTypeSelect">
-        <option value="s" rgb="gold" selected>Player start position</option>
-        <option value="d" rgb="#009c9c">Door</option>
-        <option value="1" rgb="#00007c">Wall #1</option>
-        <option value="2" rgb="#a80000">Wall #2</option>
-        <option value="3" rgb="#400000">Wall #3</option>
-        <option value="4" rgb="#048800">Wall #4</option>
-        <option value="5" rgb="#848400">Wall #5</option>
-        <option value="6" rgb="#000000">Wall #6</option>
-        <option value="7" rgb="#b8fcfc">Wall #7</option>
-        <option value="8" rgb="#000058">Wall #8</option>
-        <option value="9" rgb="#000058">Wall #9</option>
-        <option value="0" rgb="#000058">Wall #0</option>
-        <option value="c" rgb="clear">Clear</option>
+        <option value="s" selected>Player start position</option>
+        <option value="d">Door</option>
+        <option value="1">Wall #1</option>
+        <option value="2">Wall #2</option>
+        <option value="3">Wall #3</option>
+        <option value="4">Wall #4</option>
+        <option value="5">Wall #5</option>
+        <option value="6">Wall #6</option>
+        <option value="7">Wall #7</option>
+        <option value="8">Wall #8</option>
+        <option value="9">Wall #9</option>
+        <option value="0">Wall #0</option>
+        <option value="c">Clear</option>
     </select>
+    <input type="button" value="Clear all" id="clearAllBtn"></input>
 
     <br/>
 
-    <canvas id="canvas" width="1" height="1"></canvas>
+    <canvas id="canvas" width="1" height="1" style="cursor: crosshair;"></canvas>
 
-    <textarea id="textOutput" rows="40" cols="100">
-    </textarea>
+    <textarea id="textOutput" rows="40" cols="100"></textarea>
+
+    <br/>
+
+    <input type="button" value="Load from above text" id="loadBtn"></input>
 
     <script type="text/javascript">
+        window.colorTable = {
+            "s": "gold",
+            "d": "#00FFFF",
+            "1": "#000080",
+            "2": "#800080",
+            "3": "#008080",
+            "4": "#808000",
+            "5": "#FF00FF",
+            "6": "#CCCCCC",
+            "7": "#00FF00",
+            "8": "#FF0000",
+            "9": "#0000FF",
+            "0": "#000000"
+        };
         const canvas = document.getElementById('canvas');
-        window.totalWidth = 75;
-        window.totalHeight = 32;
+        window.totalWidth = 78;
+        window.totalHeight = 50;
         window.blockSize = 20;
         window.blocksPainted = 0;
         window.playerStartSetX = -1;
         window.playerStartSetY = -1;
+        window.painting = false;
         canvas.width = window.totalWidth * window.blockSize;
         canvas.height = window.totalHeight * window.blockSize;
 
         var elemLeft = canvas.offsetLeft + canvas.clientLeft,
             elemTop = canvas.offsetTop + canvas.clientTop;
-        var canvasOnClick = function(evt) {
+
+        canvas.addEventListener("mousemove", function (e) {
+            if (window.painting) {
+                window.paintPixel(e);
+            }
+        }, false);
+        canvas.addEventListener("mousedown", function (e) {
+            window.painting = true;
+            window.paintPixel(e);
+        }, false);
+        canvas.addEventListener("mouseup", function (e) {
+            window.painting = false;
+            window.refreshTextOutput();
+        }, false);
+        canvas.addEventListener("mouseout", function (e) {
+        }, false);
+
+        window.paintPixel = function(evt) {
             var x = Math.round((evt.pageX - elemLeft) / window.blockSize - 0.5),
                 y = Math.round((evt.pageY - elemTop) / window.blockSize - 0.5);
 
             var option = document.querySelector("select").selectedOptions[0];
             var value = option.getAttribute("value");
-            var rgb = option.getAttribute("rgb");
+            var rgb = window.colorTable[value];
 
             if (x >= 0 && x < window.totalWidth && y >= 0 && y < window.totalHeight) {
                 if (value == 'c') {
@@ -67,26 +104,23 @@
 
                     window.playerStartSetX = x;
                     window.playerStartSetY = y;
-                    window.walls[y][x] = `${value}_${rgb}`;
+                    window.walls[y][x] = value;
                     window.blocksPainted++;
-                } else if (window.walls[y][x] === `${value}_${rgb}`) {
-                } else if (window.walls[y][x] === `s_gold`) {
+                } else if (window.walls[y][x] === value) {
+                } else if (window.walls[y][x] === `s`) {
                     window.playerStartSetX = -1;
-                    window.walls[y][x] = `${value}_${rgb}`;
+                    window.walls[y][x] = value;
                 } else {
-                    window.walls[y][x] = `${value}_${rgb}`;
+                    window.walls[y][x] = value;
                     window.blocksPainted++;
                 }
 
                 window.refreshCanvas();
-                window.refreshTextOutput();
             }
         };
 
-        canvas.addEventListener('click', canvasOnClick, false);
-
         window.ctx = canvas.getContext('2d');
-        window.walls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight))
+        window.walls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
 
         window.refreshCanvas = function() {
             window.ctx.fillStyle = 'gray';
@@ -95,7 +129,7 @@
             for (var y = 0; y < window.totalHeight; ++y) {
                 for (var x = 0; x < window.totalWidth; ++x) {
                     if (window.walls[y][x]) {
-                        window.ctx.fillStyle = window.walls[y][x].split("_")[1];
+                        window.ctx.fillStyle = window.colorTable[window.walls[y][x]];
                         window.ctx.fillRect(x * window.blockSize, y * window.blockSize, window.blockSize,window.blockSize);
                     }
                 }
@@ -105,11 +139,11 @@
         window.refreshTextOutput = function() {
             var text = document.getElementById("textOutput");
             if (window.blocksPainted === 0) {
-                text.textContent = "Invalid level design - must be at least 3x3";
+                text.value = "Invalid level design - must be at least 3x3";
                 return;
             }
             if (window.playerStartSetX === -1) {
-                text.textContent = "Player start position must be set";
+                text.value = "Player start position must be set";
                 return;
             }
 
@@ -130,14 +164,14 @@
                     if (maxY === -1 || y > maxY) { maxY = y; }
 
                     if (safety_code === -1) {
-                        var code = window.walls[y][x].split("_")[0];
+                        var code = window.walls[y][x];
                         safety_code = code;
                     }
                 }
             }
 
             if (maxY - minY < 2 || maxX - minX < 2) {
-                text.textContent = "Invalid level design - must be at least 3x3";
+                text.value = "Invalid level design - must be at least 3x3";
                 return;
             }
 
@@ -148,10 +182,10 @@
                     var atBorder = y === minY || y === maxY || x === minX || x === maxX;
 
                     if (window.walls[y][x]) {
-                        var code = window.walls[y][x].split("_")[0];
+                        var code = window.walls[y][x];
 
                         if (code === 's' && atBorder) {
-                            text.textContent = "Invalid level design - player start position cannot be at the edge";
+                            text.value = "Invalid level design - player start position cannot be at the edge";
                             return;
                         }
                         output += code;
@@ -163,8 +197,66 @@
                 output += "\n";
             }
 
-            text.textContent = output;
+            text.value = output;
         };
+
+        document.getElementById("loadBtn").addEventListener("click", function() {
+            var text = document.getElementById("textOutput");
+            var textContent = (text.value + "").trim();
+            var newWalls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+            var newBlocksPainted = 0;
+            var newPlayerStartSetX = -1;
+            var newPlayerStartSetY = -1;
+
+            var x = 0;
+            var y = 0;
+            for (var i = 0; i < textContent.length; ++i) {
+                var c = textContent.charAt(i);
+                if (c === '\n') {
+                    if (x === 0 && y === 0) {
+                        continue;
+                    }
+                    x = 0;
+                    y++;
+                    continue;
+                } else if (c === ' ' || c === '.') {
+                    // do nothing
+                } else if (c === 's') {
+                    if (newPlayerStartSetX !== -1) {
+                        text.value = `Error: multiple starting player positions (${x},${y})`;
+                        return;
+                    }
+                    newPlayerStartSetX = x;
+                    newPlayerStartSetY = y;
+                    newWalls[y][x] = c;
+                    newBlocksPainted++;
+                } else if (c === 'd' || (c >= '0' && c <= '9')) {
+                    newWalls[y][x] = c;
+                    newBlocksPainted++;
+                } else {
+                    text.value = `Error: invalid character "${c}" (${x},${y})`;
+                    return;
+                }
+
+                x++;
+            }
+
+            window.blocksPainted = newBlocksPainted;
+            window.playerStartSetX = newPlayerStartSetX;
+            window.playerStartSetY = newPlayerStartSetY;
+            window.walls = newWalls;
+            window.refreshCanvas();
+            window.refreshTextOutput();
+        });
+
+        document.getElementById("clearAllBtn").addEventListener("click", function() {
+            window.blocksPainted = 0;
+            window.playerStartSetX = -1;
+            window.playerStartSetY = -1;
+            window.walls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));;
+            window.refreshCanvas();
+            window.refreshTextOutput();
+        });
 
         window.refreshCanvas();
         window.refreshTextOutput();

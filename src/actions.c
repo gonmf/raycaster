@@ -4,12 +4,9 @@ static unsigned int opening_door_x;
 static unsigned int opening_door_y;
 static unsigned int door_open_ticks;
 
-bool transition_step(level_t * level) {
+bool transition_step() {
     if (door_open_ticks > 0) {
         door_open_ticks--;
-        if (door_open_ticks == 0) {
-            level->content_type[opening_door_x + opening_door_y * level->width] = CONTENT_TYPE_EMPTY;
-        }
         return true;
     }
     return false;
@@ -41,18 +38,9 @@ bool open_door_in_front(level_t * level) {
         return false;
     }
 
-    if (level->content_type[door_x + 1 + door_y * level->width] == CONTENT_TYPE_WALL &&
-        level->content_type[door_x - 1 + door_y * level->width] == CONTENT_TYPE_WALL) {
-        level->texture[door_x + 1 + door_y * level->width] = level->door_open_texture;
-        level->texture[door_x - 1 + door_y * level->width] = level->door_open_texture;
-    } else if (level->content_type[door_x + (door_y + 1) * level->width] == CONTENT_TYPE_WALL &&
-        level->content_type[door_x + (door_y - 1) * level->width] == CONTENT_TYPE_WALL) {
-        level->texture[door_x + (door_y + 1) * level->width] = level->door_open_texture;
-        level->texture[door_x + (door_y - 1) * level->width] = level->door_open_texture;
-    }
-
     opening_door_x = door_x;
     opening_door_y = door_y;
     door_open_ticks = DOOR_OPEN_SPEED;
+    level->content_type[door_x + door_y * level->width] = CONTENT_TYPE_DOOR_OPEN;
     return true;
 }

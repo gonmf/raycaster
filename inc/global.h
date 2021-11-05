@@ -43,6 +43,7 @@ typedef sfBool bool;
 #define CONTENT_TYPE_EMPTY 1
 #define CONTENT_TYPE_WALL 2
 #define CONTENT_TYPE_DOOR 3
+#define CONTENT_TYPE_DOOR_OPEN 4
 
 #define MAX(X, Y) (X > Y ? X : Y)
 #define MIN(X, Y) (X < Y ? X : Y)
@@ -136,7 +137,7 @@ void load_textures();
 void paint_scene(const level_t * level);
 
 // actions.c
-bool transition_step(level_t * level);
+bool transition_step();
 bool opening_door_transition(double * percentage_open, unsigned int * door_x, unsigned int * door_y);
 bool open_door_in_front(level_t * level);
 

@@ -57,7 +57,7 @@ static void fill_in_background(const level_t * level) {
     }
 }
 
-static double cast_ray(const level_t * level, double angle, double * hit_angle, unsigned int * block_hit_x, unsigned int * block_hit_y) {
+static double cast_ray(const level_t * level, double angle, double * hit_angle, unsigned int * block_hit_x, unsigned int * block_hit_y, unsigned char * last_seen_block_type) {
     double angle_radians = angle / RADIAN_CONSTANT;
     double x_change = sin(angle_radians) * RAY_STEP_CONSTANT;
     double y_change = cos(angle_radians) * RAY_STEP_CONSTANT;
@@ -70,6 +70,10 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
     double percentage_open;
     bool opening_door = opening_door_transition(&percentage_open, &opening_door_x, &opening_door_y);
     bool skipped_door = false;
+
+    unsigned int rounded_x = (unsigned int)(curr_x + 0.5);
+    unsigned int rounded_y = (unsigned int)(curr_y + 0.5);
+    unsigned char last_seen_block_content_type = level->content_type[rounded_x + rounded_y * level->width];
 
     unsigned int steps = 0;
     while(1) {
@@ -84,13 +88,15 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
             continue;
         }
 
-        if (opening_door && opening_door_x == rounded_x && opening_door_y == rounded_y && skipped_door) {
+        bool opening_this_door = opening_door && opening_door_x == rounded_x && opening_door_y == rounded_y;
+
+        if (opening_this_door && skipped_door) {
             continue;
         }
 
         unsigned char content_type = level->content_type[rounded_x + rounded_y * level->width];
 
-        if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR) {
+        if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR || opening_this_door) {
             *block_hit_x = rounded_x;
             *block_hit_y = rounded_y;
 
@@ -136,6 +142,10 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
                     skipped_door = true;
                     curr_x += x_change / 2.0;
                     curr_y += y_change / 2.0;
+
+                    if (last_seen_block_content_type != content_type) {
+                        last_seen_block_content_type = content_type;
+                    }
                     continue;
                 } else {
                     hangle = MAX(hangle - percentage_open, 0.0);
@@ -143,7 +153,12 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
             }
 
             *hit_angle = hangle;
+            *last_seen_block_type = last_seen_block_content_type;
             return steps * RAY_STEP_CONSTANT;
+        }
+
+        if (last_seen_block_content_type != content_type) {
+            last_seen_block_content_type = content_type;
         }
     }
 }
@@ -176,18 +191,26 @@ void load_textures() {
 }
 
 static void fill_in_walls(const level_t * level) {
+    unsigned int block_hit_x;
+    unsigned int block_hit_y;
+    double block_x;
+    unsigned char last_seen_block_type;
+    unsigned char wall_texture;
+
     for (unsigned int x = 0; x < VIEWPORT_WIDTH; ++x) {
-        unsigned int block_hit_x;
-        unsigned int block_hit_y;
-        double block_x;
 
         double x_angle = fit_angle(fish_eye_table[x] + level->observer_angle);
-        double distance = cast_ray(level, x_angle, &block_x, &block_hit_x, &block_hit_y);
+        double distance = cast_ray(level, x_angle, &block_x, &block_hit_x, &block_hit_y, &last_seen_block_type);
         distance *= cos((x_angle - level->observer_angle) / RADIAN_CONSTANT);
         distance = MAX(distance, 0.0);
         double block_size = (1.5 / distance);
 
-        unsigned char wall_texture = level->texture[block_hit_x + block_hit_y * level->width];
+
+        if (last_seen_block_type == CONTENT_TYPE_DOOR_OPEN && level->content_type[block_hit_x + block_hit_y * level->width] == CONTENT_TYPE_WALL) {
+            wall_texture = level->door_open_texture;
+        } else {
+            wall_texture = level->texture[block_hit_x + block_hit_y * level->width];
+        }
 
         double block_y;
         pixel_t * pixel;

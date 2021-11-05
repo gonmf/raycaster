@@ -16,6 +16,25 @@ static void validate_scalar(int val, int min, int max, unsigned int line) {
         error_w_line("invalid scalar value", line);
     }
 }
+static void validate_door_placement(const level_t * level, unsigned int end_line) {
+    for (unsigned int y = 1; y < level->height - 1; ++y) {
+        for (unsigned int x = 1; x < level->width - 1; ++x) {
+            if (level->content_type[x + y * level->width] == CONTENT_TYPE_DOOR) {
+                bool wallW = level->content_type[x + 1 + y * level->width] == CONTENT_TYPE_WALL;
+                bool wallS = level->content_type[x - 1 + y * level->width] == CONTENT_TYPE_WALL;
+                bool wallA = level->content_type[x + (y + 1) * level->width] == CONTENT_TYPE_WALL;
+                bool wallD = level->content_type[x + (y - 1) * level->width] == CONTENT_TYPE_WALL;
+
+                bool valid = (wallW && wallS && !wallA && !wallD) || (!wallW && !wallS && wallA && wallD);
+                if (!valid) {
+                    char * s = malloc(MAX_FILE_NAME_SIZ);
+                    sprintf(s, "invalid door placement (%u,%u)", x, y);
+                    error_w_line(s, end_line);
+                }
+            }
+        }
+    }
+}
 
 static void surround_w_safety_walls(level_t * level, unsigned char door_closed_texture) {
     for (unsigned int x = 0; x < level->width; ++x) {
@@ -24,6 +43,7 @@ static void surround_w_safety_walls(level_t * level, unsigned char door_closed_t
             level->texture[x] = SAFETY_WALL_TEXTURE;
         }
         if (level->content_type[x] == CONTENT_TYPE_DOOR) {
+            fprintf(stderr, "Warning: edge door converted to wall\n");
             level->content_type[x] = CONTENT_TYPE_WALL;
             level->texture[x] = door_closed_texture;
         }
@@ -32,6 +52,7 @@ static void surround_w_safety_walls(level_t * level, unsigned char door_closed_t
             level->texture[x + (level->height - 1) * level->width] = SAFETY_WALL_TEXTURE;
         }
         if (level->content_type[x + (level->height - 1) * level->width] == CONTENT_TYPE_DOOR) {
+            fprintf(stderr, "Warning: edge door converted to wall\n");
             level->content_type[x + (level->height - 1) * level->width] = CONTENT_TYPE_WALL;
             level->texture[x + (level->height - 1) * level->width] = door_closed_texture;
         }
@@ -42,6 +63,7 @@ static void surround_w_safety_walls(level_t * level, unsigned char door_closed_t
             level->texture[y * level->width] = SAFETY_WALL_TEXTURE;
         }
         if (level->content_type[y * level->width] == CONTENT_TYPE_DOOR) {
+            fprintf(stderr, "Warning: edge door converted to wall\n");
             level->content_type[y * level->width] = CONTENT_TYPE_WALL;
             level->texture[y * level->width] = door_closed_texture;
         }
@@ -50,6 +72,7 @@ static void surround_w_safety_walls(level_t * level, unsigned char door_closed_t
             level->texture[level->width - 1 + y * level->width] = SAFETY_WALL_TEXTURE;
         }
         if (level->content_type[level->width - 1 + y * level->width] == CONTENT_TYPE_DOOR) {
+            fprintf(stderr, "Warning: edge door converted to wall\n");
             level->content_type[level->width - 1 + y * level->width] = CONTENT_TYPE_WALL;
             level->texture[level->width - 1 + y * level->width] = door_closed_texture;
         }
@@ -347,6 +370,7 @@ level_t * read_level_info(const char * filename) {
 
     unsigned char door_closed_texture = closed_door_x + closed_door_y * TEXTURE_PACK_WIDTH;
     surround_w_safety_walls(ret, door_closed_texture);
+    validate_door_placement(ret, line);
 
     return ret;
 }
