@@ -1,8 +1,8 @@
 # Ray casting experiment
 
-I've been meaning to write my own 3D graphics engine, so here it is.
-It currently uses raycasting for a 2.5D effect. As a demo I've rendered
-something akin to the first Wolfenstein game.
+I've been meaning to write my own 3D graphics engine, so here it is. It has texture mapping, collision detection, vertical camera movement, etc.
+Some notable omissions for now are floor/ceiling texture mapping and floor height/altitude.
+As a demo I've rendered something akin to the first Wolfenstein game.
 
 Since direct frame buffer access is not possible anymore, I've used CSFML.
 
@@ -29,8 +29,9 @@ Use `WASD` to move and your mouse to look around. Pause the game with `P` and qu
 
 ## Screenshots
 
-![Screenshot](https://user-images.githubusercontent.com/5512054/140237995-d1e3e8e4-cd5d-4cf7-ae04-3d9a8611e80a.png)
-![Screenshot2](https://user-images.githubusercontent.com/5512054/140237997-81e13fae-8869-4ef8-869b-5dc5a2cf1be2.png)
+![1](https://user-images.githubusercontent.com/5512054/140398798-80b76118-27dc-4fe0-b92a-db0558d9a11e.png)
+![2](https://user-images.githubusercontent.com/5512054/140398800-bcb72269-6cb0-4f5e-a6e8-c2a75149466f.png)
+![3](https://user-images.githubusercontent.com/5512054/140398804-f3bec682-3478-4ab2-a00f-ad4245de6e94.png)
 
 
 ---
