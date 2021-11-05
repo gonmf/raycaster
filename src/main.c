@@ -18,27 +18,27 @@ static void move_observer2(double x_change, double y_change) {
     unsigned int door_y;
     double percentage_open;
     bool door_is_opening = opening_door_transition(&percentage_open, &door_x, &door_y);
-    bool allow_enter_door = (door_is_opening && percentage_open > 0.75);
+    bool allow_enter_door = !door_is_opening || (door_is_opening && percentage_open > 0.75);
 
     rounded_x = (unsigned int)(new_x + 0.5 + 0.22);
     content_type = level->content_type[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_DOOR && !(allow_enter_door && door_x == rounded_x && door_y == rounded_y))) {
+    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
         return;
     }
     rounded_x = (unsigned int)(new_x + 0.5 - 0.22);
     content_type = level->content_type[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_DOOR && !(allow_enter_door && door_x == rounded_x && door_y == rounded_y))) {
+    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
         return;
     }
     rounded_x = (unsigned int)(new_x + 0.5);
     rounded_y = (unsigned int)(new_y + 0.5 + 0.22);
     content_type = level->content_type[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_DOOR && !(allow_enter_door && door_x == rounded_x && door_y == rounded_y))) {
+    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
         return;
     }
     rounded_y = (unsigned int)(new_y + 0.5 - 0.22);
     content_type = level->content_type[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_DOOR && !(allow_enter_door && door_x == rounded_x && door_y == rounded_y))) {
+    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
         return;
     }
 
@@ -307,7 +307,7 @@ static void select_level() {
 
     unsigned int selection = 0;
 
-#if 0
+#if 1
     if (levels_listed > 1) {
         unsigned int buf_idx;
         char * buf = malloc(MAX_FILE_NAME_SIZ);
