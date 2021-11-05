@@ -1,8 +1,14 @@
 - Allow saving and loading ongoing levels
-- Shading
 - Configurable viewport (not ratio)
 - Blitting
+  - Size depending only on distance to center of image
+  - Passable or impassable
 - Show (revealed) level map
+- Enemies
+  - Moving projectiles
+- Game UI
+- Level designer
+  - Allow loading an existing design
 
 Known Bugs
 - Camera is able to get too close against corners of blocks.

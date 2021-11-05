@@ -148,8 +148,8 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
     }
 }
 
-static void block_color(pixel_t * dst, double block_x, double block_y, double factor, unsigned char block_type) {
-    factor = (2.0 + factor) / 3.0;
+static void block_color(pixel_t * dst, double block_x, double block_y, double distance, unsigned char block_type) {
+    double intensity = 10.0 / distance;
 
     unsigned int x = (unsigned int)(SPRITE_WIDTH * block_x);
     unsigned int y = (unsigned int)(SPRITE_HEIGHT * block_y);
@@ -157,9 +157,9 @@ static void block_color(pixel_t * dst, double block_x, double block_y, double fa
     unsigned char texture_x = block_type % TEXTURE_PACK_WIDTH;
     unsigned char texture_y = block_type / TEXTURE_PACK_WIDTH;
     pixel_t * src = &wall_textures[texture_x][texture_y][x + y * SPRITE_WIDTH];
-    dst->red = (unsigned int)MIN(MAX(0, src->red * factor), src->red);
-    dst->green = (unsigned int)MIN(MAX(0, src->green * factor), src->green);
-    dst->blue = (unsigned int)MIN(MAX(0, src->blue * factor), src->blue);
+    dst->red = (unsigned int)MIN(MAX(0, src->red * intensity), src->red);
+    dst->green = (unsigned int)MIN(MAX(0, src->green * intensity), src->green);
+    dst->blue = (unsigned int)MIN(MAX(0, src->blue * intensity), src->blue);
 }
 
 void load_textures() {
@@ -203,7 +203,7 @@ static void fill_in_walls(const level_t * level) {
                 y = viewport_mid - mid_y;
                 pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
                 block_y = (end_y - mid_y) / (VIEWPORT_HEIGHT * block_size);
-                block_color(pixel, block_x, block_y, block_size, wall_texture);
+                block_color(pixel, block_x, block_y, distance, wall_texture);
             }
 
             // bottom part
@@ -211,7 +211,7 @@ static void fill_in_walls(const level_t * level) {
                 y = viewport_mid + mid_y;
                 pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
                 block_y = (mid_y + VIEWPORT_HEIGHT * block_size * 0.5) / (VIEWPORT_HEIGHT * block_size);
-                block_color(pixel, block_x, block_y, block_size, wall_texture);
+                block_color(pixel, block_x, block_y, distance, wall_texture);
             }
         }
     }

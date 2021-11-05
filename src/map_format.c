@@ -17,25 +17,41 @@ static void validate_scalar(int val, int min, int max, unsigned int line) {
     }
 }
 
-static void surround_w_safety_walls(level_t * level) {
+static void surround_w_safety_walls(level_t * level, unsigned char door_closed_texture) {
     for (unsigned int x = 0; x < level->width; ++x) {
-        if (level->content_type[x] != CONTENT_TYPE_WALL) {
+        if (level->content_type[x] == CONTENT_TYPE_EMPTY) {
             level->content_type[x] = CONTENT_TYPE_WALL;
             level->texture[x] = SAFETY_WALL_TEXTURE;
         }
-        if (level->content_type[x + (level->height - 1) * level->width] != CONTENT_TYPE_WALL) {
+        if (level->content_type[x] == CONTENT_TYPE_DOOR) {
+            level->content_type[x] = CONTENT_TYPE_WALL;
+            level->texture[x] = door_closed_texture;
+        }
+        if (level->content_type[x + (level->height - 1) * level->width] == CONTENT_TYPE_EMPTY) {
             level->content_type[x + (level->height - 1) * level->width] = CONTENT_TYPE_WALL;
             level->texture[x + (level->height - 1) * level->width] = SAFETY_WALL_TEXTURE;
         }
+        if (level->content_type[x + (level->height - 1) * level->width] == CONTENT_TYPE_DOOR) {
+            level->content_type[x + (level->height - 1) * level->width] = CONTENT_TYPE_WALL;
+            level->texture[x + (level->height - 1) * level->width] = door_closed_texture;
+        }
     }
     for (unsigned int y = 0; y < level->height; ++y) {
-        if (level->content_type[y * level->width] != CONTENT_TYPE_WALL) {
+        if (level->content_type[y * level->width] == CONTENT_TYPE_EMPTY) {
             level->content_type[y * level->width] = CONTENT_TYPE_WALL;
             level->texture[y * level->width] = SAFETY_WALL_TEXTURE;
         }
-        if (level->content_type[level->width - 1 + y * level->width] != CONTENT_TYPE_WALL) {
+        if (level->content_type[y * level->width] == CONTENT_TYPE_DOOR) {
+            level->content_type[y * level->width] = CONTENT_TYPE_WALL;
+            level->texture[y * level->width] = door_closed_texture;
+        }
+        if (level->content_type[level->width - 1 + y * level->width] == CONTENT_TYPE_EMPTY) {
             level->content_type[level->width - 1 + y * level->width] = CONTENT_TYPE_WALL;
             level->texture[level->width - 1 + y * level->width] = SAFETY_WALL_TEXTURE;
+        }
+        if (level->content_type[level->width - 1 + y * level->width] == CONTENT_TYPE_DOOR) {
+            level->content_type[level->width - 1 + y * level->width] = CONTENT_TYPE_WALL;
+            level->texture[level->width - 1 + y * level->width] = door_closed_texture;
         }
     }
 }
@@ -212,16 +228,18 @@ level_t * read_level_info(const char * filename) {
                         int size_w = strlen(line_buffer);
 
                         for (int i = 0; i < map_size_w; ++i) {
-                            char d = i < size_w ? line_buffer[i] : ' ';
+                            char d = i < size_w ? line_buffer[i] : '.';
                             if (d == 's') {
                                 if (player_start_x != -1) {
                                     error_w_line("multiple player start (s) definitions", line);
                                 }
                                 player_start_x = map_layout_idx % map_size_w;
                                 player_start_y = map_size_h - (map_layout_idx / map_size_w) - 1;
-
+                                if (player_start_x == 0 || player_start_x == map_size_w || player_start_y == 0 || player_start_y == map_size_h) {
+                                    error_w_line("invalid player start position", line);
+                                }
                                 map_content_type[map_layout_idx++] = CONTENT_TYPE_EMPTY;
-                            } else if (d == ' ') {
+                            } else if (d == '.' || d == ' ') {
                                 map_content_type[map_layout_idx++] = CONTENT_TYPE_EMPTY;
                             } else if (d == 'd') {
                                 if (closed_door_y == -1) {
@@ -327,7 +345,8 @@ level_t * read_level_info(const char * filename) {
     free(map_content_type);
     free(map_texture);
 
-    surround_w_safety_walls(ret);
+    unsigned char door_closed_texture = closed_door_x + closed_door_y * TEXTURE_PACK_WIDTH;
+    surround_w_safety_walls(ret, door_closed_texture);
 
     return ret;
 }

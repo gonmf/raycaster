@@ -53,6 +53,11 @@ typedef sfBool bool;
 
 #define VIEWPORT_WIDTH 1200
 #define VIEWPORT_HEIGHT 600
+#define UI_BORDER 8
+#define UI_BOTTOM 128
+#define WINDOW_TOTAL_WIDTH (VIEWPORT_WIDTH + UI_BORDER + UI_BORDER)
+#define WINDOW_TOTAL_HEIGHT (VIEWPORT_HEIGHT + UI_BORDER + UI_BOTTOM)
+#define UI_BG_COLOR "0,111,112"
 #define MAX_FPS 120
 #define FIELD_OF_VIEW 72 // degrees
 
@@ -117,13 +122,15 @@ void set_cursor_visible(bool visible);
 void window_start();
 void window_close();
 bool window_is_open();
-void window_update_pixels(const pixel_t * pixels);
+void window_update_pixels(const pixel_t * pixels, unsigned int width, unsigned int height,
+    unsigned int offset_x, unsigned int offset_y);
 void window_refresh();
 bool window_poll_event(sfEvent * event);
 
 // raycaster.c
 void color_filter(double factor);
 const pixel_t * foreground_buffer();
+const pixel_t * ui_buffer();
 void init_fish_eye_table();
 void load_textures();
 void paint_scene(const level_t * level);

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Map editor</title>
+</head>
+<body>
+    <select id="wallTypeSelect">
+        <option value="s" rgb="gold" selected>Player start position</option>
+        <option value="d" rgb="#009c9c">Door</option>
+        <option value="1" rgb="#00007c">Wall #1</option>
+        <option value="2" rgb="#a80000">Wall #2</option>
+        <option value="3" rgb="#400000">Wall #3</option>
+        <option value="4" rgb="#048800">Wall #4</option>
+        <option value="5" rgb="#848400">Wall #5</option>
+        <option value="6" rgb="#000000">Wall #6</option>
+        <option value="7" rgb="#b8fcfc">Wall #7</option>
+        <option value="8" rgb="#000058">Wall #8</option>
+        <option value="9" rgb="#000058">Wall #9</option>
+        <option value="0" rgb="#000058">Wall #0</option>
+        <option value="c" rgb="clear">Clear</option>
+    </select>
+
+    <br/>
+
+    <canvas id="canvas" width="1" height="1"></canvas>
+
+    <textarea id="textOutput" rows="40" cols="100">
+    </textarea>
+
+    <script type="text/javascript">
+        const canvas = document.getElementById('canvas');
+        window.totalWidth = 75;
+        window.totalHeight = 32;
+        window.blockSize = 20;
+        window.blocksPainted = 0;
+        window.playerStartSetX = -1;
+        window.playerStartSetY = -1;
+        canvas.width = window.totalWidth * window.blockSize;
+        canvas.height = window.totalHeight * window.blockSize;
+
+        var elemLeft = canvas.offsetLeft + canvas.clientLeft,
+            elemTop = canvas.offsetTop + canvas.clientTop;
+        var canvasOnClick = function(evt) {
+            var x = Math.round((evt.pageX - elemLeft) / window.blockSize - 0.5),
+                y = Math.round((evt.pageY - elemTop) / window.blockSize - 0.5);
+
+            var option = document.querySelector("select").selectedOptions[0];
+            var value = option.getAttribute("value");
+            var rgb = option.getAttribute("rgb");
+
+            if (x >= 0 && x < window.totalWidth && y >= 0 && y < window.totalHeight) {
+                if (value == 'c') {
+                    if (window.walls[y][x]) {
+                        if (window.playerStartSetX === x && window.playerStartSetY === y) {
+                            window.playerStartSetX = -1;
+                        }
+                        window.walls[y][x] = undefined;
+                        window.blocksPainted--;
+                    }
+                } else if (value === 's') {
+                    if (window.playerStartSetX !== -1) {
+                        window.walls[window.playerStartSetY][window.playerStartSetX] = undefined;
+                        window.playerStartSetX = -1;
+                        window.blocksPainted--;
+                    }
+
+                    window.playerStartSetX = x;
+                    window.playerStartSetY = y;
+                    window.walls[y][x] = `${value}_${rgb}`;
+                    window.blocksPainted++;
+                } else if (window.walls[y][x] === `${value}_${rgb}`) {
+                } else if (window.walls[y][x] === `s_gold`) {
+                    window.playerStartSetX = -1;
+                    window.walls[y][x] = `${value}_${rgb}`;
+                } else {
+                    window.walls[y][x] = `${value}_${rgb}`;
+                    window.blocksPainted++;
+                }
+
+                window.refreshCanvas();
+                window.refreshTextOutput();
+            }
+        };
+
+        canvas.addEventListener('click', canvasOnClick, false);
+
+        window.ctx = canvas.getContext('2d');
+        window.walls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight))
+
+        window.refreshCanvas = function() {
+            window.ctx.fillStyle = 'gray';
+            window.ctx.fillRect(0, 0, window.totalWidth * window.blockSize, window.totalHeight * window.blockSize);
+
+            for (var y = 0; y < window.totalHeight; ++y) {
+                for (var x = 0; x < window.totalWidth; ++x) {
+                    if (window.walls[y][x]) {
+                        window.ctx.fillStyle = window.walls[y][x].split("_")[1];
+                        window.ctx.fillRect(x * window.blockSize, y * window.blockSize, window.blockSize,window.blockSize);
+                    }
+                }
+            }
+        };
+
+        window.refreshTextOutput = function() {
+            var text = document.getElementById("textOutput");
+            if (window.blocksPainted === 0) {
+                text.textContent = "Invalid level design - must be at least 3x3";
+                return;
+            }
+            if (window.playerStartSetX === -1) {
+                text.textContent = "Player start position must be set";
+                return;
+            }
+
+            var minX = -1,
+                maxX = -1,
+                minY = -1,
+                maxY = -1;
+
+            var safety_code = -1;
+
+            for (var y = 0; y < window.totalHeight; ++y) {
+                for (var x = 0; x < window.totalWidth; ++x) {
+                    if (!window.walls[y][x]) { continue; }
+
+                    if (minX === -1 || x < minX) { minX = x; }
+                    if (maxX === -1 || x > maxX) { maxX = x; }
+                    if (minY === -1 || y < minY) { minY = y; }
+                    if (maxY === -1 || y > maxY) { maxY = y; }
+
+                    if (safety_code === -1) {
+                        var code = window.walls[y][x].split("_")[0];
+                        safety_code = code;
+                    }
+                }
+            }
+
+            if (maxY - minY < 2 || maxX - minX < 2) {
+                text.textContent = "Invalid level design - must be at least 3x3";
+                return;
+            }
+
+            var output = "";
+
+            for (var y = minY; y < maxY + 1; ++y) {
+                for (var x = minX; x < maxX + 1; ++x) {
+                    var atBorder = y === minY || y === maxY || x === minX || x === maxX;
+
+                    if (window.walls[y][x]) {
+                        var code = window.walls[y][x].split("_")[0];
+
+                        if (code === 's' && atBorder) {
+                            text.textContent = "Invalid level design - player start position cannot be at the edge";
+                            return;
+                        }
+                        output += code;
+                    } else {
+                        output += atBorder ? safety_code : ".";
+
+                    }
+                }
+                output += "\n";
+            }
+
+            text.textContent = output;
+        };
+
+        window.refreshCanvas();
+        window.refreshTextOutput();
+    </script>
+</body>
+</html>

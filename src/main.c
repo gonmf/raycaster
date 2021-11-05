@@ -1,6 +1,7 @@
 #include "global.h"
 
 static level_t * level;
+static pixel_t * background;
 
 static bool pause_btn_pressed = false;
 static bool paused = false;
@@ -113,11 +114,12 @@ static bool update_observer_state() {
             paused = !paused;
             if (paused) {
                 color_filter(0.5);
-                window_update_pixels(foreground_buffer());
+                window_update_pixels(foreground_buffer(), VIEWPORT_WIDTH, VIEWPORT_HEIGHT, UI_BORDER, UI_BORDER);
                 window_refresh();
                 set_cursor_visible(true);
             } else {
                 set_cursor_visible(false);
+                needs_refresh = true;
             }
             pause_btn_pressed = false;
         }
@@ -138,6 +140,8 @@ static bool update_observer_state() {
 }
 
 static void main_render_loop() {
+    window_update_pixels(background, WINDOW_TOTAL_WIDTH, WINDOW_TOTAL_HEIGHT, 0, 0);
+
     unsigned int frames_second = 1;
     long unsigned int last_ms = 0;
     struct timespec spec;
@@ -211,7 +215,7 @@ static void main_render_loop() {
         if (!paused) {
             if (needs_refresh) {
                 window_center_mouse();
-                window_update_pixels(foreground_buffer());
+                window_update_pixels(foreground_buffer(), VIEWPORT_WIDTH, VIEWPORT_HEIGHT, UI_BORDER, UI_BORDER);
                 needs_refresh = false;
             }
             window_refresh();
@@ -219,8 +223,43 @@ static void main_render_loop() {
     }
 }
 
+static void paint_ui() {
+    if (background == NULL) {
+        background = calloc(WINDOW_TOTAL_WIDTH * WINDOW_TOTAL_HEIGHT, sizeof(pixel_t));
+
+        for (unsigned int y = 0; y < WINDOW_TOTAL_HEIGHT; ++y) {
+            for (unsigned int x = 0; x < WINDOW_TOTAL_WIDTH; ++x) {
+                background[x + y * WINDOW_TOTAL_WIDTH].green = 64;
+                background[x + y * WINDOW_TOTAL_WIDTH].blue = 64;
+            }
+        }
+        for (unsigned int shade_size = 0; shade_size < 5; ++shade_size) {
+            // left and right sides
+            for (unsigned y = UI_BORDER - shade_size; y < UI_BORDER + VIEWPORT_HEIGHT + shade_size; ++y) {
+                unsigned int x = UI_BORDER - shade_size;
+                background[x + y * WINDOW_TOTAL_WIDTH].green = 32;
+                background[x + y * WINDOW_TOTAL_WIDTH].blue = 32;
+                x = WINDOW_TOTAL_WIDTH - x - 1;
+                background[x + y * WINDOW_TOTAL_WIDTH].green = 128;
+                background[x + y * WINDOW_TOTAL_WIDTH].blue = 128;
+            }
+            // top and bottom sides
+            for (unsigned x = UI_BORDER - shade_size; x < UI_BORDER + VIEWPORT_WIDTH + shade_size; ++x) {
+                unsigned int y = UI_BORDER - shade_size;
+                background[x + y * WINDOW_TOTAL_WIDTH].green = 32;
+                background[x + y * WINDOW_TOTAL_WIDTH].blue = 32;
+                y = UI_BORDER + VIEWPORT_HEIGHT + shade_size - 1;
+                background[x + y * WINDOW_TOTAL_WIDTH].green = 128;
+                background[x + y * WINDOW_TOTAL_WIDTH].blue = 128;
+            }
+        }
+    }
+}
+
 static void open_level() {
     printf("Level start - press P to pause and Esc to quit\n");
+
+    paint_ui();
     paint_scene(level);
 
     window_start();
