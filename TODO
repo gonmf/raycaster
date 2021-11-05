@@ -1,3 +1,8 @@
+- Map design is becoming too complex:
+  - Improve map editor and stop supporting manual editing
+  - Individual buttons instead of dropdown
+  - Allow editing map editor resolution
+  - Add multiple views to map editor: walls/doors, placement of soldiers/objects/player/keys
 - Allow saving and loading ongoing levels
 - Configurable viewport (not ratio)
 - Blitting
@@ -9,8 +14,6 @@
 - Game UI
 - Different door types
   - Door keys
-- Level designer
-  - Allow loading an existing design
 
 Known Bugs
 - Camera is able to get too close against corners of blocks.
