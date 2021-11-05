@@ -1,7 +1,4 @@
 - Map design is becoming too complex:
-  - Improve map editor and stop supporting manual editing
-  - Individual buttons instead of dropdown
-  - Allow editing map editor resolution
   - Add multiple views to map editor: walls/doors, placement of soldiers/objects/player/keys
 - Allow saving and loading ongoing levels
 - Configurable viewport (not ratio)

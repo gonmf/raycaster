@@ -6,7 +6,8 @@ static bool valid_command(const char * s) {
     if (strcmp(s, "OPEN_DOOR") == 0) return true;
     if (strcmp(s, "CLOSED_DOOR") == 0) return true;
     if (start_with(s, "WALL_TYPE_")) return true;
-    if (strcmp(s, "MAP_LAYOUT") == 0) return true;
+    if (strcmp(s, "LAYOUT") == 0) return true;
+    if (strcmp(s, "OBJECTS") == 0) return true;
     if (strcmp(s, "PLAYER_START_ANGLE") == 0) return true;
     return false;
 }
@@ -16,7 +17,8 @@ static void validate_scalar(int val, int min, int max, unsigned int line) {
         error_w_line("invalid scalar value", line);
     }
 }
-static void validate_door_placement(const level_t * level, unsigned int end_line) {
+
+static void validate_door_placement(const level_t * level) {
     for (unsigned int y = 1; y < level->height - 1; ++y) {
         for (unsigned int x = 1; x < level->width - 1; ++x) {
             if (level->content_type[x + y * level->width] == CONTENT_TYPE_DOOR) {
@@ -29,8 +31,23 @@ static void validate_door_placement(const level_t * level, unsigned int end_line
                 if (!valid) {
                     char * s = malloc(MAX_FILE_NAME_SIZ);
                     sprintf(s, "invalid door placement (%u,%u)", x, y);
-                    error_w_line(s, end_line);
+                    error(s);
                 }
+            }
+        }
+    }
+}
+
+static void validate_object_placement(const level_t * level) {
+    if (level->observer_x == 0 || level->observer_x == level->width - 1 ||
+        level->observer_y == 0 || level->observer_y == level->height - 1) {
+        error("player start position not empty");
+    }
+
+    for (unsigned int y = 0; y < level->height; ++y) {
+        for (unsigned int x = 0; x < level->width; ++x) {
+            if (level->content_type[x + y * level->width] != CONTENT_TYPE_EMPTY && level->observer_x == x && level->observer_y == y) {
+                error("player start position not empty");
             }
         }
     }
@@ -79,56 +96,6 @@ static void surround_w_safety_walls(level_t * level, unsigned char door_closed_t
     }
 }
 
-static void scan_map_size(const char * buffer, int * width, int * height) {
-    char c;
-    int map_layout_found = 0;
-    int map_size_w = -1;
-    int map_size_h = 0;
-    char line_buffer[80];
-    line_buffer[0] = 0;
-    unsigned int line_pos = 0;
-    unsigned int line = 1;
-
-    while ((c = buffer[0])) {
-        if (c == '\n') {
-            if (line_buffer[0]) {
-                if (line_buffer[0] == '#') {
-                    // skip line
-                } else if (valid_command(line_buffer)) {
-                    if (map_layout_found) {
-                        break;
-                    }
-                    map_layout_found = strcmp(line_buffer, "MAP_LAYOUT") == 0;
-                } else {
-                    if (map_layout_found) {
-                        int size_w = strlen(line_buffer);
-                        map_size_w = MAX(map_size_w, size_w);
-                        map_size_h++;
-                    }
-                }
-
-                line_pos = 0;
-                line_buffer[line_pos] = 0;
-            }
-
-            line++;
-        } else if (c != '\r') {
-            line_buffer[line_pos] = c;
-            line_pos++;
-            line_buffer[line_pos] = 0;
-        }
-
-        buffer++;
-    }
-
-    if (map_size_w > 2 && map_size_h > 2) {
-        *width = map_size_w;
-        *height = map_size_h;
-    } else {
-        error_w_line("invalid map definition - too small", line);
-    }
-}
-
 level_t * read_level_info(const char * filename) {
     char * str_buf = malloc(MAX_FILE_NAME_SIZ);
     snprintf(str_buf, MAX_FILE_NAME_SIZ, "./levels/%s", filename);
@@ -138,8 +105,8 @@ level_t * read_level_info(const char * filename) {
     char * orig_buffer = buffer;
 
     int map_size_w = -1;
-    int map_size_h = 0;
-    scan_map_size(buffer, &map_size_w, &map_size_h);
+    int map_size_h1 = 0;
+    int map_size_h2 = 0;
 
     int ceil_color_r = -1;
     int ceil_color_g = -1;
@@ -153,8 +120,8 @@ level_t * read_level_info(const char * filename) {
         wall_types_x[i] = -1;
         wall_types_y[i] = -1;
     }
-    unsigned char * map_content_type = calloc(map_size_w * map_size_h, 1);
-    unsigned char * map_texture = calloc(map_size_w * map_size_h, 1);
+    unsigned char * map_content_type = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, 1);
+    unsigned char * map_texture = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, 1);
     unsigned int map_layout_idx = 0;
     int player_start_x = -1;
     int player_start_y = -1;
@@ -247,22 +214,19 @@ level_t * read_level_info(const char * filename) {
                             validate_scalar(wall_types_y[wall_type_nr], 0, TEXTURE_PACK_HEIGHT - 1, line);
                             last_command_set = 0;
                         }
-                    } else if (strcmp(last_command, "MAP_LAYOUT") == 0) {
+                    } else if (strcmp(last_command, "LAYOUT") == 0) {
                         int size_w = strlen(line_buffer);
+                        if (size_w >= MAX_LEVEL_SIZE) {
+                            error_w_line("maximum map layout width exceeded", line);
+                        } else if (map_size_w == -1) {
+                            map_size_w = size_w;
+                        } else if (map_size_w != size_w) {
+                            error_w_line("unstable map layout width", line);
+                        }
 
                         for (int i = 0; i < map_size_w; ++i) {
-                            char d = i < size_w ? line_buffer[i] : '.';
-                            if (d == 's') {
-                                if (player_start_x != -1) {
-                                    error_w_line("multiple player start (s) definitions", line);
-                                }
-                                player_start_x = map_layout_idx % map_size_w;
-                                player_start_y = map_size_h - (map_layout_idx / map_size_w) - 1;
-                                if (player_start_x == 0 || player_start_x == map_size_w || player_start_y == 0 || player_start_y == map_size_h) {
-                                    error_w_line("invalid player start position", line);
-                                }
-                                map_content_type[map_layout_idx++] = CONTENT_TYPE_EMPTY;
-                            } else if (d == '.' || d == ' ') {
+                            char d = line_buffer[i];
+                            if (d == '.') {
                                 map_content_type[map_layout_idx++] = CONTENT_TYPE_EMPTY;
                             } else if (d == 'd') {
                                 if (closed_door_y == -1) {
@@ -284,6 +248,32 @@ level_t * read_level_info(const char * filename) {
                                 error_w_line("invalid map layout", line);
                             }
                         }
+                        map_size_h1++;
+                    } else if (strcmp(last_command, "OBJECTS") == 0) {
+                        int size_w = strlen(line_buffer);
+                        if (size_w >= MAX_LEVEL_SIZE) {
+                            error_w_line("maximum map layout width exceeded", line);
+                        } else if (map_size_w == -1) {
+                            map_size_w = size_w;
+                        } else if (map_size_w != size_w) {
+                            error_w_line("unstable map layout width", line);
+                        }
+
+                        for (int i = 0; i < map_size_w; ++i) {
+                            char d = line_buffer[i];
+                            if (d == 's') {
+                                if (player_start_x != -1) {
+                                    error_w_line("multiple player start (s) definitions", line);
+                                }
+                                player_start_x = i;
+                                player_start_y = map_size_h2;
+                            } else if (d == '.') {
+                                // do nothing
+                            } else {
+                                error_w_line("invalid objects layout", line);
+                            }
+                        }
+                        map_size_h2++;
                     } else if (strcmp(last_command, "PLAYER_START_ANGLE") == 0) {
                         if (last_command_uses == 0) {
                             player_start_angle = atoi(line_buffer);
@@ -312,8 +302,11 @@ level_t * read_level_info(const char * filename) {
     if (map_size_w < 0) {
         error_w_line("end of file with map not defined", line);
     }
-    if (map_size_w < 3 || map_size_h < 3) {
+    if (map_size_w < 3 || map_size_h1 < 3) {
         error_w_line("map too small", line);
+    }
+    if (map_size_h1 != map_size_h2) {
+        error_w_line("map layout size does not match objects layout", line);
     }
     if (ceil_color_r < 0) {
         error_w_line("end of file with ceil_color not defined", line);
@@ -335,13 +328,12 @@ level_t * read_level_info(const char * filename) {
     }
     free(orig_buffer);
 
-    unsigned int total_size = sizeof(pixel_t) * 2 + sizeof(int) * 2 + sizeof(double) * 3 + map_size_w * map_size_h;
-    level_t * ret = (level_t *)calloc(total_size, 1);
+    level_t * ret = (level_t *)calloc(sizeof(level_t), 1);
 
     ret->width = map_size_w;
-    ret->height = map_size_h;
+    ret->height = map_size_h1;
     ret->observer_x = player_start_x;
-    ret->observer_y = player_start_y;
+    ret->observer_y = map_size_h1 - player_start_y - 1;
     ret->observer_angle = fit_angle((double)player_start_angle);
     ret->observer_angle2 = 90.0;
     ret->ceil_color.red = ceil_color_r;
@@ -355,6 +347,9 @@ level_t * read_level_info(const char * filename) {
     ret->content_type = calloc(ret->width * ret->height, 1);
     ret->texture = calloc(ret->width * ret->height, 1);
     ret->door_open_texture = open_door_x + open_door_y * TEXTURE_PACK_WIDTH;
+    ret->enemies_count = 0;
+    ret->enemy = calloc(ret->enemies_count, sizeof(enemy_t));
+    ret->objects = calloc(ret->width * ret->height, 1);
 
     for (unsigned int y = 0; y < ret->height; ++y) {
         for (unsigned int x = 0; x < ret->width; ++x) {
@@ -370,7 +365,8 @@ level_t * read_level_info(const char * filename) {
 
     unsigned char door_closed_texture = closed_door_x + closed_door_y * TEXTURE_PACK_WIDTH;
     surround_w_safety_walls(ret, door_closed_texture);
-    validate_door_placement(ret, line);
+    validate_door_placement(ret);
+    validate_object_placement(ret);
 
     return ret;
 }

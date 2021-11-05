@@ -22,7 +22,15 @@ typedef struct  __attribute__((__packed__)) __pixel_ {
     unsigned char alpha; // not used but present for performance
 } pixel_t;
 
-typedef struct  __attribute__((__packed__)) __level_ {
+typedef struct __attribute__((__packed__)) __enemy_ {
+    unsigned char type;
+    double x;
+    double y;
+    double angle;
+    double life;
+} enemy_t;
+
+typedef struct  __level_ {
     pixel_t ceil_color;
     pixel_t floor_color;
     unsigned int width;
@@ -34,6 +42,9 @@ typedef struct  __attribute__((__packed__)) __level_ {
     unsigned char * content_type;
     unsigned char * texture;
     unsigned char door_open_texture;
+    unsigned int enemies_count; // not used yet
+    enemy_t * enemy; // not used yet
+    unsigned char * objects; // not used yet
 } level_t;
 
 #define true sfTrue
@@ -65,6 +76,7 @@ typedef sfBool bool;
 #define SPRITE_WIDTH 64
 #define SPRITE_HEIGHT 64
 
+#define MAX_LEVEL_SIZE 256
 #define MAX_LEVEL_WALL_TYPES 10 // codes 0-9
 
 #define MAX_FILE_NAME_SIZ (4 * 1024) // 4KiB
