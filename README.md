@@ -1,7 +1,7 @@
 # Ray casting experiment
 
 I've been meaning to write my own 3D graphics engine from scratch, so here it is. It has texture mapping, collision detection, vertical camera movement, animation, etc.
-Some notable omissions for now are floor/ceiling texture mapping, floor height/altitude and blitting.
+Some notable omissions for now are floor/ceiling texture mapping and altitude.
 
 As a demo I've rendered something akin to the first Wolfenstein game.
 
@@ -31,7 +31,8 @@ Use `WASD` to move and your mouse to look around. Pause the game with `P` and qu
 ## Screenshots
 
 ![1](https://user-images.githubusercontent.com/5512054/140586136-67068fab-ef16-4ff1-8235-09f4d0fd09c3.png)
-![2](https://user-images.githubusercontent.com/5512054/140586137-22eeef83-7fc1-4252-9f69-2b135652b6fc.png)
+![2](https://user-images.githubusercontent.com/5512054/140626177-be5135c0-5685-4077-80f8-f749977e1e0e.png)
+![3](https://user-images.githubusercontent.com/5512054/140586137-22eeef83-7fc1-4252-9f69-2b135652b6fc.png)
 
 Editor:
 
