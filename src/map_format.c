@@ -380,7 +380,6 @@ level_t * read_level_info(const char * filename) {
     ret->door_open_texture = open_door_x + open_door_y * wall_textures->width;
     ret->enemies_count = 0;
     ret->enemy = calloc(ret->enemies_count, sizeof(enemy_t));
-    ret->objects = calloc(ret->width * ret->height, 1);
 
     for (unsigned int y = 0; y < ret->height; ++y) {
         for (unsigned int x = 0; x < ret->width; ++x) {

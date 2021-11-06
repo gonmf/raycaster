@@ -22,23 +22,23 @@ static void move_observer2(double x_change, double y_change) {
 
     rounded_x = (unsigned int)(new_x + 0.5 + 0.22);
     content_type = level->content_type[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_OBJECT || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
         return;
     }
     rounded_x = (unsigned int)(new_x + 0.5 - 0.22);
     content_type = level->content_type[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_OBJECT || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
         return;
     }
     rounded_x = (unsigned int)(new_x + 0.5);
     rounded_y = (unsigned int)(new_y + 0.5 + 0.22);
     content_type = level->content_type[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_OBJECT || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
         return;
     }
     rounded_y = (unsigned int)(new_y + 0.5 - 0.22);
     content_type = level->content_type[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_OBJECT || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
         return;
     }
 

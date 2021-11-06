@@ -1,19 +1,20 @@
-- Add simple, unpassable objects to be blitted
-- Blitting
-  - Size depending only on distance to center of image
-  - Passable or impassable
+- Different door types
+  - Door keys
+- Enemies
+  - Moving projectiles
+- Treasure and scores
+- Show (revealed) level map
+- Game UI
+- Config file or UI menu for mouse sensitivity, resolution, FPS
+  - Configurable viewport (not ratio)
+
+---
+
 - Map design
   - Add multiple views to map editor: walls/doors, placement of soldiers/objects/player/keys
   - Allow raising canvas size to support 256x256 maps
 - Allow saving and loading ongoing levels
-- Configurable viewport (not ratio)
-- Show (revealed) level map
-- Enemies
-  - Moving projectiles
-- Game UI
-- Different door types
-  - Door keys
-- Config file for mouse sensitivity, resolution, FPS
+- Enemy noise and awareness
 
 Known Bugs
 - Camera is able to get too close against corners of blocks.

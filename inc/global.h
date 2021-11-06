@@ -44,7 +44,6 @@ typedef struct  __level_ {
     unsigned char door_open_texture;
     unsigned int enemies_count; // not used yet
     enemy_t * enemy; // not used yet
-    unsigned char * objects; // not used yet
 } level_t;
 
 #define SPRITE_WIDTH 64
@@ -101,7 +100,12 @@ typedef sfBool bool;
 #define MOVEMENT_CONSTANT 0.07
 #define HORIZONTAL_ROTATION_CONSTANT 16.0
 #define VERTICAL_ROTATION_CONSTANT 32.0
-#define RAY_STEP_CONSTANT 0.0078125
+
+// In rendering blocks we need very fine ray steps to catch the edges.
+// To render simple objects, usually even round and with transparent sides,
+// a much coarser step can be used for performance.
+#define FINE_RAY_STEP_CONSTANT 0.0078125
+#define ROUGH_RAY_STEP_CONSTANT 0.1
 
 extern sprite_pack_t * wall_textures;
 extern sprite_pack_t * objects_sprites;
