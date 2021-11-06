@@ -61,10 +61,13 @@ typedef struct __sprite_pack_ {
 #define false sfFalse
 typedef sfBool bool;
 
+#define EQUAL_PIXEL(A,B) (A.red == B.red && A.green == B.green && A.blue == B.blue && A.alpha == B.alpha)
+
 #define CONTENT_TYPE_EMPTY 1
 #define CONTENT_TYPE_WALL 2
 #define CONTENT_TYPE_DOOR 3
 #define CONTENT_TYPE_DOOR_OPEN 4
+#define CONTENT_TYPE_OBJECT 5
 
 #define MAX(X, Y) (X > Y ? X : Y)
 #define MIN(X, Y) (X < Y ? X : Y)
@@ -84,7 +87,6 @@ typedef sfBool bool;
 #define FIELD_OF_VIEW 72 // degrees
 
 #define MAX_LEVEL_SIZE 256
-#define MAX_LEVEL_WALL_TYPES 10 // codes 0-9
 
 #define MAX_FILE_NAME_SIZ (4 * 1024) // 4KiB
 #define MAX_FILE_SIZE (8 * 1024 * 1024) // 8MiB

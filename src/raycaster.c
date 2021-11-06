@@ -180,7 +180,16 @@ static void block_color(pixel_t * dst, double block_x, double block_y, double di
 }
 
 static void color_to_alpha(sprite_pack_t * pack) {
-    // TODO:
+    for (unsigned int pack_i = 0; pack_i < pack->width * pack->height; ++pack_i) {
+        for (unsigned int sprite_i = 0; sprite_i < SPRITE_WIDTH * SPRITE_HEIGHT; ++sprite_i) {
+
+            if (pack->sprites[pack_i][sprite_i].red == 0x98 &&
+                pack->sprites[pack_i][sprite_i].green == 0 &&
+                pack->sprites[pack_i][sprite_i].blue == 0x88) {
+                pack->sprites[pack_i][sprite_i].alpha = 255;
+            }
+        }
+    }
 }
 
 void load_textures() {

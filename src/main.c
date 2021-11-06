@@ -307,7 +307,7 @@ static void select_level() {
 
     unsigned int selection = 0;
 
-#if 0
+#if 1
     if (levels_listed > 1) {
         unsigned int buf_idx;
         char * buf = calloc(MAX_FILE_NAME_SIZ, 1);

@@ -16,8 +16,8 @@ static void read_subsprite(
     }
 }
 
-static unsigned int validate_sprite_pack_val(int val) {
-    if (val < 0 || val > 64) {
+static unsigned int validate_sprite_pack_val(int val, int max) {
+    if (val < 0 || val > max) {
         error("Invalid sprite pack format");
     }
 
@@ -26,7 +26,8 @@ static unsigned int validate_sprite_pack_val(int val) {
 static void parse_sprite_pack_metadata(
     sprite_pack_t * pack, const char * pack_name,
     unsigned char * x_offset_between_sprites, unsigned char * y_offset_between_sprites,
-    unsigned char * x_eol_offset, unsigned char * y_eol_offset
+    unsigned char * x_eol_offset, unsigned char * y_eol_offset,
+    bool * has_transparent_color, unsigned int * transparent_color
 ) {
     if (strlen(pack_name) >= 16) {
         error("Invalid sprite pack name");
@@ -54,17 +55,21 @@ static void parse_sprite_pack_metadata(
             int val = atoi(line_buffer);
 
             if (line == 0) {
-                pack->width = validate_sprite_pack_val(val);
+                pack->width = validate_sprite_pack_val(val, 64);
             } else if (line == 1) {
-                pack->height = validate_sprite_pack_val(val);
+                pack->height = validate_sprite_pack_val(val, 64);
             } else if (line == 2) {
-                *x_offset_between_sprites = validate_sprite_pack_val(val);
+                *x_offset_between_sprites = validate_sprite_pack_val(val, 63);
             } else if (line == 3) {
-                *y_offset_between_sprites = validate_sprite_pack_val(val);
+                *y_offset_between_sprites = validate_sprite_pack_val(val, 63);
             } else if (line == 4) {
-                *x_eol_offset = validate_sprite_pack_val(val);
+                *x_eol_offset = validate_sprite_pack_val(val, 63);
             } else if (line == 5) {
-                *y_eol_offset = validate_sprite_pack_val(val);
+                *y_eol_offset = validate_sprite_pack_val(val, 63);
+            } else if (line == 6) {
+                *has_transparent_color = (validate_sprite_pack_val(val, 1) == 1);
+            } else if (line == 7 && *has_transparent_color) {
+                *transparent_color = validate_sprite_pack_val((int)strtol(line_buffer, NULL, 16), 0xffffff);
             }
 
             line++;
@@ -77,7 +82,7 @@ static void parse_sprite_pack_metadata(
         buffer++;
     }
 
-    if (line != 6) {
+    if (line != 8) {
         error("Invalid sprite pack format");
     }
 
@@ -89,7 +94,8 @@ static void parse_sprite_pack_metadata(
 static void read_sprite_pack_pixels(
     pixel_t * dst, const sprite_pack_t * pack,
     unsigned char x_offset_between_sprites, unsigned char y_offset_between_sprites,
-    unsigned char x_eol_offset, unsigned char y_eol_offset
+    unsigned char x_eol_offset, unsigned char y_eol_offset,
+    bool has_transparent_color, unsigned int transparent_color
 ) {
     char * str_buf = calloc(MAX_FILE_NAME_SIZ, 1);
     snprintf(str_buf, MAX_FILE_NAME_SIZ, "./sprites/%s.bmp", pack->name);
@@ -105,6 +111,12 @@ static void read_sprite_pack_pixels(
     if (read < data_offset) {
         error("Not a valid Windows Bitmap file with 24pp");
     }
+
+    pixel_t transparent_pixel;
+    transparent_pixel.red = (transparent_color >> 16) & 0xff;
+    transparent_pixel.green = (transparent_color >> 8) & 0xff;
+    transparent_pixel.blue = transparent_color & 0xff;
+    transparent_pixel.alpha = 0;
 
     char * data = file_buf + data_offset;
     unsigned int total_width = pack->width * (SPRITE_WIDTH + x_offset_between_sprites) - x_offset_between_sprites + x_eol_offset;
@@ -127,6 +139,10 @@ static void read_sprite_pack_pixels(
             dst[dst_idx].red = data[src_idx * 3 + 2];
             dst[dst_idx].green = data[src_idx * 3 + 1];
             dst[dst_idx].blue = data[src_idx * 3];
+
+            if (has_transparent_color && EQUAL_PIXEL(dst[dst_idx], transparent_pixel)) {
+                dst[dst_idx].alpha = 255;
+            }
         }
     }
 
@@ -163,13 +179,16 @@ void read_sprite_pack(sprite_pack_t * pack, const char * pack_name) {
     unsigned char y_offset_between_sprites = 0;
     unsigned char x_eol_offset = 0;
     unsigned char y_eol_offset = 0;
-    parse_sprite_pack_metadata(pack, pack_name, &x_offset_between_sprites, &y_offset_between_sprites, &x_eol_offset, &y_eol_offset);
+    bool has_transparent_color = false;
+    unsigned int transparent_color = 0;
+
+    parse_sprite_pack_metadata(pack, pack_name, &x_offset_between_sprites, &y_offset_between_sprites, &x_eol_offset, &y_eol_offset, &has_transparent_color, &transparent_color);
 
     unsigned int total_width = pack->width * (SPRITE_WIDTH + x_offset_between_sprites) - x_offset_between_sprites + x_eol_offset;
     unsigned int total_height = pack->height * (SPRITE_HEIGHT + y_offset_between_sprites) - y_offset_between_sprites + y_eol_offset;
     pixel_t * pixel_buf = calloc(total_width * total_height, sizeof(pixel_t));
 
-    read_sprite_pack_pixels(pixel_buf, pack, x_offset_between_sprites, y_offset_between_sprites, x_eol_offset, y_eol_offset);
+    read_sprite_pack_pixels(pixel_buf, pack, x_offset_between_sprites, y_offset_between_sprites, x_eol_offset, y_eol_offset, has_transparent_color, transparent_color);
     for (unsigned int pack_y = 0; pack_y < pack->height; ++pack_y) {
         for (unsigned int pack_x = 0; pack_x < pack->width; ++pack_x) {
             pixel_t * dst = calloc(SPRITE_WIDTH * SPRITE_HEIGHT, sizeof(pixel_t));

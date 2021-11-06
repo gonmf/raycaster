@@ -27,16 +27,29 @@
         </select>
 
         <input type="button" value="Center canvas" id="centerMap1"></input>
+        <input type="button" value="All surround" id="wallSurround"></input>
     </div>
 
     <div id="objectsModeArea">
         Select tool:
         <select id="objectTypeSelect">
             <option value="s" selected>Player start position</option>
+            <option value="1">Object Type 1</option>
+            <option value="2">Object Type 2</option>
+            <option value="3">Object Type 3</option>
+            <option value="4">Object Type 4</option>
+            <option value="5">Object Type 5</option>
+            <option value="6">Object Type 6</option>
+            <option value="7">Object Type 7</option>
+            <option value="8">Object Type 8</option>
+            <option value="9">Object Type 9</option>
+            <option value="0">Object Type 0</option>
+            <!--
             <option value="e">Level end door</option>
             <option value="z">Enemy Soldier 1</option>
             <option value="k">Key 1</option>
             <option value="l">Key 2</option>
+            -->
             <option value="c">Clear</option>
         </select>
 
@@ -62,7 +75,6 @@
 
     <script type="text/javascript">
         window.colorTable = {
-            // wall mode colors
             "d": "#00FFFF",
             "1": "#000080",
             "2": "#800080",
@@ -74,12 +86,7 @@
             "8": "#FF0000",
             "9": "#0000FF",
             "0": "#000000",
-            // object colors
-            "s": "#FF00FF",
-            "e": "#00FFFF",
-            "z": "#FF0000",
-            "k": "#0000BB",
-            "l": "#008080"
+            "s": "#FF00FF"
         };
         const canvas = document.getElementById('canvas');
         window.operationMode = "walls";
@@ -334,7 +341,9 @@
                     continue;
                 } else if (c === '.') {
                     // do nothing
-                } else if (["s", "e", "z", "k", "l"].includes(c)) {
+                } else if (c === 'd' || (c >= '0' && c <= '9')) {
+                    newObjects[y][x] = c;
+                } else if (["s" /*, "e", "z", "k", "l" */].includes(c)) {
                     newObjects[y][x] = c;
                 } else {
                     text.value = `Error: invalid objects character "${c}" (${x},${y})`;
@@ -423,6 +432,41 @@
 
         document.getElementById("centerMap1").addEventListener("click", window.centerMap);
         document.getElementById("centerMap2").addEventListener("click", window.centerMap);
+
+        document.getElementById("wallSurround").addEventListener("click", function() {
+            var minX = -1,
+                maxX = -1,
+                minY = -1,
+                maxY = -1,
+                wallType = -1;
+
+            for (var y = 0; y < window.totalHeight; ++y) {
+                for (var x = 0; x < window.totalWidth; ++x) {
+                    if (!window.walls[y][x] && !window.objects[y][x]) { continue; }
+
+                    if (window.walls[y][x]) {
+                        wallType = window.walls[y][x];
+                    }
+                    if (minX === -1 || x < minX) { minX = x; }
+                    if (maxX === -1 || x > maxX) { maxX = x; }
+                    if (minY === -1 || y < minY) { minY = y; }
+                    if (maxY === -1 || y > maxY) { maxY = y; }
+                }
+            }
+
+            if (wallType === -1) { return; }
+
+            for (var y = minY; y <= maxY; ++y) {
+                for (var x = minX; x <= maxX; ++x) {
+                    if (y == minY || y == maxY || x == minX || x == maxX) {
+                        window.walls[y][x] = wallType;
+                        window.objects[y][x] = undefined;
+                    }
+                }
+            }
+            window.refreshCanvas();
+            window.refreshTextOutput();
+        })
 
         window.refreshCanvas();
         window.refreshTextOutput();
