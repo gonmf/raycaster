@@ -47,6 +47,16 @@ typedef struct  __level_ {
     unsigned char * objects; // not used yet
 } level_t;
 
+#define SPRITE_WIDTH 64
+#define SPRITE_HEIGHT 64
+
+typedef struct __sprite_pack_ {
+    char name[16];
+    unsigned char width;
+    unsigned char height;
+    pixel_t ** sprites; // [columns x rows][pixels_x x pixels_y]
+} sprite_pack_t;
+
 #define true sfTrue
 #define false sfFalse
 typedef sfBool bool;
@@ -73,9 +83,6 @@ typedef sfBool bool;
 #define MAX_FPS 120
 #define FIELD_OF_VIEW 72 // degrees
 
-#define SPRITE_WIDTH 64
-#define SPRITE_HEIGHT 64
-
 #define MAX_LEVEL_SIZE 256
 #define MAX_LEVEL_WALL_TYPES 10 // codes 0-9
 
@@ -83,9 +90,8 @@ typedef sfBool bool;
 #define MAX_FILE_SIZE (8 * 1024 * 1024) // 8MiB
 
 #define TEXTURE_PACK_NAME "wall_textures"
-#define TEXTURE_PACK_WIDTH 6
-#define TEXTURE_PACK_HEIGHT 18
-#define SAFETY_WALL_TEXTURE 0
+#define OBJECTS_PACK_NAME "objects"
+#define SAFETY_WALL_TEXTURE 7
 
 #define DOOR_OPEN_SPEED 80
 
@@ -95,18 +101,12 @@ typedef sfBool bool;
 #define VERTICAL_ROTATION_CONSTANT 32.0
 #define RAY_STEP_CONSTANT 0.0078125
 
-// sprites.c
-void read_sprite_pack(
-    pixel_t * dst, const char * filename,
-    unsigned int pack_width, unsigned int pack_height
-);
+extern sprite_pack_t * wall_textures;
+extern sprite_pack_t * objects_sprites;
+extern pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
-// One sprite(pack) can be subdivided into other sprites
-void read_subsprite(
-    pixel_t * restrict dst, const pixel_t * restrict src,
-    unsigned int pack_width, unsigned int pack_height,
-    unsigned int pack_x, unsigned int pack_y
-);
+// sprites.c
+void read_sprite_pack(sprite_pack_t * pack, const char * pack_name);
 
 // map_format.c
 level_t * read_level_info(const char * filename);
@@ -142,8 +142,6 @@ bool window_poll_event(sfEvent * event);
 
 // raycaster.c
 void color_filter(double factor);
-const pixel_t * foreground_buffer();
-const pixel_t * ui_buffer();
 void init_fish_eye_table();
 void load_textures();
 void paint_scene(const level_t * level);

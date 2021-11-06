@@ -29,7 +29,7 @@ static void validate_door_placement(const level_t * level) {
 
                 bool valid = (wallW && wallS && !wallA && !wallD) || (!wallW && !wallS && wallA && wallD);
                 if (!valid) {
-                    char * s = malloc(MAX_FILE_NAME_SIZ);
+                    char * s = calloc(MAX_FILE_NAME_SIZ, 1);
                     sprintf(s, "invalid door placement (%u,%u)", x, y);
                     error(s);
                 }
@@ -97,9 +97,9 @@ static void surround_w_safety_walls(level_t * level, unsigned char door_closed_t
 }
 
 level_t * read_level_info(const char * filename) {
-    char * str_buf = malloc(MAX_FILE_NAME_SIZ);
+    char * str_buf = calloc(MAX_FILE_NAME_SIZ, 1);
     snprintf(str_buf, MAX_FILE_NAME_SIZ, "./levels/%s", filename);
-    char * buffer = malloc(MAX_FILE_SIZE);
+    char * buffer = calloc(MAX_FILE_SIZE, 1);
     file_read(buffer, MAX_FILE_SIZE, str_buf);
     free(str_buf);
     char * orig_buffer = buffer;
@@ -131,21 +131,25 @@ level_t * read_level_info(const char * filename) {
     int closed_door_x = -1;
     int closed_door_y = -1;
     int wall_type_nr = 0;
-    char last_command[80];
+    char last_command[MAX_LEVEL_SIZE];
     int last_command_set = 0;
     int last_command_uses = 0;
-    char line_buffer[80];
+    char line_buffer[MAX_LEVEL_SIZE];
     line_buffer[0] = 0;
     unsigned int line_pos = 0;
     char c;
     unsigned int line = 1;
-    while ((c = buffer[0])) {
+    while ((c = *buffer)) {
         if (c == '\n') {
+            if (line_pos == MAX_LEVEL_SIZE) {
+                error("Invalid sprite pack format");
+            }
+
             if (line_buffer[0]) {
                 if (line_buffer[0] == '#') {
                     // skip line
                 } else if (valid_command(line_buffer)) {
-                    strncpy(last_command, line_buffer, 80);
+                    strncpy(last_command, line_buffer, MAX_LEVEL_SIZE);
                     last_command_set = 1;
                     last_command_uses = 0;
                 } else if (!last_command_set) {
@@ -182,21 +186,21 @@ level_t * read_level_info(const char * filename) {
                     } else if (strcmp(last_command, "OPEN_DOOR") == 0) {
                         if (last_command_uses == 0) {
                             open_door_x = atoi(line_buffer);
-                            validate_scalar(open_door_x, 0, TEXTURE_PACK_WIDTH - 1, line);
+                            validate_scalar(open_door_x, 0, wall_textures->width - 1, line);
                             last_command_uses++;
                         } else {
                             open_door_y = atoi(line_buffer);
-                            validate_scalar(open_door_y, 0, TEXTURE_PACK_HEIGHT - 1, line);
+                            validate_scalar(open_door_y, 0, wall_textures->height - 1, line);
                             last_command_set = 0;
                         }
                     } else if (strcmp(last_command, "CLOSED_DOOR") == 0) {
                         if (last_command_uses == 0) {
                             closed_door_x = atoi(line_buffer);
-                            validate_scalar(closed_door_x, 0, TEXTURE_PACK_WIDTH - 1, line);
+                            validate_scalar(closed_door_x, 0, wall_textures->width - 1, line);
                             last_command_uses++;
                         } else {
                             closed_door_y = atoi(line_buffer);
-                            validate_scalar(closed_door_y, 0, TEXTURE_PACK_HEIGHT - 1, line);
+                            validate_scalar(closed_door_y, 0, wall_textures->height - 1, line);
                             last_command_set = 0;
                         }
                     } else if (start_with(last_command, "WALL_TYPE_")) {
@@ -207,11 +211,11 @@ level_t * read_level_info(const char * filename) {
                                 error_w_line("duplicated wall type definition", line - 1);
                             }
                             wall_types_x[wall_type_nr] = atoi(line_buffer);
-                            validate_scalar(wall_types_x[wall_type_nr], 0, TEXTURE_PACK_WIDTH - 1, line);
+                            validate_scalar(wall_types_x[wall_type_nr], 0, wall_textures->width - 1, line);
                             last_command_uses++;
                         } else {
                             wall_types_y[wall_type_nr] = atoi(line_buffer);
-                            validate_scalar(wall_types_y[wall_type_nr], 0, TEXTURE_PACK_HEIGHT - 1, line);
+                            validate_scalar(wall_types_y[wall_type_nr], 0, wall_textures->height - 1, line);
                             last_command_set = 0;
                         }
                     } else if (strcmp(last_command, "LAYOUT") == 0) {
@@ -233,7 +237,7 @@ level_t * read_level_info(const char * filename) {
                                     error_w_line("closed door texture must be defined prior", line);
                                 }
                                 map_content_type[map_layout_idx] = CONTENT_TYPE_DOOR;
-                                map_texture[map_layout_idx] = closed_door_x + closed_door_y * TEXTURE_PACK_WIDTH;
+                                map_texture[map_layout_idx] = closed_door_x + closed_door_y * wall_textures->width;
                                 map_layout_idx++;
                             } else if ((d - '0') >= 0 && (d - '0') < MAX_LEVEL_WALL_TYPES) {
                                 unsigned char block_id = d - '0';
@@ -242,7 +246,7 @@ level_t * read_level_info(const char * filename) {
                                 }
 
                                 map_content_type[map_layout_idx] = CONTENT_TYPE_WALL;
-                                map_texture[map_layout_idx] = wall_types_x[block_id] + wall_types_y[block_id] * TEXTURE_PACK_WIDTH;
+                                map_texture[map_layout_idx] = wall_types_x[block_id] + wall_types_y[block_id] * wall_textures->width;
                                 map_layout_idx++;
                             } else {
                                 error_w_line("invalid map layout", line);
@@ -346,7 +350,7 @@ level_t * read_level_info(const char * filename) {
     ret->floor_color.alpha = 0;
     ret->content_type = calloc(ret->width * ret->height, 1);
     ret->texture = calloc(ret->width * ret->height, 1);
-    ret->door_open_texture = open_door_x + open_door_y * TEXTURE_PACK_WIDTH;
+    ret->door_open_texture = open_door_x + open_door_y * wall_textures->width;
     ret->enemies_count = 0;
     ret->enemy = calloc(ret->enemies_count, sizeof(enemy_t));
     ret->objects = calloc(ret->width * ret->height, 1);
@@ -363,7 +367,7 @@ level_t * read_level_info(const char * filename) {
     free(map_content_type);
     free(map_texture);
 
-    unsigned char door_closed_texture = closed_door_x + closed_door_y * TEXTURE_PACK_WIDTH;
+    unsigned char door_closed_texture = closed_door_x + closed_door_y * wall_textures->width;
     surround_w_safety_walls(ret, door_closed_texture);
     validate_door_placement(ret);
     validate_object_placement(ret);

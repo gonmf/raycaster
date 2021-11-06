@@ -1,40 +1,6 @@
 #include "global.h"
 
-void read_sprite_pack(
-    pixel_t * dst, const char * filename,
-    unsigned int pack_width, unsigned int pack_height
-) {
-    char * str_buf = malloc(MAX_FILE_NAME_SIZ);
-    snprintf(str_buf, MAX_FILE_NAME_SIZ, "./sprites/%s.bmp", filename);
-    char * buffer = malloc(MAX_FILE_SIZE);
-    unsigned int read = file_read(buffer, MAX_FILE_SIZE, str_buf);
-    free(str_buf);
-
-    if (buffer[0] != 0x42 || buffer[1] != 0x4D) {
-        error("Not a Windows Bitmap (BM) file");
-    }
-
-    unsigned int data_offset = (((unsigned int)buffer[13]) << 24) + (((unsigned int)buffer[12]) << 16) + (((unsigned int)buffer[11]) << 8) + buffer[10];
-    if (read < data_offset) {
-        error("Not a valid Windows Bitmap file with 24pp");
-    }
-
-    char * data = buffer + data_offset;
-    for (unsigned int y = 0; y < pack_height * SPRITE_HEIGHT; ++y) {
-        for (unsigned int x = 0; x < pack_width * SPRITE_WIDTH; ++x) {
-            unsigned int dst_idx = x + y * pack_width * SPRITE_WIDTH;
-            unsigned int src_idx = x + (pack_height * SPRITE_HEIGHT - y - 1) * pack_width * SPRITE_WIDTH;
-
-            dst[dst_idx].red = data[src_idx * 3 + 2];
-            dst[dst_idx].green = data[src_idx * 3 + 1];
-            dst[dst_idx].blue = data[src_idx * 3];
-        }
-    }
-
-    free(buffer);
-}
-
-void read_subsprite(
+static void read_subsprite(
     pixel_t * restrict dst, const pixel_t * restrict src,
     unsigned int pack_width, unsigned int pack_height,
     unsigned int pack_x, unsigned int pack_y
@@ -48,4 +14,174 @@ void read_subsprite(
             dst[x + y * SPRITE_WIDTH] = src[x + pack_x * SPRITE_WIDTH + y * pack_width * SPRITE_WIDTH + pack_y * pack_width * SPRITE_WIDTH * SPRITE_HEIGHT];
         }
     }
+}
+
+static unsigned int validate_sprite_pack_val(int val) {
+    if (val < 0 || val > 64) {
+        error("Invalid sprite pack format");
+    }
+
+    return (unsigned int)val;
+}
+static void parse_sprite_pack_metadata(
+    sprite_pack_t * pack, const char * pack_name,
+    unsigned char * x_offset_between_sprites, unsigned char * y_offset_between_sprites,
+    unsigned char * x_eol_offset, unsigned char * y_eol_offset
+) {
+    if (strlen(pack_name) >= 16) {
+        error("Invalid sprite pack name");
+    }
+    snprintf(pack->name, 16, "%s", pack_name);
+
+    char * str_buf = calloc(MAX_FILE_NAME_SIZ, 1);
+    snprintf(str_buf, MAX_FILE_NAME_SIZ, "./sprites/%s.txt", pack->name);
+    char * file_buf = calloc(MAX_FILE_SIZE, 1);
+    file_read(file_buf, MAX_FILE_SIZE, str_buf);
+    free(str_buf);
+
+    char * buffer = file_buf;
+    unsigned int line = 0;
+    char line_buffer[3];
+    line_buffer[0] = 0;
+    unsigned int line_pos = 0;
+    char c;
+    while ((c = *buffer)) {
+        if (c == '\n') {
+            if (line_pos == 3) {
+                error("Invalid sprite pack format");
+            }
+
+            int val = atoi(line_buffer);
+
+            if (line == 0) {
+                pack->width = validate_sprite_pack_val(val);
+            } else if (line == 1) {
+                pack->height = validate_sprite_pack_val(val);
+            } else if (line == 2) {
+                *x_offset_between_sprites = validate_sprite_pack_val(val);
+            } else if (line == 3) {
+                *y_offset_between_sprites = validate_sprite_pack_val(val);
+            } else if (line == 4) {
+                *x_eol_offset = validate_sprite_pack_val(val);
+            } else if (line == 5) {
+                *y_eol_offset = validate_sprite_pack_val(val);
+            }
+
+            line++;
+            line_pos = 0;
+            line_buffer[line_pos] = 0;
+        } else if (c != '\r') {
+            line_buffer[line_pos++] = c;
+            line_buffer[line_pos] = 0;
+        }
+        buffer++;
+    }
+
+    if (line != 6) {
+        error("Invalid sprite pack format");
+    }
+
+    free(file_buf);
+
+    pack->sprites = calloc(SPRITE_WIDTH * SPRITE_HEIGHT, sizeof(pixel_t));
+}
+
+static void read_sprite_pack_pixels(
+    pixel_t * dst, const sprite_pack_t * pack,
+    unsigned char x_offset_between_sprites, unsigned char y_offset_between_sprites,
+    unsigned char x_eol_offset, unsigned char y_eol_offset
+) {
+    char * str_buf = calloc(MAX_FILE_NAME_SIZ, 1);
+    snprintf(str_buf, MAX_FILE_NAME_SIZ, "./sprites/%s.bmp", pack->name);
+    char * file_buf = calloc(MAX_FILE_SIZE, 1);
+    unsigned int read = file_read(file_buf, MAX_FILE_SIZE, str_buf);
+    free(str_buf);
+
+    if (file_buf[0] != 0x42 || file_buf[1] != 0x4D) {
+        error("Not a Windows Bitmap (BM) file");
+    }
+
+    unsigned int data_offset = (((unsigned int)file_buf[13]) << 24) + (((unsigned int)file_buf[12]) << 16) + (((unsigned int)file_buf[11]) << 8) + file_buf[10];
+    if (read < data_offset) {
+        error("Not a valid Windows Bitmap file with 24pp");
+    }
+
+    char * data = file_buf + data_offset;
+    unsigned int total_width = pack->width * (SPRITE_WIDTH + x_offset_between_sprites) - x_offset_between_sprites + x_eol_offset;
+    unsigned int total_height = pack->height * (SPRITE_HEIGHT + y_offset_between_sprites) - y_offset_between_sprites + y_eol_offset;
+
+    for (unsigned int y = 0, yt = 0; yt < total_height; ++y, ++yt) {
+        if (y > 0 && (y % SPRITE_HEIGHT) == 0) {
+            yt += y_offset_between_sprites;
+        }
+
+        for (unsigned int x = 0, xt = 0; xt < total_width; ++x, ++xt) {
+            if (x > 0 && (x % SPRITE_WIDTH) == 0) {
+                xt += x_offset_between_sprites;
+            }
+
+            unsigned int dst_idx = x + y * pack->width * SPRITE_WIDTH;
+            unsigned int inverted_yt = total_height - yt - 1;
+            unsigned int src_idx = xt + inverted_yt * total_width;
+
+            dst[dst_idx].red = data[src_idx * 3 + 2];
+            dst[dst_idx].green = data[src_idx * 3 + 1];
+            dst[dst_idx].blue = data[src_idx * 3];
+        }
+    }
+
+    free(file_buf);
+}
+
+#if 0
+static void dump_sprite(const pixel_t * image, const char * pack_name, unsigned int id) {
+    char filename[100];
+    sprintf(filename, "sprites/dump_sprite_%s_%u.ppm", pack_name, id);
+
+    FILE * file = fopen(filename, "w");
+
+    fprintf(file, "P3\n");
+    fprintf(file, "%u %u\n", SPRITE_WIDTH, SPRITE_HEIGHT);
+    fprintf(file, "255\n");
+
+    for(unsigned int y = 0; y < SPRITE_HEIGHT; ++y) {
+        for(unsigned int x = 0; x < SPRITE_WIDTH; ++x) {
+            pixel_t pixel = image[x + y * SPRITE_WIDTH];
+
+            fprintf(file, "%u %u %u ", pixel.red, pixel.green, pixel.blue);
+        }
+
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+}
+#endif
+
+void read_sprite_pack(sprite_pack_t * pack, const char * pack_name) {
+    unsigned char x_offset_between_sprites = 0;
+    unsigned char y_offset_between_sprites = 0;
+    unsigned char x_eol_offset = 0;
+    unsigned char y_eol_offset = 0;
+    parse_sprite_pack_metadata(pack, pack_name, &x_offset_between_sprites, &y_offset_between_sprites, &x_eol_offset, &y_eol_offset);
+
+    unsigned int total_width = pack->width * (SPRITE_WIDTH + x_offset_between_sprites) - x_offset_between_sprites + x_eol_offset;
+    unsigned int total_height = pack->height * (SPRITE_HEIGHT + y_offset_between_sprites) - y_offset_between_sprites + y_eol_offset;
+    pixel_t * pixel_buf = calloc(total_width * total_height, sizeof(pixel_t));
+
+    read_sprite_pack_pixels(pixel_buf, pack, x_offset_between_sprites, y_offset_between_sprites, x_eol_offset, y_eol_offset);
+    for (unsigned int pack_y = 0; pack_y < pack->height; ++pack_y) {
+        for (unsigned int pack_x = 0; pack_x < pack->width; ++pack_x) {
+            pixel_t * dst = calloc(SPRITE_WIDTH * SPRITE_HEIGHT, sizeof(pixel_t));
+            pack->sprites[pack_x + pack_y * pack->width] = dst;
+
+            read_subsprite(dst, pixel_buf, pack->width, pack->height, pack_x, pack_y);
+
+#if 0
+            dump_sprite(dst, pack_name, pack_x + pack_y * pack->width);
+#endif
+        }
+    }
+
+    free(pixel_buf);
 }

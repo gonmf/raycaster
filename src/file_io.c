@@ -4,7 +4,7 @@ unsigned int file_read(char * dst, unsigned int max_size, const char * filename)
     FILE * file = fopen(filename, "rb");
 
     if (file == NULL) {
-        char * sb = malloc(MAX_FILE_NAME_SIZ);
+        char * sb = calloc(MAX_FILE_NAME_SIZ, 1);
         sprintf(sb, "Could not open file \"%s\"", filename);
         error(sb);
     }
@@ -15,7 +15,7 @@ unsigned int file_read(char * dst, unsigned int max_size, const char * filename)
         total_read += fread(dst, 1, max_size, file);
 
         if (ferror(file)) {
-            char * sb = malloc(MAX_FILE_NAME_SIZ);
+            char * sb = calloc(MAX_FILE_NAME_SIZ, 1);
             sprintf(sb, "Error reading file \"%s\"", filename);
             error(sb);
         }
@@ -23,7 +23,5 @@ unsigned int file_read(char * dst, unsigned int max_size, const char * filename)
 
     fclose(file);
 
-    printf("Read \"%s\"\n", filename);
-    
     return total_read;
 }

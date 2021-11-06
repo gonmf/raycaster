@@ -1,12 +1,10 @@
 #include "global.h"
 
-static double fish_eye_table[VIEWPORT_WIDTH];
-static pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
-static pixel_t wall_textures[TEXTURE_PACK_WIDTH][TEXTURE_PACK_HEIGHT][SPRITE_WIDTH * SPRITE_HEIGHT];
+sprite_pack_t * wall_textures;
+sprite_pack_t * objects_sprites;
+pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
-const pixel_t * foreground_buffer() {
-    return fg_buffer;
-}
+static double fish_eye_table[VIEWPORT_WIDTH];
 
 static unsigned int horizon_offset(const level_t * level) {
     double vertical_multiplier = level->observer_angle2 / 90.0;
@@ -177,23 +175,21 @@ static void block_color(pixel_t * dst, double block_x, double block_y, double di
     unsigned int x = (unsigned int)(SPRITE_WIDTH * block_x);
     unsigned int y = (unsigned int)(SPRITE_HEIGHT * block_y);
 
-    unsigned char texture_x = block_type % TEXTURE_PACK_WIDTH;
-    unsigned char texture_y = block_type / TEXTURE_PACK_WIDTH;
-    pixel_t * src = &wall_textures[texture_x][texture_y][x + y * SPRITE_WIDTH];
-    *dst = darken_shading(*src, intensity);
+    pixel_t src = wall_textures->sprites[block_type][x + y * SPRITE_WIDTH];
+    *dst = darken_shading(src, intensity);
+}
+
+static void color_to_alpha(sprite_pack_t * pack) {
+    // TODO:
 }
 
 void load_textures() {
-    pixel_t * sprite_pack = calloc(SPRITE_WIDTH * TEXTURE_PACK_WIDTH * SPRITE_HEIGHT * TEXTURE_PACK_HEIGHT, sizeof(pixel_t));
-    read_sprite_pack(sprite_pack, TEXTURE_PACK_NAME, TEXTURE_PACK_WIDTH, TEXTURE_PACK_HEIGHT);
+    wall_textures = calloc(1, sizeof(sprite_pack_t));
+    read_sprite_pack(wall_textures, TEXTURE_PACK_NAME);
 
-    for (unsigned int y = 0; y < TEXTURE_PACK_HEIGHT; ++y) {
-        for (unsigned int x = 0; x < TEXTURE_PACK_WIDTH; ++x) {
-            read_subsprite(wall_textures[x][y], sprite_pack, TEXTURE_PACK_WIDTH, TEXTURE_PACK_HEIGHT, x, y);
-        }
-    }
-
-    free(sprite_pack);
+    objects_sprites = calloc(1, sizeof(sprite_pack_t));
+    read_sprite_pack(objects_sprites, OBJECTS_PACK_NAME);
+    color_to_alpha(objects_sprites);
 }
 
 static void fill_in_walls(const level_t * level) {

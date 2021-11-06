@@ -114,7 +114,7 @@ static bool update_observer_state() {
             paused = !paused;
             if (paused) {
                 color_filter(0.5);
-                window_update_pixels(foreground_buffer(), VIEWPORT_WIDTH, VIEWPORT_HEIGHT, UI_BORDER, UI_BORDER);
+                window_update_pixels(fg_buffer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, UI_BORDER, UI_BORDER);
                 window_refresh();
                 set_cursor_visible(true);
             } else {
@@ -215,7 +215,7 @@ static void main_render_loop() {
         if (!paused) {
             if (needs_refresh) {
                 window_center_mouse();
-                window_update_pixels(foreground_buffer(), VIEWPORT_WIDTH, VIEWPORT_HEIGHT, UI_BORDER, UI_BORDER);
+                window_update_pixels(fg_buffer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, UI_BORDER, UI_BORDER);
                 needs_refresh = false;
             }
             window_refresh();
@@ -288,7 +288,7 @@ static void select_level() {
 
     while (levels_listed < 99 && (entry = readdir(dir)) != NULL) {
         if (valid_level_file_name(entry->d_name)) {
-            levels[levels_listed] = malloc(MAX_FILE_NAME_SIZ);
+            levels[levels_listed] = calloc(MAX_FILE_NAME_SIZ, 1);
             strncpy(levels[levels_listed], entry->d_name, MAX_FILE_NAME_SIZ);
 
             printf("%3u - %s\n", levels_listed + 1, levels[levels_listed]);
@@ -307,10 +307,10 @@ static void select_level() {
 
     unsigned int selection = 0;
 
-#if 1
+#if 0
     if (levels_listed > 1) {
         unsigned int buf_idx;
-        char * buf = malloc(MAX_FILE_NAME_SIZ);
+        char * buf = calloc(MAX_FILE_NAME_SIZ, 1);
 
         while(1) {
             printf("> ");
