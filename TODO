@@ -11,3 +11,4 @@
 
 Known Bugs
 - Camera is able to get too close against corners of blocks.
+- Object sprites are rendered inverted on the xx axis
