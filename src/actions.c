@@ -44,3 +44,19 @@ bool open_door_in_front(level_t * level) {
     level->content_type[door_x + door_y * level->width] = CONTENT_TYPE_DOOR_OPEN;
     return true;
 }
+
+bool apply_special_effect(const level_t * level, bool * exit_found) {
+    double curr_x = level->observer_x;
+    double curr_y = level->observer_y;
+    unsigned int rounded_x = (unsigned int)(curr_x + 0.5);
+    unsigned int rounded_y = (unsigned int)(curr_y + 0.5);
+
+    *exit_found = false;
+
+    if (level->special_effects[rounded_x + rounded_y * level->width] == SPECIAL_EFFECT_LEVEL_END) {
+        *exit_found = true;
+        return true;
+    }
+
+    return false;
+}

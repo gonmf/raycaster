@@ -172,6 +172,17 @@ static void main_render_loop() {
 
         if (!paused) {
             paint_scene(level);
+
+            if (needs_refresh) {
+                bool exit_found;
+                apply_special_effect(level, &exit_found);
+
+                if (exit_found) {
+                    window_close();
+                    printf("Level exit found\n");
+                    return;
+                }
+            }
         }
 
         sfEvent event;

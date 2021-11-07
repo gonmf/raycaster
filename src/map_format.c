@@ -51,50 +51,50 @@ static void surround_w_safety_walls(level_t * level, unsigned char door_closed_t
     unsigned int y;
     for (x = 0; x < level->width; ++x) {
         y = 0;
-        if (level->content_type[x + y * level->width] == CONTENT_TYPE_EMPTY || level->content_type[x + y * level->width] == CONTENT_TYPE_OBJECT) {
-            fprintf(stderr, "WARNING: empty space on the edge converted to wall (%u,%u)\n", x, y);
-            level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
-            level->texture[x + y * level->width] = SAFETY_WALL_TEXTURE;
-        }
         if (level->content_type[x + y * level->width] == CONTENT_TYPE_DOOR) {
             fprintf(stderr, "WARNING: door on the edge converted to wall (%u,%u)\n", x, y);
             level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
             level->texture[x + y * level->width] = door_closed_texture;
         }
-        y = (level->height - 1) * level->width;
-        if (level->content_type[x + y * level->width] == CONTENT_TYPE_EMPTY || level->content_type[x + y * level->width] == CONTENT_TYPE_OBJECT) {
+        if (level->content_type[x + y * level->width] != CONTENT_TYPE_WALL) {
             fprintf(stderr, "WARNING: empty space on the edge converted to wall (%u,%u)\n", x, y);
             level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
             level->texture[x + y * level->width] = SAFETY_WALL_TEXTURE;
         }
+        y = (level->height - 1);
         if (level->content_type[x + y * level->width] == CONTENT_TYPE_DOOR) {
             fprintf(stderr, "WARNING: door on the edge converted to wall (%u,%u)\n", x, y);
             level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
             level->texture[x + y * level->width] = door_closed_texture;
+        }
+        if (level->content_type[x + y * level->width] != CONTENT_TYPE_WALL) {
+            fprintf(stderr, "WARNING: empty space on the edge converted to wall (%u,%u)\n", x, y);
+            level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
+            level->texture[x + y * level->width] = SAFETY_WALL_TEXTURE;
         }
     }
     for (y = 0; y < level->height; ++y) {
         x = 0;
-        if (level->content_type[x + y * level->width] == CONTENT_TYPE_EMPTY || level->content_type[x + y * level->width] == CONTENT_TYPE_OBJECT) {
-            fprintf(stderr, "WARNING: empty space on the edge converted to wall (%u,%u)\n", x, y);
-            level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
-            level->texture[x + y * level->width] = SAFETY_WALL_TEXTURE;
-        }
         if (level->content_type[x + y * level->width] == CONTENT_TYPE_DOOR) {
             fprintf(stderr, "WARNING: door on the edge converted to wall (%u,%u)\n", x, y);
             level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
             level->texture[x + y * level->width] = door_closed_texture;
+        }
+        if (level->content_type[x + y * level->width] != CONTENT_TYPE_WALL) {
+            fprintf(stderr, "WARNING: empty space on the edge converted to wall (%u,%u)\n", x, y);
+            level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
+            level->texture[x + y * level->width] = SAFETY_WALL_TEXTURE;
         }
         x = level->width - 1;
-        if (level->content_type[x + y * level->width] == CONTENT_TYPE_EMPTY || level->content_type[x + y * level->width] == CONTENT_TYPE_OBJECT) {
-            fprintf(stderr, "WARNING: empty space on the edge converted to wall (%u,%u)\n", x, y);
-            level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
-            level->texture[x + y * level->width] = SAFETY_WALL_TEXTURE;
-        }
         if (level->content_type[x + y * level->width] == CONTENT_TYPE_DOOR) {
             fprintf(stderr, "WARNING: door on the edge converted to wall (%u,%u)\n", x, y);
             level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
             level->texture[x + y * level->width] = door_closed_texture;
+        }
+        if (level->content_type[x + y * level->width] != CONTENT_TYPE_WALL) {
+            fprintf(stderr, "WARNING: empty space on the edge converted to wall (%u,%u)\n", x, y);
+            level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
+            level->texture[x + y * level->width] = SAFETY_WALL_TEXTURE;
         }
     }
 }
@@ -128,6 +128,8 @@ level_t * read_level_info(const char * filename) {
     }
     unsigned char * map_content_type = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, 1);
     memset(map_content_type, CONTENT_TYPE_EMPTY, MAX_LEVEL_SIZE * MAX_LEVEL_SIZE);
+    unsigned char * map_special_effects = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, 1);
+    memset(map_special_effects, CONTENT_TYPE_EMPTY, MAX_LEVEL_SIZE * MAX_LEVEL_SIZE);
     unsigned char * map_texture = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, 1);
     unsigned int map_layout_idx = 0;
     int player_start_x = -1;
@@ -138,6 +140,7 @@ level_t * read_level_info(const char * filename) {
     int closed_door_x = -1;
     int closed_door_y = -1;
     int type_nr = 0;
+    bool exit_placed = false;
     char last_command[MAX_LEVEL_SIZE];
     int last_command_set = 0;
     int last_command_uses = 0;
@@ -288,6 +291,12 @@ level_t * read_level_info(const char * filename) {
                                 }
                                 player_start_x = i;
                                 player_start_y = map_size_h2;
+                            } else if (d == 'e') {
+                                if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
+                                    error_w_line("level end position must be empty", line);
+                                }
+                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_LEVEL_END;
+                                exit_placed = true;
                             } else if ((d - '0') >= 0 && (d - '0') < 10) {
                                 unsigned char block_id = d - '0';
                                 if (object_types_x[block_id] == -1) {
@@ -357,6 +366,9 @@ level_t * read_level_info(const char * filename) {
     if (closed_door_y < 0) {
         error_w_line("end of file without closed door texture defined", line);
     }
+    if (!exit_placed) {
+        error("invalid map design - no exits");
+    }
     free(orig_buffer);
 
     level_t * ret = (level_t *)calloc(sizeof(level_t), 1);
@@ -377,6 +389,7 @@ level_t * read_level_info(const char * filename) {
     ret->floor_color.alpha = 0;
     ret->content_type = calloc(ret->width * ret->height, 1);
     ret->texture = calloc(ret->width * ret->height, 1);
+    ret->special_effects = calloc(ret->width * ret->height, 1);
     ret->door_open_texture = open_door_x + open_door_y * wall_textures->width;
     ret->enemies_count = 0;
     ret->enemy = calloc(ret->enemies_count, sizeof(enemy_t));
@@ -387,11 +400,13 @@ level_t * read_level_info(const char * filename) {
 
             ret->content_type[x + y2 * ret->width] = map_content_type[x + y * ret->width];
             ret->texture[x + y2 * ret->width] = map_texture[x + y * ret->width];
+            ret->special_effects[x + y2 * ret->width] = map_special_effects[x + y * ret->width];
         }
     }
 
     free(map_content_type);
     free(map_texture);
+    free(map_special_effects);
 
     unsigned char door_closed_texture = closed_door_x + closed_door_y * wall_textures->width;
     surround_w_safety_walls(ret, door_closed_texture);

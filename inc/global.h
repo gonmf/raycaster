@@ -41,6 +41,7 @@ typedef struct  __level_ {
     double observer_angle2;
     unsigned char * content_type;
     unsigned char * texture;
+    unsigned char * special_effects;
     unsigned char door_open_texture;
     unsigned int enemies_count; // not used yet
     enemy_t * enemy; // not used yet
@@ -62,11 +63,14 @@ typedef sfBool bool;
 
 #define EQUAL_PIXEL(A,B) (A.red == B.red && A.green == B.green && A.blue == B.blue && A.alpha == B.alpha)
 
-#define CONTENT_TYPE_EMPTY 1
-#define CONTENT_TYPE_WALL 2
-#define CONTENT_TYPE_DOOR 3
-#define CONTENT_TYPE_DOOR_OPEN 4
-#define CONTENT_TYPE_OBJECT 5
+#define CONTENT_TYPE_EMPTY 0
+#define CONTENT_TYPE_WALL 1
+#define CONTENT_TYPE_DOOR 2
+#define CONTENT_TYPE_DOOR_OPEN 3
+#define CONTENT_TYPE_OBJECT 4
+
+#define SPECIAL_EFFECT_NONE 0
+#define SPECIAL_EFFECT_LEVEL_END 1
 
 #define MAX(X, Y) (X > Y ? X : Y)
 #define MIN(X, Y) (X < Y ? X : Y)
@@ -156,5 +160,6 @@ void paint_scene(const level_t * level);
 bool transition_step();
 bool opening_door_transition(double * percentage_open, unsigned int * door_x, unsigned int * door_y);
 bool open_door_in_front(level_t * level);
+bool apply_special_effect(const level_t * level, bool * exit_found);
 
 #endif

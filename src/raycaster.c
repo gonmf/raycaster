@@ -107,8 +107,8 @@ static double cast_simple_ray(const level_t * level, double angle, double * bloc
 
         unsigned char content_type = level->content_type[rounded_x + rounded_y * level->width];
 
-        if (content_type == CONTENT_TYPE_EMPTY) {
-            continue;
+        if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR) {
+            return -1;
         } else if (content_type == CONTENT_TYPE_DOOR_OPEN) {
             if (opening_this_door) {
                 curr_x -= x_change / 2.0;
@@ -157,8 +157,8 @@ static double cast_simple_ray(const level_t * level, double angle, double * bloc
             } else {
                 continue;
             }
-        } else if (content_type != CONTENT_TYPE_OBJECT) {
-            return -1;
+        } else if (content_type == CONTENT_TYPE_EMPTY) {
+            continue;
         }
 
         *block_hit_x = rounded_x;

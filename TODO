@@ -1,8 +1,9 @@
+- End level coords
+- Treasure and scores
 - Different door types
   - Door keys
 - Enemies
   - Moving projectiles
-- Treasure and scores
 - Show (revealed) level map
 - Game UI
 - Config file or UI menu for mouse sensitivity, resolution, FPS
