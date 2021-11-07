@@ -2,15 +2,12 @@
 
 static void read_subsprite(
     pixel_t * restrict dst, const pixel_t * restrict src,
-    unsigned int pack_width, unsigned int pack_height,
+    unsigned int pack_width,
     unsigned int pack_x, unsigned int pack_y
 ) {
 
     for (unsigned int y = 0; y < SPRITE_HEIGHT; ++y) {
         for (unsigned int x = 0; x < SPRITE_WIDTH; ++x) {
-            unsigned int sx = x + pack_x * SPRITE_WIDTH;
-            unsigned int sy = y + pack_y * SPRITE_HEIGHT;
-            dst[x + y * SPRITE_WIDTH] = src[sx + sy * SPRITE_WIDTH * pack_height];
             dst[x + y * SPRITE_WIDTH] = src[x + pack_x * SPRITE_WIDTH + y * pack_width * SPRITE_WIDTH + pack_y * pack_width * SPRITE_WIDTH * SPRITE_HEIGHT];
         }
     }
@@ -194,7 +191,7 @@ void read_sprite_pack(sprite_pack_t * pack, const char * pack_name) {
             pixel_t * dst = calloc(SPRITE_WIDTH * SPRITE_HEIGHT, sizeof(pixel_t));
             pack->sprites[pack_x + pack_y * pack->width] = dst;
 
-            read_subsprite(dst, pixel_buf, pack->width, pack->height, pack_x, pack_y);
+            read_subsprite(dst, pixel_buf, pack->width, pack_x, pack_y);
 
 #if 0
             dump_sprite(dst, pack_name, pack_x, pack_y);

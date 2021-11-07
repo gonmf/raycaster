@@ -6,6 +6,8 @@ static pixel_t * background;
 static bool pause_btn_pressed = false;
 static bool paused = false;
 static bool action_btn_pressed = false;
+static bool map_btn_pressed = false;
+static bool show_map = false;
 
 static void move_observer2(double x_change, double y_change) {
     double new_x = level->observer_x + x_change;
@@ -129,7 +131,6 @@ static bool update_observer_state() {
             pause_btn_pressed = false;
         }
     }
-
     if (key_is_pressed(sfKeyE)) {
         action_btn_pressed = true;
     } else {
@@ -138,6 +139,15 @@ static bool update_observer_state() {
                 needs_refresh = true;
             }
             action_btn_pressed = false;
+        }
+    }
+    if (key_is_pressed(sfKeyM)) {
+        map_btn_pressed = true;
+    } else {
+        if (map_btn_pressed) {
+            show_map = !show_map;
+            map_btn_pressed = false;
+            needs_refresh = true;
         }
     }
 
@@ -192,6 +202,10 @@ static void main_render_loop() {
                     printf("Level exit found\n");
                     return;
                 }
+            }
+
+            if (show_map) {
+                paint_map(level);
             }
         }
 
@@ -250,28 +264,23 @@ static void paint_ui() {
 
         for (unsigned int y = 0; y < WINDOW_TOTAL_HEIGHT; ++y) {
             for (unsigned int x = 0; x < WINDOW_TOTAL_WIDTH; ++x) {
-                background[x + y * WINDOW_TOTAL_WIDTH].green = 64;
-                background[x + y * WINDOW_TOTAL_WIDTH].blue = 64;
+                background[x + y * WINDOW_TOTAL_WIDTH] = color_ui_bg;
             }
         }
         for (unsigned int shade_size = 0; shade_size < 5; ++shade_size) {
             // left and right sides
             for (unsigned y = UI_BORDER - shade_size; y < UI_BORDER + VIEWPORT_HEIGHT + shade_size; ++y) {
                 unsigned int x = UI_BORDER - shade_size;
-                background[x + y * WINDOW_TOTAL_WIDTH].green = 32;
-                background[x + y * WINDOW_TOTAL_WIDTH].blue = 32;
+                background[x + y * WINDOW_TOTAL_WIDTH] = color_ui_bg_dark;
                 x = WINDOW_TOTAL_WIDTH - x - 1;
-                background[x + y * WINDOW_TOTAL_WIDTH].green = 128;
-                background[x + y * WINDOW_TOTAL_WIDTH].blue = 128;
+                background[x + y * WINDOW_TOTAL_WIDTH] = color_ui_bg_light;
             }
             // top and bottom sides
             for (unsigned x = UI_BORDER - shade_size; x < UI_BORDER + VIEWPORT_WIDTH + shade_size; ++x) {
                 unsigned int y = UI_BORDER - shade_size;
-                background[x + y * WINDOW_TOTAL_WIDTH].green = 32;
-                background[x + y * WINDOW_TOTAL_WIDTH].blue = 32;
+                background[x + y * WINDOW_TOTAL_WIDTH] = color_ui_bg_dark;
                 y = UI_BORDER + VIEWPORT_HEIGHT + shade_size - 1;
-                background[x + y * WINDOW_TOTAL_WIDTH].green = 128;
-                background[x + y * WINDOW_TOTAL_WIDTH].blue = 128;
+                background[x + y * WINDOW_TOTAL_WIDTH] = color_ui_bg_light;
             }
         }
     }
@@ -372,8 +381,9 @@ static void select_level() {
 }
 
 int main() {
-    load_textures();
+    init_base_colors();
     init_fish_eye_table();
+    load_textures();
 
     select_level();
     open_level();

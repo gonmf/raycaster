@@ -11,48 +11,6 @@ static unsigned int horizon_offset(const level_t * level) {
     return (unsigned int)((VIEWPORT_HEIGHT / 2) * vertical_multiplier);
 }
 
-static pixel_t shading(pixel_t min_color, pixel_t max_color, double factor) {
-    pixel_t ret;
-
-    ret.red = (unsigned char)(min_color.red * (1.0 - factor) + max_color.red * factor);
-    ret.green = (unsigned char)(min_color.green * (1.0 - factor) + max_color.green * factor);
-    ret.blue = (unsigned char)(min_color.blue * (1.0 - factor) + max_color.blue * factor);
-
-    return ret;
-}
-
-static pixel_t brighten_shading(pixel_t color, double factor) {
-    pixel_t white;
-    white.red = 255;
-    white.green = 255;
-    white.blue = 255;
-    white.alpha = 0;
-
-    return shading(color, white, factor);
-}
-
-static pixel_t darken_shading(pixel_t color, double factor) {
-    pixel_t black;
-    black.red = 0;
-    black.green = 0;
-    black.blue = 0;
-    black.alpha = 0;
-
-    return shading(black, color, factor);
-}
-
-void brighten_scene(double factor) {
-    for (unsigned int i = 0; i < VIEWPORT_WIDTH * VIEWPORT_HEIGHT; ++i) {
-        fg_buffer[i] = brighten_shading(fg_buffer[i], factor);
-    }
-}
-
-void darken_scene(double factor) {
-    for (unsigned int i = 0; i < VIEWPORT_WIDTH * VIEWPORT_HEIGHT; ++i) {
-        fg_buffer[i] = darken_shading(fg_buffer[i], factor);
-    }
-}
-
 void init_fish_eye_table() {
     double half_fov = FIELD_OF_VIEW / 2.0;
 
@@ -241,7 +199,6 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
         }
 
         bool opening_this_door = opening_door && opening_door_x == rounded_x && opening_door_y == rounded_y;
-
         if (opening_this_door && skipped_door) {
             continue;
         }
@@ -335,26 +292,12 @@ static void block_color(pixel_t * dst, double block_x, double block_y, double in
     *dst = darken_shading(src, intensity);
 }
 
-static void color_to_alpha(sprite_pack_t * pack) {
-    for (unsigned int pack_i = 0; pack_i < pack->width * pack->height; ++pack_i) {
-        for (unsigned int sprite_i = 0; sprite_i < SPRITE_WIDTH * SPRITE_HEIGHT; ++sprite_i) {
-
-            if (pack->sprites[pack_i][sprite_i].red == 0x98 &&
-                pack->sprites[pack_i][sprite_i].green == 0 &&
-                pack->sprites[pack_i][sprite_i].blue == 0x88) {
-                pack->sprites[pack_i][sprite_i].alpha = 255;
-            }
-        }
-    }
-}
-
 void load_textures() {
     wall_textures = calloc(1, sizeof(sprite_pack_t));
     read_sprite_pack(wall_textures, TEXTURE_PACK_NAME);
 
     objects_sprites = calloc(1, sizeof(sprite_pack_t));
     read_sprite_pack(objects_sprites, OBJECTS_PACK_NAME);
-    color_to_alpha(objects_sprites);
 }
 
 static void fill_in_objects(const level_t * level) {
@@ -386,7 +329,9 @@ static void fill_in_objects(const level_t * level) {
             pixel_t * pixel;
             unsigned int y;
 
-            double intensity = MIN(MAX(10.0 / distance, 0.0), 1.0);;
+            level->map_revealed[block_hit_x + block_hit_y * level->width] = true;
+
+            double intensity = MIN(MAX(10.0 / distance, 0.0), 1.0);
 
             for (unsigned int mid_y = 0; mid_y < end_y; ++mid_y) {
                 // top part
@@ -437,6 +382,8 @@ static void fill_in_walls(const level_t * level) {
 
         unsigned int end_y = (unsigned int)(block_size * VIEWPORT_HEIGHT / 2.0);
         double intensity = MIN(MAX(10.0 / distance, 0.0), 1.0);
+
+        level->map_revealed[block_hit_x + block_hit_y * level->width] = true;
 
         for (unsigned int mid_y = 0; mid_y < end_y; ++mid_y) {
             // top part

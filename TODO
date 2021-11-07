@@ -1,6 +1,5 @@
 - Enemies
   - Moving projectiles
-- Show (revealed) level map
 - Game UI
 - Config file or UI menu for mouse sensitivity, resolution, FPS
   - Configurable viewport (not ratio)

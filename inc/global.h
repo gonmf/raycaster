@@ -15,9 +15,9 @@
 #include <math.h>
 #include <limits.h>
 
-#define true sfTrue
-#define false sfFalse
-typedef sfBool bool;
+#define true 1
+#define false 0
+typedef char bool;
 
 typedef struct  __attribute__((__packed__)) __pixel_ {
     unsigned char red;
@@ -47,6 +47,7 @@ typedef struct  __level_ {
     unsigned char * content_type;
     unsigned char * texture;
     unsigned char * special_effects;
+    bool * map_revealed;
     unsigned char door_open_texture;
     unsigned int enemies_count; // not used yet
     enemy_t * enemy; // not used yet
@@ -99,6 +100,7 @@ typedef struct __sprite_pack_ {
 #define UI_BG_COLOR "0,111,112"
 #define MAX_FPS 120
 #define FIELD_OF_VIEW 72 // degrees
+#define MAP_BLOCK_SIZE 8
 
 #define MAX_LEVEL_SIZE 256
 
@@ -122,9 +124,22 @@ typedef struct __sprite_pack_ {
 #define FINE_RAY_STEP_CONSTANT 0.0078125
 #define ROUGH_RAY_STEP_CONSTANT 0.05
 
+// raycaster.c
 extern sprite_pack_t * wall_textures;
 extern sprite_pack_t * objects_sprites;
 extern pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
+
+// color.c
+extern pixel_t color_white;
+extern pixel_t color_gray;
+extern pixel_t color_black;
+extern pixel_t color_red;
+extern pixel_t color_blue;
+extern pixel_t color_cyan;
+extern pixel_t color_gold;
+extern pixel_t color_ui_bg;
+extern pixel_t color_ui_bg_dark;
+extern pixel_t color_ui_bg_light;
 
 // sprites.c
 void read_sprite_pack(sprite_pack_t * pack, const char * pack_name);
@@ -162,8 +177,6 @@ void window_refresh();
 bool window_poll_event(sfEvent * event);
 
 // raycaster.c
-void brighten_scene(double factor);
-void darken_scene(double factor);
 void init_fish_eye_table();
 void load_textures();
 void paint_scene(const level_t * level);
@@ -175,5 +188,16 @@ bool open_door_in_front(level_t * level);
 bool short_flash_effect(double * percentage);
 void start_flash_effect(unsigned int duration);
 bool apply_special_effect(level_t * level, bool * exit_found);
+
+// ui.c
+void paint_map(const level_t * level);
+
+// color.c
+pixel_t shading(pixel_t min_color, pixel_t max_color, double factor);
+pixel_t brighten_shading(pixel_t color, double factor);
+pixel_t darken_shading(pixel_t color, double factor);
+void brighten_scene(double factor);
+void darken_scene(double factor);
+void init_base_colors();
 
 #endif

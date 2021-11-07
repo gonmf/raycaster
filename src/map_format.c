@@ -163,7 +163,7 @@ level_t * read_level_info(const char * filename) {
     unsigned char * map_content_type = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, 1);
     memset(map_content_type, CONTENT_TYPE_EMPTY, MAX_LEVEL_SIZE * MAX_LEVEL_SIZE);
     unsigned char * map_special_effects = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, 1);
-    memset(map_special_effects, CONTENT_TYPE_EMPTY, MAX_LEVEL_SIZE * MAX_LEVEL_SIZE);
+    memset(map_special_effects, SPECIAL_EFFECT_NONE, MAX_LEVEL_SIZE * MAX_LEVEL_SIZE);
     unsigned char * map_texture = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, 1);
     unsigned int map_layout_idx = 0;
     int player_start_x = -1;
@@ -381,6 +381,10 @@ level_t * read_level_info(const char * filename) {
 
                             // Start and end positions
                             if (d == 's') {
+                                if (player_start_x != -1) {
+                                    error_w_line("multiple player start definitions", line);
+                                }
+
                                 player_start_x = i;
                                 player_start_y = map_size_h2;
                             } else if (d == 'e') {
@@ -510,15 +514,15 @@ level_t * read_level_info(const char * filename) {
         error("invalid map design - mismatch between locked doors and keys");
     }
 
-    // TODO: validate all doors and keys are defined in match
     free(buffer);
 
     level_t * ret = (level_t *)calloc(sizeof(level_t), 1);
 
     ret->width = map_size_w;
     ret->height = map_size_h1;
-    ret->observer_x = player_start_x;
-    ret->observer_y = map_size_h1 - player_start_y - 1;
+    ret->observer_x = (double)player_start_x;
+    player_start_y = map_size_h1 - player_start_y - 1;
+    ret->observer_y = (double)player_start_y;
     ret->observer_angle = fit_angle((double)player_start_angle);
     ret->observer_angle2 = 90.0;
     ret->ceil_color.red = ceil_color_r;
@@ -532,9 +536,10 @@ level_t * read_level_info(const char * filename) {
     ret->content_type = calloc(ret->width * ret->height, 1);
     ret->texture = calloc(ret->width * ret->height, 1);
     ret->special_effects = calloc(ret->width * ret->height, 1);
+    ret->map_revealed = calloc(ret->width * ret->height, 1);
     ret->door_open_texture = open_door_x + open_door_y * wall_textures->width;
     ret->enemies_count = 0;
-    ret->enemy = calloc(ret->enemies_count, sizeof(enemy_t));
+    ret->enemy = NULL; // calloc(ret->enemies_count, sizeof(enemy_t));
     ret->score = 0;
     ret->key_1 = false;
     ret->key_2 = false;
@@ -546,6 +551,7 @@ level_t * read_level_info(const char * filename) {
             ret->content_type[x + y2 * ret->width] = map_content_type[x + y * ret->width];
             ret->texture[x + y2 * ret->width] = map_texture[x + y * ret->width];
             ret->special_effects[x + y2 * ret->width] = map_special_effects[x + y * ret->width];
+            ret->map_revealed[x + y2 * ret->width] = false;
         }
     }
 
@@ -557,6 +563,8 @@ level_t * read_level_info(const char * filename) {
     surround_w_safety_walls(ret, door_closed_texture);
     validate_door_placement(ret);
     validate_object_placement(ret);
+
+    ret->map_revealed[player_start_x + player_start_y * ret->width] = true;
 
     return ret;
 }
