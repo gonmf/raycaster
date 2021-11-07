@@ -6,9 +6,6 @@
 
 ---
 
-- Map design
-  - Add multiple views to map editor: walls/doors, placement of soldiers/objects/player/keys
-  - Allow raising canvas size to support 256x256 maps
 - Allow saving and loading ongoing levels
 - Enemy noise and awareness
 

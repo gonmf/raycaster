@@ -102,7 +102,8 @@ typedef struct __sprite_pack_ {
 #define FIELD_OF_VIEW 72 // degrees
 #define MAP_BLOCK_SIZE 8
 
-#define MAX_LEVEL_SIZE 256
+#define MIN_LEVEL_SIZE 5
+#define MAX_LEVEL_SIZE 128
 
 #define MAX_FILE_NAME_SIZ (4 * 1024) // 4KiB
 #define MAX_FILE_SIZE (8 * 1024 * 1024) // 8MiB
@@ -113,6 +114,7 @@ typedef struct __sprite_pack_ {
 
 #define DOOR_OPEN_SPEED 80
 #define TREASURE_PICKUP_FLASH_DURATION 8
+
 // Voodoo:
 #define MOVEMENT_CONSTANT 0.07
 #define HORIZONTAL_ROTATION_CONSTANT 16.0

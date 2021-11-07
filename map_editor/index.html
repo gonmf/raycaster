@@ -7,6 +7,9 @@
 <body>
     <input type="button" value="Wall mode" id="wallMode"></input>
     <input type="button" value="Object mode" id="objectMode"></input>
+    <input type="number" value="78" id="canvasWidth" min="5" max="128" style="width: 50px" />
+    <input type="number" value="50" id="canvasHeight" min="5" max="128" style="width: 50px" />
+    <input type="button" value="New canvas" id="newCanvas"></input> (will delete existing)
     <hr/>
 
     <div id="wallModeArea">
@@ -95,113 +98,25 @@
     <input type="button" value="Load from above text" id="loadBtn"></input>
 
     <script type="text/javascript">
-        window.colorTable = {};
-        window.colorFor = function(code) {
-            if (window.colorTable[code]) {
-                return window.colorTable[code];
-            }
+        // Global constants
 
-            window.colorTable[code] = `#${Math.floor(Math.random()*16777215).toString(16)}`;
-            return window.colorTable[code];
-        }
+        const colorTable = {};
         const canvas = document.getElementById('canvas');
         const previewCanvas1 = document.getElementById('previewCanvas1');
         const previewCanvas2 = document.getElementById('previewCanvas2');
 
-        const adjustCanvasSizes = function() {
-            canvas.width = window.totalWidth * window.blockSize;
-            canvas.height = window.totalHeight * window.blockSize;
-        };
+        // Functions
 
-        window.operationMode = "walls";
-        window.totalWidth = 78;
-        window.totalHeight = 50;
-        window.blockSize = 16;
-        window.painting = false;
-        adjustCanvasSizes();
-        canvas.width = window.totalWidth * window.blockSize;
-        canvas.height = window.totalHeight * window.blockSize;
-
-        canvas.addEventListener("mousemove", function (e) {
-            if (window.painting) {
-                window.changePositionValue(e);
+        const colorFor = function(code) {
+            if (colorTable[code]) {
+                return colorTable[code];
             }
-        }, false);
-        canvas.addEventListener("mousedown", function (e) {
-            window.painting = true;
-            window.changePositionValue(e);
-        }, false);
-        canvas.addEventListener("mouseup", function (e) {
-            window.painting = false;
-            window.refreshTextOutput();
-        }, false);
-        canvas.addEventListener("mouseout", function (e) {
-        }, false);
 
-        window.changePositionWall = function(evt) {
-            var elemLeft = canvas.offsetLeft + canvas.clientLeft,
-                elemTop = canvas.offsetTop + canvas.clientTop;
+            colorTable[code] = `#${Math.floor(Math.random()*16777215).toString(16)}`;
+            return colorTable[code];
+        }
 
-            var x = Math.round((evt.pageX - elemLeft) / window.blockSize - 0.5),
-                y = Math.round((evt.pageY - elemTop) / window.blockSize - 0.5);
-
-            var option = document.getElementById("wallTypeSelect").selectedOptions[0];
-            var value = option.getAttribute("value");
-            var rgb = window.colorFor(value);
-
-            if (x >= 0 && x < window.totalWidth && y >= 0 && y < window.totalHeight) {
-                if (value == 'c') {
-                    if (window.walls[y][x]) {
-                        window.walls[y][x] = undefined;
-                    }
-                } else if (window.walls[y][x] === value) {
-                    // do nothing
-                } else if (!window.objects[y][x]) {
-                    window.walls[y][x] = value;
-                }
-
-                window.refreshCanvas();
-            }
-        };
-
-        window.changePositionObject = function(evt) {
-            var elemLeft = canvas.offsetLeft + canvas.clientLeft,
-                elemTop = canvas.offsetTop + canvas.clientTop;
-
-            var x = Math.round((evt.pageX - elemLeft) / window.blockSize - 0.5),
-                y = Math.round((evt.pageY - elemTop) / window.blockSize - 0.5);
-
-            var option = document.getElementById("objectTypeSelect").selectedOptions[0];
-            var value = option.getAttribute("value");
-            var rgb = window.colorFor(value);
-
-            if (x >= 0 && x < window.totalWidth && y >= 0 && y < window.totalHeight) {
-                if (value == 'c') {
-                    if (window.objects[y][x]) {
-                        window.objects[y][x] = undefined;
-                    }
-                } else if (window.objects[y][x] === value) {
-                    // do nothing
-                } else if (!window.walls[y][x]) {
-                    window.objects[y][x] = value;
-                }
-
-                window.refreshCanvas();
-            }
-        };
-
-        window.changePositionValue = function(evt) {
-            if (window.operationMode === "walls") {
-                window.changePositionWall(evt);
-            } else {
-                window.changePositionObject(evt);
-            }
-        };
-
-        window.walls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
-        window.objects = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
-
-        window.refreshPreview = function() {
+        const refreshPreview = function() {
             // preview canvases
             if (operationMode == "walls") {
                 var option = document.getElementById("wallTypeSelect").selectedOptions[0];
@@ -209,7 +124,7 @@
                 var ctx = previewCanvas1.getContext('2d');
                 ctx.fillStyle = "black";
                 ctx.fillRect(0, 0, 28, 28);
-                ctx.fillStyle = window.colorFor(value);
+                ctx.fillStyle = colorFor(value);
                 ctx.fillRect(1, 1, 28 - 2, 28 - 2);
             } else {
                 var option = document.getElementById("objectTypeSelect").selectedOptions[0];
@@ -217,7 +132,7 @@
                 var ctx = previewCanvas2.getContext('2d');
                 ctx.beginPath();
                 ctx.arc(28 / 2, 28 / 2, 28 / 2.2, 0, 2 * Math.PI, false);
-                ctx.fillStyle = window.colorFor(value);
+                ctx.fillStyle = colorFor(value);
                 ctx.fill();
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = 'black';
@@ -225,7 +140,7 @@
             }
         };
 
-        window.refreshCanvas = function() {
+        const refreshCanvas = function() {
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = 'gray';
             ctx.fillRect(0, 0, window.totalWidth * window.blockSize, window.totalHeight * window.blockSize);
@@ -235,13 +150,13 @@
                     if (window.walls[y][x]) {
                         ctx.fillStyle = "black";
                         ctx.fillRect(x * window.blockSize, y * window.blockSize, window.blockSize, window.blockSize);
-                        ctx.fillStyle = window.colorFor(window.walls[y][x]);
+                        ctx.fillStyle = colorFor(window.walls[y][x]);
                         ctx.fillRect(x * window.blockSize + 1, y * window.blockSize + 1, window.blockSize - 2, window.blockSize - 2);
                     }
                     if (window.objects[y][x]) {
                         ctx.beginPath();
                         ctx.arc(x * window.blockSize + window.blockSize / 2, y * window.blockSize + window.blockSize / 2, window.blockSize / 2.2, 0, 2 * Math.PI, false);
-                        ctx.fillStyle = window.colorFor(window.objects[y][x]);
+                        ctx.fillStyle = colorFor(window.objects[y][x]);
                         ctx.fill();
                         ctx.lineWidth = 1;
                         ctx.strokeStyle = 'black';
@@ -250,10 +165,10 @@
                 }
             }
 
-            window.refreshPreview();
+            refreshPreview();
         };
 
-        window.refreshTextOutput = function() {
+        const refreshTextOutput = function() {
             var text = document.getElementById("textOutput");
             var minX = -1,
                 maxX = -1,
@@ -333,15 +248,72 @@
             text.value = output;
         };
 
-        document.getElementById("wallTypeSelect").addEventListener("click", function() {
-            window.refreshPreview();
-        });
+        const adjustCanvasSizes = function() {
+            canvas.width = window.totalWidth * window.blockSize;
+            canvas.height = window.totalHeight * window.blockSize;
+        };
 
-        document.getElementById("objectTypeSelect").addEventListener("click", function() {
-            window.refreshPreview();
-        });
+        const changePositionWall = function(evt) {
+            var elemLeft = canvas.offsetLeft + canvas.clientLeft,
+                elemTop = canvas.offsetTop + canvas.clientTop;
 
-        window.toggleOperationModeButtons = function() {
+            var x = Math.round((evt.pageX - elemLeft) / window.blockSize - 0.5),
+                y = Math.round((evt.pageY - elemTop) / window.blockSize - 0.5);
+
+            var option = document.getElementById("wallTypeSelect").selectedOptions[0];
+            var value = option.getAttribute("value");
+            var rgb = colorFor(value);
+
+            if (x >= 0 && x < window.totalWidth && y >= 0 && y < window.totalHeight) {
+                if (value == 'c') {
+                    if (window.walls[y][x]) {
+                        window.walls[y][x] = undefined;
+                    }
+                } else if (window.walls[y][x] === value) {
+                    // do nothing
+                } else if (!window.objects[y][x]) {
+                    window.walls[y][x] = value;
+                }
+
+                refreshCanvas();
+            }
+        };
+
+        const changePositionObject = function(evt) {
+            var elemLeft = canvas.offsetLeft + canvas.clientLeft,
+                elemTop = canvas.offsetTop + canvas.clientTop;
+
+            var x = Math.round((evt.pageX - elemLeft) / window.blockSize - 0.5),
+                y = Math.round((evt.pageY - elemTop) / window.blockSize - 0.5);
+
+            var option = document.getElementById("objectTypeSelect").selectedOptions[0];
+            var value = option.getAttribute("value");
+            var rgb = colorFor(value);
+
+            if (x >= 0 && x < window.totalWidth && y >= 0 && y < window.totalHeight) {
+                if (value == 'c') {
+                    if (window.objects[y][x]) {
+                        window.objects[y][x] = undefined;
+                    }
+                } else if (window.objects[y][x] === value) {
+                    // do nothing
+                } else if (!window.walls[y][x]) {
+                    window.objects[y][x] = value;
+                }
+
+                refreshCanvas();
+            }
+        };
+
+        const changePositionValue = function(evt) {
+            if (window.operationMode === "walls") {
+                changePositionWall(evt);
+            } else {
+                changePositionObject(evt);
+            }
+        };
+
+        const toggleOperationModeButtons = function() {
             if (window.operationMode === "walls") {
                 document.getElementById("wallMode").disabled = true;
                 document.getElementById("objectMode").disabled = false;
@@ -353,10 +325,111 @@
                 document.getElementById("wallModeArea").hidden = true;
                 document.getElementById("objectsModeArea").hidden = false;
             }
-            window.refreshPreview();
+            refreshPreview();
         };
 
-        document.getElementById("loadBtn").addEventListener("click", function() {
+        const switchOperationMode = function() {
+            window.operationMode = (window.operationMode === 'walls' ? 'objects' : 'walls');
+            toggleOperationModeButtons();
+        };
+
+        const centerMap = function() {
+            var minX = -1,
+                maxX = -1,
+                minY = -1,
+                maxY = -1;
+
+            for (var y = 0; y < window.totalHeight; ++y) {
+                for (var x = 0; x < window.totalWidth; ++x) {
+                    if (!window.walls[y][x] && !window.objects[y][x]) { continue; }
+
+                    if (minX === -1 || x < minX) { minX = x; }
+                    if (maxX === -1 || x > maxX) { maxX = x; }
+                    if (minY === -1 || y < minY) { minY = y; }
+                    if (maxY === -1 || y > maxY) { maxY = y; }
+                }
+            }
+
+            if (minX === -1) { return; }
+
+            var centerX = Math.round((maxX + minX) / 2),
+                centerY = Math.round((maxY + minY) / 2);
+            var diffX = Math.round(Math.round(window.totalWidth / 2) - centerX);
+            var diffY = Math.round(Math.round(window.totalHeight / 2) - centerY);
+
+            var newWalls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+            var newObjects = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+
+            for (var y = 0; y < window.totalHeight; ++y) {
+                for (var x = 0; x < window.totalWidth; ++x) {
+                    if (window.walls[y][x]) {
+                        newWalls[y + diffY][x + diffX] = window.walls[y][x];
+                    }
+                    if (window.objects[y][x]) {
+                        newObjects[y + diffY][x + diffX] = window.objects[y][x];
+                    }
+                }
+            }
+
+            window.walls = newWalls;
+            window.objects = newObjects;
+            refreshCanvas();
+            refreshTextOutput();
+        };
+
+        const surroundWithAll = function() {
+            var minX = -1,
+                maxX = -1,
+                minY = -1,
+                maxY = -1,
+                wallType = -1;
+
+            for (var y = 0; y < window.totalHeight; ++y) {
+                for (var x = 0; x < window.totalWidth; ++x) {
+                    if (!window.walls[y][x] && !window.objects[y][x]) { continue; }
+
+                    if (window.walls[y][x]) {
+                        wallType = window.walls[y][x];
+                    }
+                    if (minX === -1 || x < minX) { minX = x; }
+                    if (maxX === -1 || x > maxX) { maxX = x; }
+                    if (minY === -1 || y < minY) { minY = y; }
+                    if (maxY === -1 || y > maxY) { maxY = y; }
+                }
+            }
+
+            if (wallType === -1) { return; }
+
+            for (var y = minY; y <= maxY; ++y) {
+                for (var x = minX; x <= maxX; ++x) {
+                    if (y == minY || y == maxY || x == minX || x == maxX) {
+                        window.walls[y][x] = wallType;
+                        window.objects[y][x] = undefined;
+                    }
+                }
+            }
+            refreshCanvas();
+            refreshTextOutput();
+        };
+
+        const createNewCanvas = function() {
+            var width = parseInt(document.getElementById("canvasWidth").value);
+            var height = parseInt(document.getElementById("canvasHeight").value);
+
+            if (width < 5 || height < 5 || width > 128 || height > 128) {
+                return;
+            }
+
+            window.totalWidth = width;
+            window.totalHeight = height;
+            window.walls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+            window.objects = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+            adjustCanvasSizes();
+            refreshCanvas();
+            refreshTextOutput();
+        };
+
+        const loadFromText = function() {
             var text = document.getElementById("textOutput");
             var textContent = (text.value + "").trim();
             var newWalls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
@@ -424,120 +497,65 @@
 
             window.walls = newWalls;
             window.objects = newObjects;
-            window.centerMap();
-            window.refreshCanvas();
-            window.refreshTextOutput();
-        });
-
-        document.getElementById("zoomIn").addEventListener("click", function() {
-            if (window.blockSize < 40) {
-                window.blockSize += 2;
-                adjustCanvasSizes();
-                window.refreshCanvas();
-            }
-        });
-
-        document.getElementById("zoomOut").addEventListener("click", function() {
-            if (window.blockSize > 8) {
-                window.blockSize -= 2;
-                adjustCanvasSizes();
-                window.refreshCanvas();
-            }
-        });
-
-        var switchOperationMode = function() {
-            window.operationMode = (window.operationMode === 'walls' ? 'objects' : 'walls');
-            window.toggleOperationModeButtons();
-        }
-
-        document.getElementById("wallMode").addEventListener("click", switchOperationMode);
-        document.getElementById("objectMode").addEventListener("click", switchOperationMode);
-
-        window.centerMap = function() {
-            var minX = -1,
-                maxX = -1,
-                minY = -1,
-                maxY = -1;
-
-            for (var y = 0; y < window.totalHeight; ++y) {
-                for (var x = 0; x < window.totalWidth; ++x) {
-                    if (!window.walls[y][x] && !window.objects[y][x]) { continue; }
-
-                    if (minX === -1 || x < minX) { minX = x; }
-                    if (maxX === -1 || x > maxX) { maxX = x; }
-                    if (minY === -1 || y < minY) { minY = y; }
-                    if (maxY === -1 || y > maxY) { maxY = y; }
-                }
-            }
-
-            if (minX === -1) { return; }
-
-            var centerX = Math.round((maxX + minX) / 2),
-                centerY = Math.round((maxY + minY) / 2);
-            var diffX = Math.round(Math.round(window.totalWidth / 2) - centerX);
-            var diffY = Math.round(Math.round(window.totalHeight / 2) - centerY);
-
-            var newWalls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
-            var newObjects = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
-
-            for (var y = 0; y < window.totalHeight; ++y) {
-                for (var x = 0; x < window.totalWidth; ++x) {
-                    if (window.walls[y][x]) {
-                        newWalls[y + diffY][x + diffX] = window.walls[y][x];
-                    }
-                    if (window.objects[y][x]) {
-                        newObjects[y + diffY][x + diffX] = window.objects[y][x];
-                    }
-                }
-            }
-
-            window.walls = newWalls;
-            window.objects = newObjects;
-            window.refreshCanvas();
-            window.refreshTextOutput();
+            centerMap();
+            refreshCanvas();
+            refreshTextOutput();
         };
 
-        document.getElementById("centerMap1").addEventListener("click", window.centerMap);
-        document.getElementById("centerMap2").addEventListener("click", window.centerMap);
+        const zoom = function() {
+            var newBlockSize = window.blockSize += this;
 
-        document.getElementById("wallSurround").addEventListener("click", function() {
-            var minX = -1,
-                maxX = -1,
-                minY = -1,
-                maxY = -1,
-                wallType = -1;
-
-            for (var y = 0; y < window.totalHeight; ++y) {
-                for (var x = 0; x < window.totalWidth; ++x) {
-                    if (!window.walls[y][x] && !window.objects[y][x]) { continue; }
-
-                    if (window.walls[y][x]) {
-                        wallType = window.walls[y][x];
-                    }
-                    if (minX === -1 || x < minX) { minX = x; }
-                    if (maxX === -1 || x > maxX) { maxX = x; }
-                    if (minY === -1 || y < minY) { minY = y; }
-                    if (maxY === -1 || y > maxY) { maxY = y; }
-                }
+            if (newBlockSize > 8 && newBlockSize < 24) {
+                window.blockSize = newBlockSize;
+                adjustCanvasSizes();
+                refreshCanvas();
             }
+        };
 
-            if (wallType === -1) { return; }
+        // Global variables
 
-            for (var y = minY; y <= maxY; ++y) {
-                for (var x = minX; x <= maxX; ++x) {
-                    if (y == minY || y == maxY || x == minX || x == maxX) {
-                        window.walls[y][x] = wallType;
-                        window.objects[y][x] = undefined;
-                    }
-                }
+        window.operationMode = "walls";
+        window.totalWidth = 78;
+        window.totalHeight = 50;
+        window.blockSize = 16;
+        window.painting = false;
+        window.walls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+        window.objects = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+
+        // Event handlers
+
+        canvas.addEventListener("mousemove", function (e) {
+            if (window.painting) {
+                changePositionValue(e);
             }
-            window.refreshCanvas();
-            window.refreshTextOutput();
-        })
+        }, false);
+        canvas.addEventListener("mousedown", function (e) {
+            window.painting = true;
+            changePositionValue(e);
+        }, false);
+        canvas.addEventListener("mouseup", function () {
+            window.painting = false;
+            refreshTextOutput();
+        }, false);
 
-        window.refreshCanvas();
-        window.refreshTextOutput();
-        window.toggleOperationModeButtons();
+        document.getElementById("wallTypeSelect").addEventListener("click", refreshPreview);
+        document.getElementById("objectTypeSelect").addEventListener("click", refreshPreview);
+        document.getElementById("loadBtn").addEventListener("click", loadFromText);
+        document.getElementById("zoomIn").addEventListener("click", zoom.bind(2));
+        document.getElementById("zoomOut").addEventListener("click", zoom.bind(-2));
+        document.getElementById("wallMode").addEventListener("click", switchOperationMode);
+        document.getElementById("objectMode").addEventListener("click", switchOperationMode);
+        document.getElementById("centerMap1").addEventListener("click", centerMap);
+        document.getElementById("centerMap2").addEventListener("click", centerMap);
+        document.getElementById("wallSurround").addEventListener("click", surroundWithAll);
+        document.getElementById("newCanvas").addEventListener("click", createNewCanvas);
+
+        // Init
+
+        adjustCanvasSizes();
+        refreshCanvas();
+        refreshTextOutput();
+        toggleOperationModeButtons();
     </script>
 </body>
 </html>

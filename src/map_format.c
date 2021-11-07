@@ -43,8 +43,11 @@ static void validate_door_placement(const level_t * level) {
 }
 
 static void validate_object_placement(const level_t * level) {
-    if (level->observer_x == 0 || level->observer_x == level->width - 1 ||
-        level->observer_y == 0 || level->observer_y == level->height - 1) {
+    unsigned int rounded_x = (unsigned int)level->observer_x;
+    unsigned int rounded_y = (unsigned int)level->observer_y;
+
+    if (rounded_x == 0 || rounded_x == level->width - 1 ||
+        rounded_y == 0 || rounded_y == level->height - 1) {
         error("player start position not empty");
     }
 }
@@ -171,10 +174,10 @@ level_t * read_level_info(const char * filename) {
     int player_start_angle = -36;
     int type_nr = 0;
     bool exit_placed = false;
-    char last_command[MAX_LEVEL_SIZE];
+    char last_command[MAX_LEVEL_SIZE + 1];
     int last_command_set = 0;
     int last_command_uses = 0;
-    char line_buffer[MAX_LEVEL_SIZE];
+    char line_buffer[MAX_LEVEL_SIZE + 1];
     line_buffer[0] = 0;
     unsigned int line_pos = 0;
     char c;
@@ -183,7 +186,7 @@ level_t * read_level_info(const char * filename) {
         c = buffer[ci];
 
         if (c == '\n') {
-            if (line_pos == MAX_LEVEL_SIZE) {
+            if (line_pos > MAX_LEVEL_SIZE) {
                 error("Invalid sprite pack format");
             }
 
@@ -191,7 +194,7 @@ level_t * read_level_info(const char * filename) {
                 if (line_buffer[0] == '#') {
                     // skip line
                 } else if (valid_command(line_buffer)) {
-                    strncpy(last_command, line_buffer, MAX_LEVEL_SIZE);
+                    strncpy(last_command, line_buffer, MAX_LEVEL_SIZE + 1);
                     last_command_set = 1;
                     last_command_uses = 0;
                     map_layout_idx = 0;
@@ -311,8 +314,8 @@ level_t * read_level_info(const char * filename) {
                         }
                     } else if (strcmp(last_command, "LAYOUT") == 0) {
                         int size_w = strlen(line_buffer);
-                        if (size_w >= MAX_LEVEL_SIZE) {
-                            error_w_line("maximum map layout width exceeded", line);
+                        if (size_w < MIN_LEVEL_SIZE || size_w > MAX_LEVEL_SIZE) {
+                            error_w_line("invalid map width", line);
                         } else if (map_size_w == -1) {
                             map_size_w = size_w;
                         } else if (map_size_w != size_w) {
@@ -363,9 +366,12 @@ level_t * read_level_info(const char * filename) {
                             map_layout_idx++;
                         }
                         map_size_h1++;
+                        if (map_size_h1 > MAX_LEVEL_SIZE) {
+                            error_w_line("invalid map height", line);
+                        }
                     } else if (strcmp(last_command, "OBJECTS") == 0) {
                         int size_w = strlen(line_buffer);
-                        if (size_w >= MAX_LEVEL_SIZE) {
+                        if (size_w > MAX_LEVEL_SIZE) {
                             error_w_line("maximum map layout width exceeded", line);
                         } else if (map_size_w == -1) {
                             map_size_w = size_w;
@@ -483,8 +489,8 @@ level_t * read_level_info(const char * filename) {
     if (map_size_w < 0) {
         error_w_line("end of file with map not defined", line);
     }
-    if (map_size_w < 3 || map_size_h1 < 3) {
-        error_w_line("map too small", line);
+    if (map_size_h1 < MIN_LEVEL_SIZE) {
+        error_w_line("invalid map height", line);
     }
     if (map_size_h1 != map_size_h2) {
         error_w_line("map layout size does not match objects layout", line);
