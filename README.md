@@ -26,7 +26,14 @@ Compile by running `make`.
 
 ## Controls
 
-Use `WASD` to move and your mouse to look around. Pause the game with `P` and quit with `Escape`. Use `E` to open doors and `M` to show the map.
+Input | Action
+--- | ---
+Keys `WASD` | Move character
+_mouse movement_ | Move camera
+Key `E` | Open doors
+Key `M` | Open map
+Key `P` | Pause game
+Key `Esc` | Close game
 
 ## Screenshots
 
