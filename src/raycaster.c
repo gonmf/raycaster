@@ -11,17 +11,43 @@ static unsigned int horizon_offset(const level_t * level) {
     return (unsigned int)((VIEWPORT_HEIGHT / 2) * vertical_multiplier);
 }
 
-static pixel_t darken_shading(pixel_t color, double factor) {
-    pixel_t ret = color;
+static pixel_t shading(pixel_t min_color, pixel_t max_color, double factor) {
+    pixel_t ret;
 
-    ret.red = (unsigned int)(MIN(MAX(ret.red * factor, 0.0), ret.red));
-    ret.green = (unsigned int)(MIN(MAX(ret.green * factor, 0.0), ret.green));
-    ret.blue = (unsigned int)(MIN(MAX(ret.blue * factor, 0.0), ret.blue));
+    ret.red = (unsigned char)(min_color.red * (1.0 - factor) + max_color.red * factor);
+    ret.green = (unsigned char)(min_color.green * (1.0 - factor) + max_color.green * factor);
+    ret.blue = (unsigned char)(min_color.blue * (1.0 - factor) + max_color.blue * factor);
 
     return ret;
 }
 
-void color_filter(double factor) {
+static pixel_t brighten_shading(pixel_t color, double factor) {
+    pixel_t white;
+    white.red = 255;
+    white.green = 255;
+    white.blue = 255;
+    white.alpha = 0;
+
+    return shading(color, white, factor);
+}
+
+static pixel_t darken_shading(pixel_t color, double factor) {
+    pixel_t black;
+    black.red = 0;
+    black.green = 0;
+    black.blue = 0;
+    black.alpha = 0;
+
+    return shading(black, color, factor);
+}
+
+void brighten_scene(double factor) {
+    for (unsigned int i = 0; i < VIEWPORT_WIDTH * VIEWPORT_HEIGHT; ++i) {
+        fg_buffer[i] = brighten_shading(fg_buffer[i], factor);
+    }
+}
+
+void darken_scene(double factor) {
     for (unsigned int i = 0; i < VIEWPORT_WIDTH * VIEWPORT_HEIGHT; ++i) {
         fg_buffer[i] = darken_shading(fg_buffer[i], factor);
     }
@@ -289,9 +315,7 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
     }
 }
 
-static void object_color(pixel_t * dst, double sprite_x, double sprite_y, double distance, unsigned char sprite_type) {
-    double intensity = 10.0 / distance;
-
+static void object_color(pixel_t * dst, double sprite_x, double sprite_y, double intensity, unsigned char sprite_type) {
     unsigned int x = (unsigned int)(SPRITE_WIDTH * sprite_x);
     unsigned int y = (unsigned int)(SPRITE_HEIGHT * sprite_y);
 
@@ -303,9 +327,7 @@ static void object_color(pixel_t * dst, double sprite_x, double sprite_y, double
     }
 }
 
-static void block_color(pixel_t * dst, double block_x, double block_y, double distance, unsigned char block_type) {
-    double intensity = 10.0 / distance;
-
+static void block_color(pixel_t * dst, double block_x, double block_y, double intensity, unsigned char block_type) {
     unsigned int x = (unsigned int)(SPRITE_WIDTH * block_x);
     unsigned int y = (unsigned int)(SPRITE_HEIGHT * block_y);
 
@@ -364,13 +386,15 @@ static void fill_in_objects(const level_t * level) {
             pixel_t * pixel;
             unsigned int y;
 
+            double intensity = MIN(MAX(10.0 / distance, 0.0), 1.0);;
+
             for (unsigned int mid_y = 0; mid_y < end_y; ++mid_y) {
                 // top part
                 if (viewport_mid >= mid_y) {
                     y = viewport_mid - mid_y;
                     pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
                     block_y = (end_y - mid_y) / (VIEWPORT_HEIGHT * block_size);
-                    object_color(pixel, block_x, block_y, distance, sprite_id);
+                    object_color(pixel, block_x, block_y, intensity, sprite_id);
                 }
 
                 // bottom part
@@ -378,7 +402,7 @@ static void fill_in_objects(const level_t * level) {
                     y = viewport_mid + mid_y;
                     pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
                     block_y = (mid_y + VIEWPORT_HEIGHT * block_size * 0.5) / (VIEWPORT_HEIGHT * block_size);
-                    object_color(pixel, block_x, block_y, distance, sprite_id);
+                    object_color(pixel, block_x, block_y, intensity, sprite_id);
                 }
             }
         }
@@ -390,7 +414,7 @@ static void fill_in_walls(const level_t * level) {
     unsigned int block_hit_y = INT_MAX;
     double block_x;
     unsigned char last_seen_block_type;
-    unsigned char prite_id;
+    unsigned char sprite_id;
     unsigned int viewport_mid = horizon_offset(level);
 
     for (unsigned int x = 0; x < VIEWPORT_WIDTH; ++x) {
@@ -402,9 +426,9 @@ static void fill_in_walls(const level_t * level) {
         double block_size = (1.5 / distance);
 
         if (last_seen_block_type == CONTENT_TYPE_DOOR_OPEN && level->content_type[block_hit_x + block_hit_y * level->width] == CONTENT_TYPE_WALL) {
-            prite_id = level->door_open_texture;
+            sprite_id = level->door_open_texture;
         } else {
-            prite_id = level->texture[block_hit_x + block_hit_y * level->width];
+            sprite_id = level->texture[block_hit_x + block_hit_y * level->width];
         }
 
         double block_y;
@@ -412,6 +436,7 @@ static void fill_in_walls(const level_t * level) {
         unsigned int y;
 
         unsigned int end_y = (unsigned int)(block_size * VIEWPORT_HEIGHT / 2.0);
+        double intensity = MIN(MAX(10.0 / distance, 0.0), 1.0);
 
         for (unsigned int mid_y = 0; mid_y < end_y; ++mid_y) {
             // top part
@@ -419,7 +444,7 @@ static void fill_in_walls(const level_t * level) {
                 y = viewport_mid - mid_y;
                 pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
                 block_y = (end_y - mid_y) / (VIEWPORT_HEIGHT * block_size);
-                block_color(pixel, block_x, block_y, distance, prite_id);
+                block_color(pixel, block_x, block_y, intensity, sprite_id);
             }
 
             // bottom part
@@ -427,7 +452,7 @@ static void fill_in_walls(const level_t * level) {
                 y = viewport_mid + mid_y;
                 pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
                 block_y = (mid_y + VIEWPORT_HEIGHT * block_size * 0.5) / (VIEWPORT_HEIGHT * block_size);
-                block_color(pixel, block_x, block_y, distance, prite_id);
+                block_color(pixel, block_x, block_y, intensity, sprite_id);
             }
         }
     }

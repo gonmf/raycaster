@@ -6,7 +6,8 @@ static bool valid_command(const char * s) {
     if (strcmp(s, "OPEN_DOOR") == 0) return true;
     if (strcmp(s, "CLOSED_DOOR") == 0) return true;
     if (start_with(s, "WALL_TYPE_")) return true;
-    if (start_with(s, "OBJECT_TYPE_")) return true;
+    if (start_with(s, "FURNITURE_OBJECT_TYPE_")) return true;
+    if (start_with(s, "TREASURE_OBJECT_TYPE_")) return true;
     if (strcmp(s, "LAYOUT") == 0) return true;
     if (strcmp(s, "OBJECTS") == 0) return true;
     if (strcmp(s, "PLAYER_START_ANGLE") == 0) return true;
@@ -118,13 +119,19 @@ level_t * read_level_info(const char * filename) {
     int floor_color_b = -1;
     int wall_types_x[10];
     int wall_types_y[10];
-    int object_types_x[10];
-    int object_types_y[10];
+    int furniture_obj_types_x[10];
+    int furniture_obj_types_y[10];
     for (unsigned int i = 0; i < 10; ++i) {
         wall_types_x[i] = -1;
         wall_types_y[i] = -1;
-        object_types_x[i] = -1;
-        object_types_y[i] = -1;
+        furniture_obj_types_x[i] = -1;
+        furniture_obj_types_y[i] = -1;
+    }
+    int treasure_obj_types_x[4];
+    int treasure_obj_types_y[4];
+    for (unsigned int i = 0; i < 4; ++i) {
+        treasure_obj_types_x[i] = -1;
+        treasure_obj_types_y[i] = -1;
     }
     unsigned char * map_content_type = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, 1);
     memset(map_content_type, CONTENT_TYPE_EMPTY, MAX_LEVEL_SIZE * MAX_LEVEL_SIZE);
@@ -217,19 +224,34 @@ level_t * read_level_info(const char * filename) {
                             validate_scalar(wall_types_y[type_nr], 0, wall_textures->height - 1, line);
                             last_command_set = 0;
                         }
-                    } else if (start_with(last_command, "OBJECT_TYPE_")) {
+                    } else if (start_with(last_command, "FURNITURE_OBJECT_TYPE_")) {
                         if (last_command_uses == 0) {
-                            type_nr = atoi(last_command + strlen("OBJECT_TYPE_"));
+                            type_nr = atoi(last_command + strlen("FURNITURE_OBJECT_TYPE_"));
                             validate_scalar(type_nr, 0, 10, line);
-                            if (object_types_x[type_nr] != -1) {
+                            if (furniture_obj_types_x[type_nr] != -1) {
                                 error_w_line("duplicated object type definition", line - 1);
                             }
-                            object_types_x[type_nr] = atoi(line_buffer);
-                            validate_scalar(object_types_x[type_nr], 0, wall_textures->width - 1, line);
+                            furniture_obj_types_x[type_nr] = atoi(line_buffer);
+                            validate_scalar(furniture_obj_types_x[type_nr], 0, wall_textures->width - 1, line);
                             last_command_uses++;
                         } else {
-                            object_types_y[type_nr] = atoi(line_buffer);
-                            validate_scalar(object_types_y[type_nr], 0, wall_textures->height - 1, line);
+                            furniture_obj_types_y[type_nr] = atoi(line_buffer);
+                            validate_scalar(furniture_obj_types_y[type_nr], 0, wall_textures->height - 1, line);
+                            last_command_set = 0;
+                        }
+                    } else if (start_with(last_command, "TREASURE_OBJECT_TYPE_")) {
+                        if (last_command_uses == 0) {
+                            type_nr = atoi(last_command + strlen("TREASURE_OBJECT_TYPE_"));
+                            validate_scalar(type_nr, 0, 4, line);
+                            if (treasure_obj_types_x[type_nr] != -1) {
+                                error_w_line("duplicated object type definition", line - 1);
+                            }
+                            treasure_obj_types_x[type_nr] = atoi(line_buffer);
+                            validate_scalar(treasure_obj_types_x[type_nr], 0, wall_textures->width - 1, line);
+                            last_command_uses++;
+                        } else {
+                            treasure_obj_types_y[type_nr] = atoi(line_buffer);
+                            validate_scalar(treasure_obj_types_y[type_nr], 0, wall_textures->height - 1, line);
                             last_command_set = 0;
                         }
                     } else if (strcmp(last_command, "LAYOUT") == 0) {
@@ -284,22 +306,59 @@ level_t * read_level_info(const char * filename) {
                             char d = line_buffer[i];
                             if (d == 's') {
                                 if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
-                                    error_w_line("player start position must be empty", line);
-                                }
-                                if (player_start_x != -1) {
-                                    error_w_line("multiple player start (s) definitions", line);
+                                    error_w_line("object position must be empty", line);
                                 }
                                 player_start_x = i;
                                 player_start_y = map_size_h2;
                             } else if (d == 'e') {
                                 if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
-                                    error_w_line("level end position must be empty", line);
+                                    error_w_line("object position must be empty", line);
                                 }
                                 map_special_effects[map_layout_idx] = SPECIAL_EFFECT_LEVEL_END;
                                 exit_placed = true;
+                            } else if (d == 't') {
+                                if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
+                                    error_w_line("object position must be empty", line);
+                                }
+                                if (treasure_obj_types_x[0] == -1) {
+                                    error_w_line("treasure type 1 texture must be defined prior", line);
+                                }
+                                map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
+                                map_texture[map_layout_idx] = treasure_obj_types_x[0] + treasure_obj_types_y[0] * objects_sprites->width;
+                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_SCORE_1;
+                            } else if (d == 'y') {
+                                if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
+                                    error_w_line("object position must be empty", line);
+                                }
+                                if (treasure_obj_types_x[1] == -1) {
+                                    error_w_line("treasure type 2 texture must be defined prior", line);
+                                }
+                                map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
+                                map_texture[map_layout_idx] = treasure_obj_types_x[1] + treasure_obj_types_y[1] * objects_sprites->width;
+                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_SCORE_2;
+                            } else if (d == 'u') {
+                                if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
+                                    error_w_line("object position must be empty", line);
+                                }
+                                if (treasure_obj_types_x[2] == -1) {
+                                    error_w_line("treasure type 3 texture must be defined prior", line);
+                                }
+                                map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
+                                map_texture[map_layout_idx] = treasure_obj_types_x[2] + treasure_obj_types_y[2] * objects_sprites->width;
+                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_SCORE_3;
+                            } else if (d == 'i') {
+                                if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
+                                    error_w_line("object position must be empty", line);
+                                }
+                                if (treasure_obj_types_x[3] == -1) {
+                                    error_w_line("treasure type 4 texture must be defined prior", line);
+                                }
+                                map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
+                                map_texture[map_layout_idx] = treasure_obj_types_x[3] + treasure_obj_types_y[3] * objects_sprites->width;
+                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_SCORE_4;
                             } else if ((d - '0') >= 0 && (d - '0') < 10) {
                                 unsigned char block_id = d - '0';
-                                if (object_types_x[block_id] == -1) {
+                                if (furniture_obj_types_x[block_id] == -1) {
                                     error_w_line("object type must be defined prior", line);
                                 }
                                 if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
@@ -307,7 +366,7 @@ level_t * read_level_info(const char * filename) {
                                 }
 
                                 map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
-                                map_texture[map_layout_idx] = object_types_x[block_id] + object_types_y[block_id] * wall_textures->width;
+                                map_texture[map_layout_idx] = furniture_obj_types_x[block_id] + furniture_obj_types_y[block_id] * objects_sprites->width;
                             } else if (d != '.') {
                                 error_w_line("invalid objects layout", line);
                             }
@@ -393,6 +452,7 @@ level_t * read_level_info(const char * filename) {
     ret->door_open_texture = open_door_x + open_door_y * wall_textures->width;
     ret->enemies_count = 0;
     ret->enemy = calloc(ret->enemies_count, sizeof(enemy_t));
+    ret->score = 0;
 
     for (unsigned int y = 0; y < ret->height; ++y) {
         for (unsigned int x = 0; x < ret->width; ++x) {

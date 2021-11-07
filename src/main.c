@@ -13,6 +13,7 @@ static void move_observer2(double x_change, double y_change) {
     unsigned int rounded_x = (unsigned int)(new_x + 0.5);
     unsigned int rounded_y = (unsigned int)(new_y + 0.5);
     unsigned char content_type;
+    unsigned char special_effect;
 
     unsigned int door_x;
     unsigned int door_y;
@@ -22,23 +23,27 @@ static void move_observer2(double x_change, double y_change) {
 
     rounded_x = (unsigned int)(new_x + 0.5 + 0.22);
     content_type = level->content_type[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_OBJECT || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+    special_effect = level->special_effects[rounded_x + rounded_y * level->width];
+    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_OBJECT && special_effect == SPECIAL_EFFECT_NONE) || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
         return;
     }
     rounded_x = (unsigned int)(new_x + 0.5 - 0.22);
     content_type = level->content_type[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_OBJECT || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+    special_effect = level->special_effects[rounded_x + rounded_y * level->width];
+    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_OBJECT && special_effect == SPECIAL_EFFECT_NONE) || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
         return;
     }
     rounded_x = (unsigned int)(new_x + 0.5);
     rounded_y = (unsigned int)(new_y + 0.5 + 0.22);
     content_type = level->content_type[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_OBJECT || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+    special_effect = level->special_effects[rounded_x + rounded_y * level->width];
+    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_OBJECT && special_effect == SPECIAL_EFFECT_NONE) || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
         return;
     }
     rounded_y = (unsigned int)(new_y + 0.5 - 0.22);
     content_type = level->content_type[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_OBJECT || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+    special_effect = level->special_effects[rounded_x + rounded_y * level->width];
+    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_OBJECT && special_effect == SPECIAL_EFFECT_NONE) || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
         return;
     }
 
@@ -113,7 +118,7 @@ static bool update_observer_state() {
         if (pause_btn_pressed) {
             paused = !paused;
             if (paused) {
-                color_filter(0.5);
+                darken_scene(0.5);
                 window_update_pixels(fg_buffer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, UI_BORDER, UI_BORDER);
                 window_refresh();
                 set_cursor_visible(true);
@@ -172,6 +177,11 @@ static void main_render_loop() {
 
         if (!paused) {
             paint_scene(level);
+
+            double flash_percentage;
+            if (short_flash_effect(&flash_percentage)) {
+                brighten_scene(flash_percentage);
+            }
 
             if (needs_refresh) {
                 bool exit_found;

@@ -4,12 +4,22 @@ static unsigned int opening_door_x;
 static unsigned int opening_door_y;
 static unsigned int door_open_ticks;
 
+static unsigned int flash_effect_ticks;
+static unsigned int flash_effect_duration;
+
 bool transition_step() {
+    bool ret = false;
+
     if (door_open_ticks > 0) {
         door_open_ticks--;
-        return true;
+        ret = true;
     }
-    return false;
+    if (flash_effect_ticks > 0) {
+        flash_effect_ticks--;
+        ret = true;
+    }
+
+    return ret;
 }
 
 bool opening_door_transition(double * percentage_open, unsigned int * door_x, unsigned int * door_y) {
@@ -45,7 +55,24 @@ bool open_door_in_front(level_t * level) {
     return true;
 }
 
-bool apply_special_effect(const level_t * level, bool * exit_found) {
+bool short_flash_effect(double * percentage) {
+    if (flash_effect_ticks > 0) {
+        if (flash_effect_ticks >= flash_effect_duration / 2) {
+            *percentage = 1.0 - flash_effect_ticks / ((double)flash_effect_duration);
+        } else {
+            *percentage = flash_effect_ticks / ((double)flash_effect_duration);
+        }
+        return true;
+    }
+    return false;
+}
+
+void start_flash_effect(unsigned int duration) {
+    flash_effect_ticks = duration;
+    flash_effect_duration = duration;
+}
+
+bool apply_special_effect(level_t * level, bool * exit_found) {
     double curr_x = level->observer_x;
     double curr_y = level->observer_y;
     unsigned int rounded_x = (unsigned int)(curr_x + 0.5);
@@ -53,10 +80,38 @@ bool apply_special_effect(const level_t * level, bool * exit_found) {
 
     *exit_found = false;
 
-    if (level->special_effects[rounded_x + rounded_y * level->width] == SPECIAL_EFFECT_LEVEL_END) {
-        *exit_found = true;
-        return true;
-    }
+    unsigned int i = rounded_x + rounded_y * level->width;
+    unsigned char effect = level->special_effects[i];
 
-    return false;
+    switch(effect) {
+        case SPECIAL_EFFECT_LEVEL_END:
+            *exit_found = true;
+            return true;
+        case SPECIAL_EFFECT_SCORE_1:
+            level->content_type[i] = CONTENT_TYPE_EMPTY;
+            level->special_effects[i] = SPECIAL_EFFECT_NONE;
+            start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
+            level->score += 1;
+            return true;
+        case SPECIAL_EFFECT_SCORE_2:
+            level->content_type[i] = CONTENT_TYPE_EMPTY;
+            level->special_effects[i] = SPECIAL_EFFECT_NONE;
+            start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
+            level->score += 2;
+            return true;
+        case SPECIAL_EFFECT_SCORE_3:
+            level->content_type[i] = CONTENT_TYPE_EMPTY;
+            level->special_effects[i] = SPECIAL_EFFECT_NONE;
+            start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
+            level->score += 4;
+            return true;
+        case SPECIAL_EFFECT_SCORE_4:
+            level->content_type[i] = CONTENT_TYPE_EMPTY;
+            level->special_effects[i] = SPECIAL_EFFECT_NONE;
+            start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
+            level->score += 10;
+            return true;
+        default:
+            return false;
+    }
 }

@@ -39,6 +39,7 @@ typedef struct  __level_ {
     double observer_y;
     double observer_angle;
     double observer_angle2;
+    unsigned int score;
     unsigned char * content_type;
     unsigned char * texture;
     unsigned char * special_effects;
@@ -71,6 +72,10 @@ typedef sfBool bool;
 
 #define SPECIAL_EFFECT_NONE 0
 #define SPECIAL_EFFECT_LEVEL_END 1
+#define SPECIAL_EFFECT_SCORE_1 2
+#define SPECIAL_EFFECT_SCORE_2 3
+#define SPECIAL_EFFECT_SCORE_3 4
+#define SPECIAL_EFFECT_SCORE_4 5
 
 #define MAX(X, Y) (X > Y ? X : Y)
 #define MIN(X, Y) (X < Y ? X : Y)
@@ -99,7 +104,7 @@ typedef sfBool bool;
 #define SAFETY_WALL_TEXTURE 7
 
 #define DOOR_OPEN_SPEED 80
-
+#define TREASURE_PICKUP_FLASH_DURATION 10
 // Voodoo:
 #define MOVEMENT_CONSTANT 0.07
 #define HORIZONTAL_ROTATION_CONSTANT 16.0
@@ -151,7 +156,8 @@ void window_refresh();
 bool window_poll_event(sfEvent * event);
 
 // raycaster.c
-void color_filter(double factor);
+void brighten_scene(double factor);
+void darken_scene(double factor);
 void init_fish_eye_table();
 void load_textures();
 void paint_scene(const level_t * level);
@@ -160,6 +166,8 @@ void paint_scene(const level_t * level);
 bool transition_step();
 bool opening_door_transition(double * percentage_open, unsigned int * door_x, unsigned int * door_y);
 bool open_door_in_front(level_t * level);
-bool apply_special_effect(const level_t * level, bool * exit_found);
+bool short_flash_effect(double * percentage);
+void start_flash_effect(unsigned int duration);
+bool apply_special_effect(level_t * level, bool * exit_found);
 
 #endif

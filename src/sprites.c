@@ -150,9 +150,9 @@ static void read_sprite_pack_pixels(
 }
 
 #if 0
-static void dump_sprite(const pixel_t * image, const char * pack_name, unsigned int id) {
+static void dump_sprite(const pixel_t * image, const char * pack_name, unsigned int x, unsigned int y) {
     char filename[100];
-    sprintf(filename, "sprites/dump_sprite_%s_%u.ppm", pack_name, id);
+    sprintf(filename, "sprites/dump_sprite_%s_%ux%u.ppm", pack_name, x, y);
 
     FILE * file = fopen(filename, "w");
 
@@ -197,7 +197,7 @@ void read_sprite_pack(sprite_pack_t * pack, const char * pack_name) {
             read_subsprite(dst, pixel_buf, pack->width, pack->height, pack_x, pack_y);
 
 #if 0
-            dump_sprite(dst, pack_name, pack_x + pack_y * pack->width);
+            dump_sprite(dst, pack_name, pack_x, pack_y);
 #endif
         }
     }
