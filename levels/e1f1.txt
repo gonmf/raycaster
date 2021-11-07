@@ -1,17 +1,43 @@
-# red,green,blue
-CEIL_COLOR
-483818
-
-FLOOR_COLOR
-6A6A6A
-
-# doors appear as a "d" in the map layout
 OPEN_DOOR
 4
 16
 CLOSED_DOOR
 2
 16
+LOCKED_DOOR_TYPE_0
+2
+17
+LOCKED_DOOR_TYPE_1
+3
+17
+TREASURE_OBJECT_TYPE_0
+1
+6
+TREASURE_OBJECT_TYPE_1
+2
+6
+TREASURE_OBJECT_TYPE_2
+3
+6
+TREASURE_OBJECT_TYPE_3
+4
+6
+KEY_OBJECT_TYPE_0
+2
+4
+KEY_OBJECT_TYPE_1
+3
+4
+PLAYER_START_ANGLE
+0
+
+
+# red,green,blue
+CEIL_COLOR
+483818
+
+FLOOR_COLOR
+6A6A6A
 
 # may be defined out of order
 # the argument is the (x,y) coords of the subsprite of the respective
@@ -48,19 +74,6 @@ FURNITURE_OBJECT_TYPE_2
 4
 1
 
-TREASURE_OBJECT_TYPE_0
-1
-6
-TREASURE_OBJECT_TYPE_1
-2
-6
-TREASURE_OBJECT_TYPE_2
-3
-6
-TREASURE_OBJECT_TYPE_3
-4
-6
-
 # do NOT generate manually; use the map editor instead
 LAYOUT
 11111111111111111111111111111111111
@@ -72,9 +85,9 @@ LAYOUT
 1.....11.......11..77077..........1
 1.....1.........1..7...7..........1
 1.....2.........2177...0..........1
-1.....1..........d.....7..........1
+1.....f..........d.....7..........1
 1.....1.........1177...7..........1
-1.....1.........3..7...0..........1
+1.....g.........3..7...0..........1
 1.....2....7....2..7...7..........1
 1.....1.........1..7...7..........1
 1.....d.........4..7...0..........1
@@ -105,8 +118,8 @@ OBJECTS
 ............21.....................
 ............1.....s................
 ............1......................
-...................................
-...................................
+.l.................................
+......................k............
 ...................................
 ...................................
 ...................................
@@ -126,6 +139,4 @@ OBJECTS
 ...................................
 
 PLAYER_START_ANGLE
-# must be between [-359,359]
-# 0 degrees is straight up, grows clockwise
 -90

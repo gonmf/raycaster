@@ -387,7 +387,7 @@
                     continue;
                 } else if (c === '.') {
                     // do nothing
-                } else if (c === 'd' || (c >= '0' && c <= '9')) {
+                } else if (["d", "f", "g"].includes(c) || (c >= '0' && c <= '9')) {
                     newWalls[y][x] = c;
                 } else {
                     text.value = `Error: invalid walls character "${c}" (${x},${y})`;
@@ -410,9 +410,9 @@
                     continue;
                 } else if (c === '.') {
                     // do nothing
-                } else if (c === 'd' || (c >= '0' && c <= '9')) {
+                } else if (c >= '0' && c <= '9') {
                     newObjects[y][x] = c;
-                } else if (["s" /*, "e", "z", "k", "l" */].includes(c)) {
+                } else if (["s", "e", "k", "l", "t", "y", "u", "i"].includes(c)) {
                     newObjects[y][x] = c;
                 } else {
                     text.value = `Error: invalid objects character "${c}" (${x},${y})`;

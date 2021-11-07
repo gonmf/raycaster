@@ -15,6 +15,10 @@
 #include <math.h>
 #include <limits.h>
 
+#define true sfTrue
+#define false sfFalse
+typedef sfBool bool;
+
 typedef struct  __attribute__((__packed__)) __pixel_ {
     unsigned char red;
     unsigned char green;
@@ -46,6 +50,8 @@ typedef struct  __level_ {
     unsigned char door_open_texture;
     unsigned int enemies_count; // not used yet
     enemy_t * enemy; // not used yet
+    bool key_1;
+    bool key_2;
 } level_t;
 
 #define SPRITE_WIDTH 64
@@ -57,10 +63,6 @@ typedef struct __sprite_pack_ {
     unsigned char height;
     pixel_t ** sprites; // [columns x rows][pixels_x x pixels_y]
 } sprite_pack_t;
-
-#define true sfTrue
-#define false sfFalse
-typedef sfBool bool;
 
 #define EQUAL_PIXEL(A,B) (A.red == B.red && A.green == B.green && A.blue == B.blue && A.alpha == B.alpha)
 
@@ -76,6 +78,10 @@ typedef sfBool bool;
 #define SPECIAL_EFFECT_SCORE_2 3
 #define SPECIAL_EFFECT_SCORE_3 4
 #define SPECIAL_EFFECT_SCORE_4 5
+#define SPECIAL_EFFECT_REQUIRES_KEY_1 6
+#define SPECIAL_EFFECT_REQUIRES_KEY_2 7
+#define SPECIAL_EFFECT_KEY_1 8
+#define SPECIAL_EFFECT_KEY_2 9
 
 #define MAX(X, Y) (X > Y ? X : Y)
 #define MIN(X, Y) (X < Y ? X : Y)
@@ -104,7 +110,7 @@ typedef sfBool bool;
 #define SAFETY_WALL_TEXTURE 7
 
 #define DOOR_OPEN_SPEED 80
-#define TREASURE_PICKUP_FLASH_DURATION 10
+#define TREASURE_PICKUP_FLASH_DURATION 8
 // Voodoo:
 #define MOVEMENT_CONSTANT 0.07
 #define HORIZONTAL_ROTATION_CONSTANT 16.0
@@ -114,7 +120,7 @@ typedef sfBool bool;
 // To render simple objects, usually even round and with transparent sides,
 // a much coarser step can be used for performance.
 #define FINE_RAY_STEP_CONSTANT 0.0078125
-#define ROUGH_RAY_STEP_CONSTANT 0.1
+#define ROUGH_RAY_STEP_CONSTANT 0.05
 
 extern sprite_pack_t * wall_textures;
 extern sprite_pack_t * objects_sprites;

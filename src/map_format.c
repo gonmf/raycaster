@@ -8,6 +8,8 @@ static bool valid_command(const char * s) {
     if (start_with(s, "WALL_TYPE_")) return true;
     if (start_with(s, "FURNITURE_OBJECT_TYPE_")) return true;
     if (start_with(s, "TREASURE_OBJECT_TYPE_")) return true;
+    if (start_with(s, "LOCKED_DOOR_TYPE_")) return true;
+    if (start_with(s, "KEY_OBJECT_TYPE_")) return true;
     if (strcmp(s, "LAYOUT") == 0) return true;
     if (strcmp(s, "OBJECTS") == 0) return true;
     if (strcmp(s, "PLAYER_START_ANGLE") == 0) return true;
@@ -106,7 +108,6 @@ level_t * read_level_info(const char * filename) {
     char * buffer = calloc(MAX_FILE_SIZE, 1);
     file_read(buffer, MAX_FILE_SIZE, str_buf);
     free(str_buf);
-    char * orig_buffer = buffer;
 
     int map_size_w = -1;
     int map_size_h1 = 0;
@@ -117,13 +118,32 @@ level_t * read_level_info(const char * filename) {
     int floor_color_r = -1;
     int floor_color_g = -1;
     int floor_color_b = -1;
+    bool locked_door_1_set = false;
+    bool key_1_set = false;
+    bool locked_door_2_set = false;
+    bool key_2_set = false;
+
+    // "wall" texture IDs:
+    int open_door_x = -1;
+    int open_door_y = -1;
+    int closed_door_x = -1;
+    int closed_door_y = -1;
     int wall_types_x[10];
     int wall_types_y[10];
-    int furniture_obj_types_x[10];
-    int furniture_obj_types_y[10];
     for (unsigned int i = 0; i < 10; ++i) {
         wall_types_x[i] = -1;
         wall_types_y[i] = -1;
+    }
+    int locked_door_x[2];
+    int locked_door_y[2];
+    for (unsigned int i = 0; i < 2; ++i) {
+        locked_door_x[i] = -1;
+        locked_door_y[i] = -1;
+    }
+    // "object" texture IDs:
+    int furniture_obj_types_x[10];
+    int furniture_obj_types_y[10];
+    for (unsigned int i = 0; i < 10; ++i) {
         furniture_obj_types_x[i] = -1;
         furniture_obj_types_y[i] = -1;
     }
@@ -133,6 +153,13 @@ level_t * read_level_info(const char * filename) {
         treasure_obj_types_x[i] = -1;
         treasure_obj_types_y[i] = -1;
     }
+    int door_key_x[2];
+    int door_key_y[2];
+    for (unsigned int i = 0; i < 2; ++i) {
+        door_key_x[i] = -1;
+        door_key_y[i] = -1;
+    }
+
     unsigned char * map_content_type = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, 1);
     memset(map_content_type, CONTENT_TYPE_EMPTY, MAX_LEVEL_SIZE * MAX_LEVEL_SIZE);
     unsigned char * map_special_effects = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, 1);
@@ -142,10 +169,6 @@ level_t * read_level_info(const char * filename) {
     int player_start_x = -1;
     int player_start_y = -1;
     int player_start_angle = -36;
-    int open_door_x = -1;
-    int open_door_y = -1;
-    int closed_door_x = -1;
-    int closed_door_y = -1;
     int type_nr = 0;
     bool exit_placed = false;
     char last_command[MAX_LEVEL_SIZE];
@@ -156,7 +179,9 @@ level_t * read_level_info(const char * filename) {
     unsigned int line_pos = 0;
     char c;
     unsigned int line = 1;
-    while ((c = *buffer)) {
+    for (unsigned int ci = 0; buffer[ci]; ++ci) {
+        c = buffer[ci];
+
         if (c == '\n') {
             if (line_pos == MAX_LEVEL_SIZE) {
                 error("Invalid sprite pack format");
@@ -232,11 +257,11 @@ level_t * read_level_info(const char * filename) {
                                 error_w_line("duplicated object type definition", line - 1);
                             }
                             furniture_obj_types_x[type_nr] = atoi(line_buffer);
-                            validate_scalar(furniture_obj_types_x[type_nr], 0, wall_textures->width - 1, line);
+                            validate_scalar(furniture_obj_types_x[type_nr], 0, objects_sprites->width - 1, line);
                             last_command_uses++;
                         } else {
                             furniture_obj_types_y[type_nr] = atoi(line_buffer);
-                            validate_scalar(furniture_obj_types_y[type_nr], 0, wall_textures->height - 1, line);
+                            validate_scalar(furniture_obj_types_y[type_nr], 0, objects_sprites->height - 1, line);
                             last_command_set = 0;
                         }
                     } else if (start_with(last_command, "TREASURE_OBJECT_TYPE_")) {
@@ -247,11 +272,41 @@ level_t * read_level_info(const char * filename) {
                                 error_w_line("duplicated object type definition", line - 1);
                             }
                             treasure_obj_types_x[type_nr] = atoi(line_buffer);
-                            validate_scalar(treasure_obj_types_x[type_nr], 0, wall_textures->width - 1, line);
+                            validate_scalar(treasure_obj_types_x[type_nr], 0, objects_sprites->width - 1, line);
                             last_command_uses++;
                         } else {
                             treasure_obj_types_y[type_nr] = atoi(line_buffer);
-                            validate_scalar(treasure_obj_types_y[type_nr], 0, wall_textures->height - 1, line);
+                            validate_scalar(treasure_obj_types_y[type_nr], 0, objects_sprites->height - 1, line);
+                            last_command_set = 0;
+                        }
+                    } else if (start_with(last_command, "KEY_OBJECT_TYPE_")) {
+                        if (last_command_uses == 0) {
+                            type_nr = atoi(last_command + strlen("KEY_OBJECT_TYPE_"));
+                            validate_scalar(type_nr, 0, 4, line);
+                            if (door_key_x[type_nr] != -1) {
+                                error_w_line("duplicated object type definition", line - 1);
+                            }
+                            door_key_x[type_nr] = atoi(line_buffer);
+                            validate_scalar(door_key_x[type_nr], 0, objects_sprites->width - 1, line);
+                            last_command_uses++;
+                        } else {
+                            door_key_y[type_nr] = atoi(line_buffer);
+                            validate_scalar(door_key_y[type_nr], 0, objects_sprites->height - 1, line);
+                            last_command_set = 0;
+                        }
+                    } else if (start_with(last_command, "LOCKED_DOOR_TYPE_")) {
+                        if (last_command_uses == 0) {
+                            type_nr = atoi(last_command + strlen("LOCKED_DOOR_TYPE_"));
+                            validate_scalar(type_nr, 0, 4, line);
+                            if (locked_door_x[type_nr] != -1) {
+                                error_w_line("duplicated door type definition", line - 1);
+                            }
+                            locked_door_x[type_nr] = atoi(line_buffer);
+                            validate_scalar(locked_door_x[type_nr], 0, wall_textures->width - 1, line);
+                            last_command_uses++;
+                        } else {
+                            locked_door_y[type_nr] = atoi(line_buffer);
+                            validate_scalar(locked_door_y[type_nr], 0, wall_textures->height - 1, line);
                             last_command_set = 0;
                         }
                     } else if (strcmp(last_command, "LAYOUT") == 0) {
@@ -266,19 +321,35 @@ level_t * read_level_info(const char * filename) {
 
                         for (int i = 0; i < map_size_w; ++i) {
                             char d = line_buffer[i];
+                            if (d != '.' && map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
+                                error_w_line("wall layout and object layout collision", line);
+                            }
+
+                            // Doors
                             if (d == 'd') {
-                                if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
-                                    error_w_line("wall position must be empty", line);
-                                }
                                 if (closed_door_y == -1) {
                                     error_w_line("closed door texture must be defined prior", line);
                                 }
                                 map_content_type[map_layout_idx] = CONTENT_TYPE_DOOR;
                                 map_texture[map_layout_idx] = closed_door_x + closed_door_y * wall_textures->width;
-                            } else if ((d - '0') >= 0 && (d - '0') < 10) {
-                                if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
-
+                            } else if (d == 'f') {
+                                if (locked_door_y[0] == -1) {
+                                    error_w_line("closed door texture must be defined prior", line);
                                 }
+                                map_content_type[map_layout_idx] = CONTENT_TYPE_DOOR;
+                                map_texture[map_layout_idx] = locked_door_x[0] + locked_door_y[0] * wall_textures->width;
+                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_REQUIRES_KEY_1;
+                                locked_door_1_set = true;
+                            } else if (d == 'g') {
+                                if (locked_door_y[1] == -1) {
+                                    error_w_line("closed door texture must be defined prior", line);
+                                }
+                                map_content_type[map_layout_idx] = CONTENT_TYPE_DOOR;
+                                map_texture[map_layout_idx] = locked_door_x[1] + locked_door_y[1] * wall_textures->width;
+                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_REQUIRES_KEY_2;
+                                locked_door_2_set = true;
+                            // Walls
+                            } else if ((d - '0') >= 0 && (d - '0') < 10) {
                                 unsigned char block_id = d - '0';
                                 if (wall_types_x[block_id] == -1) {
                                     error_w_line("wall type must be defined prior", line);
@@ -304,22 +375,42 @@ level_t * read_level_info(const char * filename) {
 
                         for (int i = 0; i < map_size_w; ++i) {
                             char d = line_buffer[i];
+                            if (d != '.' && map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
+                                error_w_line("wall layout and object layout collision", line);
+                            }
+
+                            // Start and end positions
                             if (d == 's') {
-                                if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
-                                    error_w_line("object position must be empty", line);
-                                }
                                 player_start_x = i;
                                 player_start_y = map_size_h2;
                             } else if (d == 'e') {
-                                if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
-                                    error_w_line("object position must be empty", line);
-                                }
                                 map_special_effects[map_layout_idx] = SPECIAL_EFFECT_LEVEL_END;
                                 exit_placed = true;
-                            } else if (d == 't') {
-                                if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
-                                    error_w_line("object position must be empty", line);
+                            // Door keys
+                            } else if (d == 'k') {
+                                if (door_key_x[0] == -1) {
+                                    error_w_line("key 1 texture must be defined prior", line);
                                 }
+                                if (key_1_set) {
+                                    error_w_line("duplicate key found", line);
+                                }
+                                map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
+                                map_texture[map_layout_idx] = door_key_x[0] + door_key_y[0] * objects_sprites->width;
+                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_KEY_1;
+                                key_1_set = true;
+                            } else if (d == 'l') {
+                                if (door_key_x[1] == -1) {
+                                    error_w_line("key 2 texture must be defined prior", line);
+                                }
+                                if (key_2_set) {
+                                    error_w_line("duplicate key found", line);
+                                }
+                                map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
+                                map_texture[map_layout_idx] = door_key_x[1] + door_key_y[1] * objects_sprites->width;
+                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_KEY_2;
+                                key_2_set = true;
+                            // Treasures
+                            } else if (d == 't') {
                                 if (treasure_obj_types_x[0] == -1) {
                                     error_w_line("treasure type 1 texture must be defined prior", line);
                                 }
@@ -327,9 +418,6 @@ level_t * read_level_info(const char * filename) {
                                 map_texture[map_layout_idx] = treasure_obj_types_x[0] + treasure_obj_types_y[0] * objects_sprites->width;
                                 map_special_effects[map_layout_idx] = SPECIAL_EFFECT_SCORE_1;
                             } else if (d == 'y') {
-                                if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
-                                    error_w_line("object position must be empty", line);
-                                }
                                 if (treasure_obj_types_x[1] == -1) {
                                     error_w_line("treasure type 2 texture must be defined prior", line);
                                 }
@@ -337,9 +425,6 @@ level_t * read_level_info(const char * filename) {
                                 map_texture[map_layout_idx] = treasure_obj_types_x[1] + treasure_obj_types_y[1] * objects_sprites->width;
                                 map_special_effects[map_layout_idx] = SPECIAL_EFFECT_SCORE_2;
                             } else if (d == 'u') {
-                                if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
-                                    error_w_line("object position must be empty", line);
-                                }
                                 if (treasure_obj_types_x[2] == -1) {
                                     error_w_line("treasure type 3 texture must be defined prior", line);
                                 }
@@ -347,22 +432,17 @@ level_t * read_level_info(const char * filename) {
                                 map_texture[map_layout_idx] = treasure_obj_types_x[2] + treasure_obj_types_y[2] * objects_sprites->width;
                                 map_special_effects[map_layout_idx] = SPECIAL_EFFECT_SCORE_3;
                             } else if (d == 'i') {
-                                if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
-                                    error_w_line("object position must be empty", line);
-                                }
                                 if (treasure_obj_types_x[3] == -1) {
                                     error_w_line("treasure type 4 texture must be defined prior", line);
                                 }
                                 map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
                                 map_texture[map_layout_idx] = treasure_obj_types_x[3] + treasure_obj_types_y[3] * objects_sprites->width;
                                 map_special_effects[map_layout_idx] = SPECIAL_EFFECT_SCORE_4;
+                            // Furniture
                             } else if ((d - '0') >= 0 && (d - '0') < 10) {
                                 unsigned char block_id = d - '0';
                                 if (furniture_obj_types_x[block_id] == -1) {
                                     error_w_line("object type must be defined prior", line);
-                                }
-                                if (map_content_type[map_layout_idx] != CONTENT_TYPE_EMPTY) {
-                                    error_w_line("object position must be empty", line);
                                 }
 
                                 map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
@@ -394,8 +474,6 @@ level_t * read_level_info(const char * filename) {
             line_pos++;
             line_buffer[line_pos] = 0;
         }
-
-        buffer++;
     }
 
     if (map_size_w < 0) {
@@ -428,7 +506,12 @@ level_t * read_level_info(const char * filename) {
     if (!exit_placed) {
         error("invalid map design - no exits");
     }
-    free(orig_buffer);
+    if (locked_door_1_set != key_1_set || locked_door_2_set != key_2_set) {
+        error("invalid map design - mismatch between locked doors and keys");
+    }
+
+    // TODO: validate all doors and keys are defined in match
+    free(buffer);
 
     level_t * ret = (level_t *)calloc(sizeof(level_t), 1);
 
@@ -453,6 +536,8 @@ level_t * read_level_info(const char * filename) {
     ret->enemies_count = 0;
     ret->enemy = calloc(ret->enemies_count, sizeof(enemy_t));
     ret->score = 0;
+    ret->key_1 = false;
+    ret->key_2 = false;
 
     for (unsigned int y = 0; y < ret->height; ++y) {
         for (unsigned int x = 0; x < ret->width; ++x) {

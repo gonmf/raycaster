@@ -48,6 +48,25 @@ bool open_door_in_front(level_t * level) {
         return false;
     }
 
+    unsigned char door_effect = level->special_effects[door_x + door_y * level->width];
+    if (door_effect == SPECIAL_EFFECT_REQUIRES_KEY_1) {
+        if(level->key_1) {
+            printf("Key used\n");
+            level->special_effects[door_x + door_y * level->width] = SPECIAL_EFFECT_NONE;
+        } else {
+            printf("Door requires key\n");
+            return false;
+        }
+    } else if (door_effect == SPECIAL_EFFECT_REQUIRES_KEY_2) {
+        if(level->key_2) {
+            printf("Key used\n");
+            level->special_effects[door_x + door_y * level->width] = SPECIAL_EFFECT_NONE;
+        } else {
+            printf("Door requires key\n");
+            return false;
+        }
+    }
+
     opening_door_x = door_x;
     opening_door_y = door_y;
     door_open_ticks = DOOR_OPEN_SPEED;
@@ -92,24 +111,42 @@ bool apply_special_effect(level_t * level, bool * exit_found) {
             level->special_effects[i] = SPECIAL_EFFECT_NONE;
             start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
             level->score += 1;
+            printf("Score: %u\n", level->score);
             return true;
         case SPECIAL_EFFECT_SCORE_2:
             level->content_type[i] = CONTENT_TYPE_EMPTY;
             level->special_effects[i] = SPECIAL_EFFECT_NONE;
             start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
             level->score += 2;
+            printf("Score: %u\n", level->score);
             return true;
         case SPECIAL_EFFECT_SCORE_3:
             level->content_type[i] = CONTENT_TYPE_EMPTY;
             level->special_effects[i] = SPECIAL_EFFECT_NONE;
             start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
             level->score += 4;
+            printf("Score: %u\n", level->score);
             return true;
         case SPECIAL_EFFECT_SCORE_4:
             level->content_type[i] = CONTENT_TYPE_EMPTY;
             level->special_effects[i] = SPECIAL_EFFECT_NONE;
             start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
             level->score += 10;
+            printf("Score: %u\n", level->score);
+            return true;
+        case SPECIAL_EFFECT_KEY_1:
+            level->content_type[i] = CONTENT_TYPE_EMPTY;
+            level->special_effects[i] = SPECIAL_EFFECT_NONE;
+            start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
+            level->key_1 = true;
+            printf("Keys: %s\n", level->key_1 && level->key_2 ? "1 & 2" : (level->key_1 ? "1" : "2"));
+            return true;
+        case SPECIAL_EFFECT_KEY_2:
+            level->content_type[i] = CONTENT_TYPE_EMPTY;
+            level->special_effects[i] = SPECIAL_EFFECT_NONE;
+            start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
+            level->key_2 = true;
+            printf("Keys: %s\n", level->key_1 && level->key_2 ? "1 & 2" : (level->key_1 ? "1" : "2"));
             return true;
         default:
             return false;
