@@ -30,7 +30,7 @@
             <option value="g">Door for Key 2</option>
             <option value="h">Door Level Start</option>
             <option value="j">Door Level End</option>
-            <option value="c">Clear</option>
+            <option value="clear">Clear</option>
         </select>
 
         <canvas id="previewCanvas1" width="28" height="28" style="position: absolute"></canvas>
@@ -54,9 +54,9 @@
             <option value="b">Ammo</option>
             <option value="n">Ammo + Weapon 3</option>
             <option value="m">Ammo + Weapon 4</option>
-            <option value="r">Health Small</option>
-            <option value="t">Health Large</option>
-            <option value="y">Health Total</option>
+            <option value="q">Health Small</option>
+            <option value="w">Health Large</option>
+            <option value="r">Health Total</option>
             <option value="1">Object Type 1</option>
             <option value="2">Object Type 2</option>
             <option value="3">Object Type 3</option>
@@ -67,11 +67,12 @@
             <option value="8">Object Type 8</option>
             <option value="9">Object Type 9</option>
             <option value="0">Object Type 0</option>
-            <option value="q">Enemy 1</option>
-            <option value="a">Enemy 2</option>
-            <option value="z">Enemy 3</option>
-            <option value="x">Enemy 4</option>
-            <option value="c">Clear</option>
+            <option value="a">Enemy 1</option>
+            <option value="z">Enemy 2</option>
+            <option value="x">Enemy 3</option>
+            <option value="c">Enemy 4</option>
+            <option value="v">Enemy 5</option>
+            <option value="clear">Clear</option>
         </select>
 
         <canvas id="previewCanvas2" width="28" height="28" style="position: absolute"></canvas>
@@ -101,9 +102,9 @@
         // Global constants
 
         const colorTable = {};
-        const canvas = document.getElementById('canvas');
-        const previewCanvas1 = document.getElementById('previewCanvas1');
-        const previewCanvas2 = document.getElementById('previewCanvas2');
+        const canvas = document.getElementById("canvas");
+        const previewCanvas1 = document.getElementById("previewCanvas1");
+        const previewCanvas2 = document.getElementById("previewCanvas2");
 
         // Functions
 
@@ -112,37 +113,56 @@
                 return colorTable[code];
             }
 
-            colorTable[code] = `#${Math.floor(Math.random()*16777215).toString(16)}`;
+            var color = `${Math.floor(Math.random()*16777215).toString(16)}`;
+            while (color.length < 6) {
+                color = `0${color}`;
+            }
+
+            colorTable[code] = `#${color}`;
             return colorTable[code];
         }
 
         const refreshPreview = function() {
             // preview canvases
             if (operationMode == "walls") {
-                var option = document.getElementById("wallTypeSelect").selectedOptions[0];
+                var element = document.getElementById("wallTypeSelect");
+                var option = element.selectedOptions[0];
                 var value = option.getAttribute("value");
-                var ctx = previewCanvas1.getContext('2d');
+                if (value === "clear") {
+                    previewCanvas1.style.opacity = 0;
+                    return;
+                } else {
+                    previewCanvas1.style.opacity = 1;
+                }
+                var ctx = previewCanvas1.getContext("2d");
                 ctx.fillStyle = "black";
                 ctx.fillRect(0, 0, 28, 28);
                 ctx.fillStyle = colorFor(value);
                 ctx.fillRect(1, 1, 28 - 2, 28 - 2);
             } else {
-                var option = document.getElementById("objectTypeSelect").selectedOptions[0];
+                var element = document.getElementById("objectTypeSelect");
+                var option = element.selectedOptions[0];
                 var value = option.getAttribute("value");
-                var ctx = previewCanvas2.getContext('2d');
+                if (value === "clear") {
+                    previewCanvas2.style.opacity = 0;
+                    return;
+                } else {
+                    previewCanvas2.style.opacity = 1;
+                }
+                var ctx = previewCanvas2.getContext("2d");
                 ctx.beginPath();
                 ctx.arc(28 / 2, 28 / 2, 28 / 2.2, 0, 2 * Math.PI, false);
                 ctx.fillStyle = colorFor(value);
                 ctx.fill();
                 ctx.lineWidth = 1;
-                ctx.strokeStyle = 'black';
+                ctx.strokeStyle = "black";
                 ctx.stroke();
             }
         };
 
         const refreshCanvas = function() {
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'gray';
+            var ctx = canvas.getContext("2d");
+            ctx.fillStyle = "gray";
             ctx.fillRect(0, 0, window.totalWidth * window.blockSize, window.totalHeight * window.blockSize);
 
             for (var y = 0; y < window.totalHeight; ++y) {
@@ -152,14 +172,13 @@
                         ctx.fillRect(x * window.blockSize, y * window.blockSize, window.blockSize, window.blockSize);
                         ctx.fillStyle = colorFor(window.walls[y][x]);
                         ctx.fillRect(x * window.blockSize + 1, y * window.blockSize + 1, window.blockSize - 2, window.blockSize - 2);
-                    }
-                    if (window.objects[y][x]) {
+                    } else if (window.objects[y][x]) {
                         ctx.beginPath();
                         ctx.arc(x * window.blockSize + window.blockSize / 2, y * window.blockSize + window.blockSize / 2, window.blockSize / 2.2, 0, 2 * Math.PI, false);
                         ctx.fillStyle = colorFor(window.objects[y][x]);
                         ctx.fill();
                         ctx.lineWidth = 1;
-                        ctx.strokeStyle = 'black';
+                        ctx.strokeStyle = "black";
                         ctx.stroke();
                     }
                 }
@@ -188,11 +207,11 @@
                     if (minY === -1 || y < minY) { minY = y; }
                     if (maxY === -1 || y > maxY) { maxY = y; }
 
-                    if (window.objects[y][x] == 's') {
+                    if (window.objects[y][x] == "s") {
                         playerStarts++;
-                    } else if (window.objects[y][x] == 'k') {
+                    } else if (window.objects[y][x] == "k") {
                         keyOnes++;
-                    } else if (window.objects[y][x] == 'l') {
+                    } else if (window.objects[y][x] == "l") {
                         keyTwos++;
                     }
                 }
@@ -251,6 +270,9 @@
         const adjustCanvasSizes = function() {
             canvas.width = window.totalWidth * window.blockSize;
             canvas.height = window.totalHeight * window.blockSize;
+            var ctx = canvas.getContext("2d");
+            ctx.fillStyle = "gray";
+            ctx.fillRect(0, 0, window.totalWidth * window.blockSize, window.totalHeight * window.blockSize);
         };
 
         const changePositionWall = function(evt) {
@@ -262,10 +284,9 @@
 
             var option = document.getElementById("wallTypeSelect").selectedOptions[0];
             var value = option.getAttribute("value");
-            var rgb = colorFor(value);
 
             if (x >= 0 && x < window.totalWidth && y >= 0 && y < window.totalHeight) {
-                if (value == 'c') {
+                if (value === "clear") {
                     if (window.walls[y][x]) {
                         window.walls[y][x] = undefined;
                     }
@@ -276,6 +297,7 @@
                 }
 
                 refreshCanvas();
+                refreshTextOutput();
             }
         };
 
@@ -288,10 +310,9 @@
 
             var option = document.getElementById("objectTypeSelect").selectedOptions[0];
             var value = option.getAttribute("value");
-            var rgb = colorFor(value);
 
             if (x >= 0 && x < window.totalWidth && y >= 0 && y < window.totalHeight) {
-                if (value == 'c') {
+                if (value === "clear") {
                     if (window.objects[y][x]) {
                         window.objects[y][x] = undefined;
                     }
@@ -302,6 +323,7 @@
                 }
 
                 refreshCanvas();
+                refreshTextOutput();
             }
         };
 
@@ -329,7 +351,7 @@
         };
 
         const switchOperationMode = function() {
-            window.operationMode = (window.operationMode === 'walls' ? 'objects' : 'walls');
+            window.operationMode = (window.operationMode === "walls" ? "objects" : "walls");
             toggleOperationModeButtons();
         };
 
@@ -451,16 +473,16 @@
                 y = 0;
             for (var i = 0; i < wallsPart.length; ++i) {
                 var c = wallsPart.charAt(i);
-                if (c === '\n') {
+                if (c === "\n") {
                     if (x === 0) {
                         continue;
                     }
                     x = 0;
                     y++;
                     continue;
-                } else if (c === '.') {
+                } else if (c === ".") {
                     // do nothing
-                } else if (["d", "f", "g"].includes(c) || (c >= '0' && c <= '9')) {
+                } else if (["d", "f", "g", "h", "j"].includes(c) || (c >= "0" && c <= "9")) {
                     newWalls[y][x] = c;
                 } else {
                     text.value = `Error: invalid walls character "${c}" (${x},${y})`;
@@ -474,18 +496,18 @@
             y = 0;
             for (var i = 0; i < objectsPart.length; ++i) {
                 var c = objectsPart.charAt(i);
-                if (c === '\n') {
+                if (c === "\n") {
                     if (x === 0) {
                         continue;
                     }
                     x = 0;
                     y++;
                     continue;
-                } else if (c === '.') {
+                } else if (c === ".") {
                     // do nothing
-                } else if (c >= '0' && c <= '9') {
+                } else if (c >= "0" && c <= "9") {
                     newObjects[y][x] = c;
-                } else if (["s", "e", "k", "l", "t", "y", "u", "i"].includes(c)) {
+                } else if (["s", "e", "k", "l", "t", "y", "u", "i", "b", "n", "m", "q", "w", "r", "a", "z", "x", "c", "v"].includes(c)) {
                     newObjects[y][x] = c;
                 } else {
                     text.value = `Error: invalid objects character "${c}" (${x},${y})`;
@@ -501,15 +523,20 @@
             refreshCanvas();
             refreshTextOutput();
         };
-
-        const zoom = function() {
-            var newBlockSize = window.blockSize += this;
+        const zoom = function(change) {
+            var newBlockSize = window.blockSize + change;
 
             if (newBlockSize > 8 && newBlockSize < 24) {
                 window.blockSize = newBlockSize;
                 adjustCanvasSizes();
                 refreshCanvas();
             }
+        };
+        const zoomIn = function() {
+            zoom(2);
+        };
+        const zoomOut = function() {
+            zoom(-2);
         };
 
         // Global variables
@@ -533,16 +560,15 @@
             window.painting = true;
             changePositionValue(e);
         }, false);
-        canvas.addEventListener("mouseup", function () {
+        document.addEventListener("mouseup", function () {
             window.painting = false;
-            refreshTextOutput();
         }, false);
 
         document.getElementById("wallTypeSelect").addEventListener("click", refreshPreview);
         document.getElementById("objectTypeSelect").addEventListener("click", refreshPreview);
         document.getElementById("loadBtn").addEventListener("click", loadFromText);
-        document.getElementById("zoomIn").addEventListener("click", zoom.bind(2));
-        document.getElementById("zoomOut").addEventListener("click", zoom.bind(-2));
+        document.getElementById("zoomIn").addEventListener("click", zoomIn);
+        document.getElementById("zoomOut").addEventListener("click", zoomOut);
         document.getElementById("wallMode").addEventListener("click", switchOperationMode);
         document.getElementById("objectMode").addEventListener("click", switchOperationMode);
         document.getElementById("centerMap1").addEventListener("click", centerMap);
