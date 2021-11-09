@@ -2,6 +2,7 @@
 
 sprite_pack_t * wall_textures;
 sprite_pack_t * objects_sprites;
+sprite_pack_t * enemy_sprites[5];
 pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
 static double fish_eye_table[VIEWPORT_WIDTH];
@@ -47,7 +48,7 @@ static void fill_in_background(const level_t * level) {
     }
 }
 
-static double cast_simple_ray(const level_t * level, double angle, double * block_x, unsigned int * block_hit_x, unsigned int * block_hit_y, unsigned int * step_count) {
+static double cast_simple_ray(const level_t * level, double angle, double * block_x, unsigned int * block_hit_x, unsigned int * block_hit_y, unsigned int * enemy, unsigned int * step_count) {
     double angle_radians = angle / RADIAN_CONSTANT;
     double x_change = sin(angle_radians) * ROUGH_RAY_STEP_CONSTANT;
     double y_change = cos(angle_radians) * ROUGH_RAY_STEP_CONSTANT;
@@ -142,23 +143,43 @@ static double cast_simple_ray(const level_t * level, double angle, double * bloc
                 continue;
             }
         } else if (content_type == CONTENT_TYPE_EMPTY) {
+            for (unsigned int i = 0; i < level->enemies_count; ++i) {
+                if (rounded_x == (unsigned int)(level->enemy[i].x + 0.5) && rounded_y == (unsigned int)(level->enemy[i].y + 0.5)) {
+                    if (*enemy == i) {
+                        continue;
+                    }
+
+                    double enemy_x = level->enemy[i].x;
+                    double enemy_y = level->enemy[i].y;
+                    double distance = sqrt((level->observer_x - enemy_x) * (level->observer_x - enemy_x) + (level->observer_y - enemy_y) * (level->observer_y - enemy_y));
+                    double angle_to_center = atan((level->observer_x - enemy_x) / (level->observer_y - enemy_y)) * RADIAN_CONSTANT;
+                    double angle_diff = angle_to_center - angle;
+                    double opposite = tan(angle_diff / RADIAN_CONSTANT) * distance;
+                    if (fabs(opposite) > 0.5) {
+                        continue;
+                    }
+                    *block_hit_x = INT_MAX;
+                    *enemy = i;
+                    *block_x = 1.0 - MIN(MAX((opposite + 0.5) / 1.0, 0.0), 1.0);
+                    *step_count = steps + 1;
+                    return distance;
+                }
+            }
             continue;
         }
 
         *block_hit_x = rounded_x;
         *block_hit_y = rounded_y;
+        *enemy = INT_MAX;
 
         double distance = sqrt((level->observer_x - rounded_x) * (level->observer_x - rounded_x) + (level->observer_y - rounded_y) * (level->observer_y - rounded_y));
-
-
         double angle_to_center = atan((level->observer_x - rounded_x) / (level->observer_y - rounded_y)) * RADIAN_CONSTANT;
         double angle_diff = angle_to_center - angle;
         double opposite = tan(angle_diff / RADIAN_CONSTANT) * distance;
         if (fabs(opposite) > 0.5) {
             continue;
         }
-        *block_x = MIN(MAX(opposite / distance, 0.0), 1.0);
-        *block_x = MIN(MAX((opposite + 0.5) / 1.0, 0.0), 1.0);
+        *block_x = 1.0 - MIN(MAX((opposite + 0.5) / 1.0, 0.0), 1.0);
         *step_count = steps + 1;
         return distance;
     }
@@ -272,6 +293,18 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
     }
 }
 
+static void enemy_color(pixel_t * dst, double sprite_x, double sprite_y, double intensity, unsigned char sprite_type, unsigned char enemy_type) {
+    unsigned int x = (unsigned int)(SPRITE_WIDTH * sprite_x);
+    unsigned int y = (unsigned int)(SPRITE_HEIGHT * sprite_y);
+
+    pixel_t src = enemy_sprites[enemy_type]->sprites[sprite_type][x + y * SPRITE_WIDTH];
+    // alpha == 1 is used as indicator another object's pixel was already painted
+    if (src.alpha == 0 && dst->alpha == 0) {
+        *dst = darken_shading(src, intensity);
+        dst->alpha = 1;
+    }
+}
+
 static void object_color(pixel_t * dst, double sprite_x, double sprite_y, double intensity, unsigned char sprite_type) {
     unsigned int x = (unsigned int)(SPRITE_WIDTH * sprite_x);
     unsigned int y = (unsigned int)(SPRITE_HEIGHT * sprite_y);
@@ -292,44 +325,73 @@ static void block_color(pixel_t * dst, double block_x, double block_y, double in
     *dst = darken_shading(src, intensity);
 }
 
-void load_textures() {
-    wall_textures = calloc(1, sizeof(sprite_pack_t));
-    read_sprite_pack(wall_textures, TEXTURE_PACK_NAME);
-
-    objects_sprites = calloc(1, sizeof(sprite_pack_t));
-    read_sprite_pack(objects_sprites, OBJECTS_PACK_NAME);
-}
-
 static void fill_in_objects(const level_t * level) {
     unsigned int block_hit_x;
     unsigned int block_hit_y = INT_MAX;
+    unsigned int enemy = INT_MAX;
     unsigned int viewport_mid = horizon_offset(level);
+    unsigned char enemy_type;
     double block_x;
 
     for (unsigned int x = 0; x < VIEWPORT_WIDTH; ++x) {
         double x_angle = fit_angle(fish_eye_table[x] + level->observer_angle);
         block_hit_x = INT_MAX;
+        enemy = INT_MAX;
 
         unsigned int min_step_count = 0;
         while(1) {
-            double distance = cast_simple_ray(level, x_angle, &block_x, &block_hit_x, &block_hit_y, &min_step_count);
+            double distance = cast_simple_ray(level, x_angle, &block_x, &block_hit_x, &block_hit_y, &enemy, &min_step_count);
             if (distance <= 0.0) {
                 break;
             }
 
+            bool render_enemy = block_hit_x == INT_MAX;
             distance *= cos((x_angle - level->observer_angle) / RADIAN_CONSTANT);
             distance = MAX(distance, 0.0);
 
             double block_size = (1.5 / distance);
 
-            unsigned char sprite_id = level->texture[block_hit_x + block_hit_y * level->width];
+            unsigned char sprite_id;
+
+            if (render_enemy) {
+                unsigned int enemy_angle;
+                int angles_sum;
+
+                switch(level->enemy[enemy].state) {
+                    case ENEMY_STATE_STILL:
+                        angles_sum = (unsigned int)(x_angle + level->enemy[enemy].angle + 180 + 23);
+                        enemy_angle = (8 - (((unsigned int)angles_sum) / 45)) % 8;
+                        sprite_id = enemy_angle;
+                        break;
+                    case ENEMY_STATE_MOVING:
+                        angles_sum = (unsigned int)(x_angle + level->enemy[enemy].angle + 180 + 23);
+                        enemy_angle = (8 - (((unsigned int)angles_sum) / 45)) % 8;
+                        sprite_id = enemy_angle + level->enemy[enemy].state_step * 8;
+                        break;
+                    case ENEMY_STATE_SHOT:
+                        sprite_id = 7 + 5 * 8;
+                        break;
+                    case ENEMY_STATE_SHOOTING:
+                        sprite_id = level->enemy[enemy].state_step + 5 * 8;
+                        break;
+                    case ENEMY_STATE_DYING:
+                        sprite_id = level->enemy[enemy].state_step + 5 * 8;
+                        break;
+                    default: // dead
+                        sprite_id = 4 + 5 * 8;
+                        break;
+                }
+
+                enemy_type = level->enemy[enemy].type;
+            } else {
+                sprite_id = level->texture[block_hit_x + block_hit_y * level->width];
+                level->map_revealed[block_hit_x + block_hit_y * level->width] = true;
+            }
 
             unsigned int end_y = (unsigned int)(block_size * VIEWPORT_HEIGHT / 2.0);
             double block_y;
             pixel_t * pixel;
             unsigned int y;
-
-            level->map_revealed[block_hit_x + block_hit_y * level->width] = true;
 
             double intensity = MIN(MAX(10.0 / distance, 0.0), 1.0);
 
@@ -339,7 +401,11 @@ static void fill_in_objects(const level_t * level) {
                     y = viewport_mid - mid_y;
                     pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
                     block_y = (end_y - mid_y) / (VIEWPORT_HEIGHT * block_size);
-                    object_color(pixel, block_x, block_y, intensity, sprite_id);
+                    if (render_enemy) {
+                        enemy_color(pixel, block_x, block_y, intensity, sprite_id, enemy_type);
+                    } else {
+                        object_color(pixel, block_x, block_y, intensity, sprite_id);
+                    }
                 }
 
                 // bottom part
@@ -347,7 +413,11 @@ static void fill_in_objects(const level_t * level) {
                     y = viewport_mid + mid_y;
                     pixel = &(fg_buffer[x + y * VIEWPORT_WIDTH]);
                     block_y = (mid_y + VIEWPORT_HEIGHT * block_size * 0.5) / (VIEWPORT_HEIGHT * block_size);
-                    object_color(pixel, block_x, block_y, intensity, sprite_id);
+                    if (render_enemy) {
+                        enemy_color(pixel, block_x, block_y, intensity, sprite_id, enemy_type);
+                    } else {
+                        object_color(pixel, block_x, block_y, intensity, sprite_id);
+                    }
                 }
             }
         }

@@ -9,14 +9,31 @@ static bool action_btn_pressed = false;
 static bool map_btn_pressed = false;
 static bool show_map = false;
 
+static bool position_blocked(
+    unsigned int rounded_x, unsigned int rounded_y,
+    bool allow_enter_door, unsigned int door_x, unsigned int door_y
+) {
+    unsigned char content_type = level->content_type[rounded_x + rounded_y * level->width];
+    unsigned char special_effect = level->special_effects[rounded_x + rounded_y * level->width];
+
+    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_OBJECT && special_effect == SPECIAL_EFFECT_NONE) || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+        return true;
+    }
+
+    for (unsigned int i = 0; i < level->enemies_count; ++i) {
+        if (rounded_x == (unsigned int)(level->enemy[i].x + 0.5) && rounded_y == (unsigned int)(level->enemy[i].y + 0.5)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static void move_observer2(double x_change, double y_change) {
     double new_x = level->observer_x + x_change;
     double new_y = level->observer_y + y_change;
     unsigned int rounded_x = (unsigned int)(new_x + 0.5);
     unsigned int rounded_y = (unsigned int)(new_y + 0.5);
-    unsigned char content_type;
-    unsigned char special_effect;
-
     unsigned int door_x;
     unsigned int door_y;
     double percentage_open;
@@ -24,28 +41,23 @@ static void move_observer2(double x_change, double y_change) {
     bool allow_enter_door = !door_is_opening || (door_is_opening && percentage_open > 0.75);
 
     rounded_x = (unsigned int)(new_x + 0.5 + 0.22);
-    content_type = level->content_type[rounded_x + rounded_y * level->width];
-    special_effect = level->special_effects[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_OBJECT && special_effect == SPECIAL_EFFECT_NONE) || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+    if (position_blocked(rounded_x, rounded_y, allow_enter_door, door_x, door_y)) {
         return;
     }
+
     rounded_x = (unsigned int)(new_x + 0.5 - 0.22);
-    content_type = level->content_type[rounded_x + rounded_y * level->width];
-    special_effect = level->special_effects[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_OBJECT && special_effect == SPECIAL_EFFECT_NONE) || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+    if (position_blocked(rounded_x, rounded_y, allow_enter_door, door_x, door_y)) {
         return;
     }
+
     rounded_x = (unsigned int)(new_x + 0.5);
     rounded_y = (unsigned int)(new_y + 0.5 + 0.22);
-    content_type = level->content_type[rounded_x + rounded_y * level->width];
-    special_effect = level->special_effects[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_OBJECT && special_effect == SPECIAL_EFFECT_NONE) || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+    if (position_blocked(rounded_x, rounded_y, allow_enter_door, door_x, door_y)) {
         return;
     }
+
     rounded_y = (unsigned int)(new_y + 0.5 - 0.22);
-    content_type = level->content_type[rounded_x + rounded_y * level->width];
-    special_effect = level->special_effects[rounded_x + rounded_y * level->width];
-    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_OBJECT && special_effect == SPECIAL_EFFECT_NONE) || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+    if (position_blocked(rounded_x, rounded_y, allow_enter_door, door_x, door_y)) {
         return;
     }
 
@@ -304,7 +316,7 @@ static int valid_level_file_name(const char * s) {
     return !(s[0] == 0 || s[0] == '.' || s[0] == '/' || s[0] == '\\');
 }
 
-static void select_level() {
+static bool select_level() {
     DIR * dir = opendir("./levels");
     struct dirent * entry;
 
@@ -333,11 +345,11 @@ static void select_level() {
         error("No levels found");
     }
 
-    printf("\nSelect level\n");
+    printf("\nSelect level (Q to quit)\n");
 
     unsigned int selection = 0;
+    bool quit = false;
 
-#if 1
     if (levels_listed > 1) {
         unsigned int buf_idx;
         char * buf = calloc(MAX_FILE_NAME_SIZ, 1);
@@ -349,13 +361,17 @@ static void select_level() {
             buf_idx = 0;
             while (buf_idx < MAX_FILE_NAME_SIZ - 1) {
                 char c = getchar();
-
                 if (c == 0 || c == '\n') {
                     break;
                 }
                 buf[buf_idx++] = c;
             }
             buf[buf_idx] = 0;
+
+            if (strcmp(buf, "q") == 0 || strcmp(buf, "Q") == 0) {
+                quit = true;
+                break;
+            }
 
             selection = (unsigned int)atoi(buf);
             if (selection >= 1 && selection <= levels_listed) {
@@ -369,24 +385,67 @@ static void select_level() {
     } else {
         printf("> 1\n");
     }
-#else
-    fprintf(stderr, "WARNING: level selection skipped\n");
-#endif
 
-    level = read_level_info(levels[selection]);
+    if (!quit) {
+        level = read_level_info(levels[selection]);
+    }
 
     for (unsigned int i = 0; i < levels_listed; ++i) {
         free(levels[i]);
+    }
+
+    return !quit;
+}
+
+static void unload_assets() {
+    pause_btn_pressed = false;
+    paused = false;
+    action_btn_pressed = false;
+    map_btn_pressed = false;
+    show_map = false;
+
+    if (level) {
+        free(level->content_type);
+        free(level->texture);
+        free(level->special_effects);
+        free(level->map_revealed);
+        free(level->enemy);
+        free(level);
+        level = NULL;
+    }
+    if (background) {
+        free(background);
+        background = NULL;
+    }
+    if (wall_textures) {
+        free(wall_textures);
+        wall_textures = NULL;
+    }
+    if (objects_sprites) {
+        free(objects_sprites);
+        objects_sprites = NULL;
+    }
+    for (int i = 0; i < 5; ++i) {
+        if (enemy_sprites[i]) {
+            free(enemy_sprites[i]);
+            enemy_sprites[i] = NULL;
+        }
     }
 }
 
 int main() {
     init_base_colors();
     init_fish_eye_table();
-    load_textures();
 
-    select_level();
-    open_level();
+    while (select_level()) {
+        open_level();
+#if 0
+        break;
+#endif
+        unload_assets();
+    }
+
+    printf("Goodbye\n");
 
     return EXIT_SUCCESS;
 }

@@ -28,10 +28,12 @@ typedef struct  __attribute__((__packed__)) __pixel_ {
 
 typedef struct __attribute__((__packed__)) __enemy_ {
     unsigned char type;
+    char life;
+    unsigned char state;
+    unsigned char state_step;
     double x;
     double y;
     double angle;
-    double life;
 } enemy_t;
 
 typedef struct  __level_ {
@@ -49,8 +51,8 @@ typedef struct  __level_ {
     unsigned char * special_effects;
     bool * map_revealed;
     unsigned char door_open_texture;
-    unsigned int enemies_count; // not used yet
-    enemy_t * enemy; // not used yet
+    unsigned int enemies_count;
+    enemy_t * enemy;
     bool key_1;
     bool key_2;
 } level_t;
@@ -83,6 +85,13 @@ typedef struct __sprite_pack_ {
 #define SPECIAL_EFFECT_REQUIRES_KEY_2 7
 #define SPECIAL_EFFECT_KEY_1 8
 #define SPECIAL_EFFECT_KEY_2 9
+
+#define ENEMY_STATE_STILL 0
+#define ENEMY_STATE_MOVING 1
+#define ENEMY_STATE_SHOT 2
+#define ENEMY_STATE_SHOOTING 3
+#define ENEMY_STATE_DYING 4
+#define ENEMY_STATE_DEAD 5
 
 #define MAX(X, Y) (X > Y ? X : Y)
 #define MIN(X, Y) (X < Y ? X : Y)
@@ -129,6 +138,7 @@ typedef struct __sprite_pack_ {
 // raycaster.c
 extern sprite_pack_t * wall_textures;
 extern sprite_pack_t * objects_sprites;
+extern sprite_pack_t * enemy_sprites[5];
 extern pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
 // color.c
@@ -163,6 +173,7 @@ unsigned int file_read(char * dst, unsigned int max_size, const char * filename)
 
 // math.c
 double fit_angle(double d);
+int fit_angle_int(int d);
 
 // string.c
 bool start_with(const char * s, const char * prefix);
@@ -180,7 +191,6 @@ bool window_poll_event(sfEvent * event);
 
 // raycaster.c
 void init_fish_eye_table();
-void load_textures();
 void paint_scene(const level_t * level);
 
 // actions.c

@@ -1,4 +1,9 @@
 - Enemies
+  - strategic state (waiting, looking for player)
+  - detailed state (moving, shooting)
+  - actions/animations
+  - shooting
+  - dying and leaving an ammo pack behind
   - Moving projectiles
 - Game UI
 - Config file or UI menu for mouse sensitivity, resolution, FPS

@@ -9,3 +9,13 @@ double fit_angle(double d) {
     }
     return d;
 }
+
+int fit_angle_int(int d) {
+    while (d < 0) {
+        d += 360;
+    }
+    while (d >= 360) {
+        d -= 360;
+    }
+    return d;
+}
