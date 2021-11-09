@@ -434,12 +434,15 @@ static void unload_assets() {
 }
 
 int main() {
+#if DEBUG
+    printf("Running in debug mode\n");
+#endif
     init_base_colors();
     init_fish_eye_table();
 
     while (select_level()) {
         open_level();
-#if 0
+#if DEBUG
         break;
 #endif
         unload_assets();

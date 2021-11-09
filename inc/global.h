@@ -15,6 +15,8 @@
 #include <math.h>
 #include <limits.h>
 
+#define DEBUG 0
+
 #define true 1
 #define false 0
 typedef char bool;

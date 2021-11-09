@@ -15,21 +15,21 @@
     <div id="wallModeArea">
         Select tool:
         <select id="wallTypeSelect">
-            <option value="1" selected>Wall Type 1</option>
-            <option value="2">Wall Type 2</option>
-            <option value="3">Wall Type 3</option>
-            <option value="4">Wall Type 4</option>
-            <option value="5">Wall Type 5</option>
-            <option value="6">Wall Type 6</option>
-            <option value="7">Wall Type 7</option>
-            <option value="8">Wall Type 8</option>
-            <option value="9">Wall Type 9</option>
-            <option value="0">Wall Type 0</option>
-            <option value="d">Door Regular</option>
-            <option value="f">Door for Key 1</option>
-            <option value="g">Door for Key 2</option>
-            <option value="h">Door Level Start</option>
-            <option value="j">Door Level End</option>
+            <option value="A" selected>Wall Type A</option>
+            <option value="B">Wall Type B</option>
+            <option value="C">Wall Type C</option>
+            <option value="D">Wall Type D</option>
+            <option value="E">Wall Type E</option>
+            <option value="F">Wall Type F</option>
+            <option value="G">Wall Type G</option>
+            <option value="H">Wall Type H</option>
+            <option value="I">Wall Type I</option>
+            <option value="J">Wall Type J</option>
+            <option value="K">Door Regular</option>
+            <option value="L">Door for Key 1</option>
+            <option value="M">Door for Key 2</option>
+            <option value="N">Level Start Door</option>
+            <option value="O">Level End Door</option>
             <option value="clear">Clear</option>
         </select>
 
@@ -38,6 +38,7 @@
 
         <input type="button" value="Center canvas" id="centerMap1"></input>
         <input type="button" value="All surround" id="wallSurround"></input>
+        <input type="button" value="Reset colors" id="resetColors1"></input>
     </div>
 
     <div id="objectsModeArea">
@@ -79,6 +80,7 @@
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 
         <input type="button" value="Center canvas" id="centerMap2"></input>
+        <input type="button" value="Reset colors" id="resetColors2"></input>
     </div>
 
     <hr/>
@@ -120,7 +122,7 @@
 
             colorTable[code] = `#${color}`;
             return colorTable[code];
-        }
+        };
 
         const refreshPreview = function() {
             // preview canvases
@@ -167,15 +169,17 @@
 
             for (var y = 0; y < window.totalHeight; ++y) {
                 for (var x = 0; x < window.totalWidth; ++x) {
-                    if (window.walls[y][x]) {
+                    if (!window.contents[y][x]) { continue; }
+
+                    if (window.contents[y][x] >= "A" && window.contents[y][x] <= "O") {
                         ctx.fillStyle = "black";
                         ctx.fillRect(x * window.blockSize, y * window.blockSize, window.blockSize, window.blockSize);
-                        ctx.fillStyle = colorFor(window.walls[y][x]);
+                        ctx.fillStyle = colorFor(window.contents[y][x]);
                         ctx.fillRect(x * window.blockSize + 1, y * window.blockSize + 1, window.blockSize - 2, window.blockSize - 2);
-                    } else if (window.objects[y][x]) {
+                    } else {
                         ctx.beginPath();
                         ctx.arc(x * window.blockSize + window.blockSize / 2, y * window.blockSize + window.blockSize / 2, window.blockSize / 2.2, 0, 2 * Math.PI, false);
-                        ctx.fillStyle = colorFor(window.objects[y][x]);
+                        ctx.fillStyle = colorFor(window.contents[y][x]);
                         ctx.fill();
                         ctx.lineWidth = 1;
                         ctx.strokeStyle = "black";
@@ -185,6 +189,16 @@
             }
 
             refreshPreview();
+        };
+
+        const resetColors = function() {
+            var keys = Object.keys(colorTable);
+            for (var i = 0; i < keys.length; ++i) {
+                delete colorTable[keys[i]];
+            }
+
+            refreshPreview();
+            refreshCanvas();
         };
 
         const refreshTextOutput = function() {
@@ -200,18 +214,18 @@
 
             for (var y = 0; y < window.totalHeight; ++y) {
                 for (var x = 0; x < window.totalWidth; ++x) {
-                    if (!window.walls[y][x] && !window.objects[y][x]) { continue; }
+                    if (!window.contents[y][x]) { continue; }
 
                     if (minX === -1 || x < minX) { minX = x; }
                     if (maxX === -1 || x > maxX) { maxX = x; }
                     if (minY === -1 || y < minY) { minY = y; }
                     if (maxY === -1 || y > maxY) { maxY = y; }
 
-                    if (window.objects[y][x] == "s") {
+                    if (window.contents[y][x] == "s") {
                         playerStarts++;
-                    } else if (window.objects[y][x] == "k") {
+                    } else if (window.contents[y][x] == "k") {
                         keyOnes++;
-                    } else if (window.objects[y][x] == "l") {
+                    } else if (window.contents[y][x] == "l") {
                         keyTwos++;
                     }
                 }
@@ -236,36 +250,21 @@
                 return;
             }
 
-            var output = "LAYOUT\n";
+            var output = "";
 
             for (var y = minY; y < maxY + 1; ++y) {
                 for (var x = minX; x < maxX + 1; ++x) {
-                    if (window.walls[y][x]) {
-                        var code = window.walls[y][x];
-                        output += code;
-                    } else {
-                        output += ".";
-
-                    }
-                }
-                output += "\n";
-            }
-
-            output += "OBJECTS\n"
-            for (var y = minY; y < maxY + 1; ++y) {
-                for (var x = minX; x < maxX + 1; ++x) {
-                    if (window.objects[y][x]) {
-                        var code = window.objects[y][x];
-                        output += code;
-                    } else {
-                        output += ".";
-                    }
+                    output += window.contents[y][x] || ".";
                 }
                 output += "\n";
             }
 
             text.value = output;
         };
+
+        const isWall = function(code) {
+            return code && code >= "A" && code <= "O";
+        }
 
         const adjustCanvasSizes = function() {
             canvas.width = window.totalWidth * window.blockSize;
@@ -287,13 +286,11 @@
 
             if (x >= 0 && x < window.totalWidth && y >= 0 && y < window.totalHeight) {
                 if (value === "clear") {
-                    if (window.walls[y][x]) {
-                        window.walls[y][x] = undefined;
+                    if (window.contents[y][x]) {
+                        window.contents[y][x] = undefined;
                     }
-                } else if (window.walls[y][x] === value) {
-                    // do nothing
-                } else if (!window.objects[y][x]) {
-                    window.walls[y][x] = value;
+                } else if (!window.contents[y][x] || isWall(window.contents[y][x])) {
+                    window.contents[y][x] = value;
                 }
 
                 refreshCanvas();
@@ -313,13 +310,11 @@
 
             if (x >= 0 && x < window.totalWidth && y >= 0 && y < window.totalHeight) {
                 if (value === "clear") {
-                    if (window.objects[y][x]) {
-                        window.objects[y][x] = undefined;
+                    if (window.contents[y][x]) {
+                        window.contents[y][x] = undefined;
                     }
-                } else if (window.objects[y][x] === value) {
-                    // do nothing
-                } else if (!window.walls[y][x]) {
-                    window.objects[y][x] = value;
+                } else if (!window.contents[y][x] || !isWall(window.contents[y][x])) {
+                    window.contents[y][x] = value;
                 }
 
                 refreshCanvas();
@@ -363,7 +358,7 @@
 
             for (var y = 0; y < window.totalHeight; ++y) {
                 for (var x = 0; x < window.totalWidth; ++x) {
-                    if (!window.walls[y][x] && !window.objects[y][x]) { continue; }
+                    if (!window.contents[y][x]) { continue; }
 
                     if (minX === -1 || x < minX) { minX = x; }
                     if (maxX === -1 || x > maxX) { maxX = x; }
@@ -379,27 +374,22 @@
             var diffX = Math.round(Math.round(window.totalWidth / 2) - centerX);
             var diffY = Math.round(Math.round(window.totalHeight / 2) - centerY);
 
-            var newWalls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
-            var newObjects = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+            var newContents = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
 
             for (var y = 0; y < window.totalHeight; ++y) {
                 for (var x = 0; x < window.totalWidth; ++x) {
-                    if (window.walls[y][x]) {
-                        newWalls[y + diffY][x + diffX] = window.walls[y][x];
-                    }
-                    if (window.objects[y][x]) {
-                        newObjects[y + diffY][x + diffX] = window.objects[y][x];
+                    if (window.contents[y][x]) {
+                        newContents[y + diffY][x + diffX] = window.contents[y][x];
                     }
                 }
             }
 
-            window.walls = newWalls;
-            window.objects = newObjects;
+            window.contents = newContents;
             refreshCanvas();
             refreshTextOutput();
         };
 
-        const surroundWithAll = function() {
+        const surroundWithWalls = function() {
             var minX = -1,
                 maxX = -1,
                 minY = -1,
@@ -408,10 +398,10 @@
 
             for (var y = 0; y < window.totalHeight; ++y) {
                 for (var x = 0; x < window.totalWidth; ++x) {
-                    if (!window.walls[y][x] && !window.objects[y][x]) { continue; }
+                    if (!window.contents[y][x]) { continue; }
 
-                    if (window.walls[y][x]) {
-                        wallType = window.walls[y][x];
+                    if (window.contents[y][x] >= "A" && window.contents[y][x] <= "J") {
+                        wallType = window.contents[y][x];
                     }
                     if (minX === -1 || x < minX) { minX = x; }
                     if (maxX === -1 || x > maxX) { maxX = x; }
@@ -425,8 +415,11 @@
             for (var y = minY; y <= maxY; ++y) {
                 for (var x = minX; x <= maxX; ++x) {
                     if (y == minY || y == maxY || x == minX || x == maxX) {
-                        window.walls[y][x] = wallType;
-                        window.objects[y][x] = undefined;
+                        if ((window.contents[y][x] >= "A" && window.contents[y][x] <= "J") || window.contents[y][x] == 'N' || window.contents[y][x] == 'O') {
+                            // do nothing
+                        } else {
+                            window.contents[y][x] = wallType;
+                        }
                     }
                 }
             }
@@ -444,8 +437,7 @@
 
             window.totalWidth = width;
             window.totalHeight = height;
-            window.walls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
-            window.objects = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+            window.contents = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
             adjustCanvasSizes();
             refreshCanvas();
             refreshTextOutput();
@@ -454,25 +446,19 @@
         const loadFromText = function() {
             var text = document.getElementById("textOutput");
             var textContent = (text.value + "").trim();
-            var newWalls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
-            var newObjects = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+            var newContents = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
 
-            var wallsPart = textContent.split("OBJECTS\n")[0];
-            if (!wallsPart || !wallsPart.startsWith("LAYOUT\n")) {
+            textContent = textContent.split("LAYOUT\n");
+            textContent = textContent[1] || textContent[0];
+            if (!textContent || textContent.split("\n").length < 4) {
                     text.value = `Error: unrecognized format`;
                     return;
-            }
-            wallsPart = wallsPart.split("LAYOUT\n")[1];
-            var objectsPart = textContent.split("OBJECTS\n")[1];
-            if (!wallsPart || !objectsPart) {
-                text.value = `Error: unrecognized format`;
-                return;
             }
 
             var x = 0,
                 y = 0;
-            for (var i = 0; i < wallsPart.length; ++i) {
-                var c = wallsPart.charAt(i);
+            for (var i = 0; i < textContent.length; ++i) {
+                var c = textContent.charAt(i);
                 if (c === "\n") {
                     if (x === 0) {
                         continue;
@@ -482,43 +468,17 @@
                     continue;
                 } else if (c === ".") {
                     // do nothing
-                } else if (["d", "f", "g", "h", "j"].includes(c) || (c >= "0" && c <= "9")) {
-                    newWalls[y][x] = c;
+                } else if (isWall(c) || (c >= "0" && c <= "9") || ["s", "e", "k", "l", "t", "y", "u", "i", "b", "n", "m", "q", "w", "r", "a", "z", "x", "c", "v"].includes(c)) {
+                    newContents[y][x] = c;
                 } else {
-                    text.value = `Error: invalid walls character "${c}" (${x},${y})`;
+                    text.value = `Error: invalid character "${c}" (${x},${y})`;
                     return;
                 }
 
                 x++;
             }
 
-            x = 0;
-            y = 0;
-            for (var i = 0; i < objectsPart.length; ++i) {
-                var c = objectsPart.charAt(i);
-                if (c === "\n") {
-                    if (x === 0) {
-                        continue;
-                    }
-                    x = 0;
-                    y++;
-                    continue;
-                } else if (c === ".") {
-                    // do nothing
-                } else if (c >= "0" && c <= "9") {
-                    newObjects[y][x] = c;
-                } else if (["s", "e", "k", "l", "t", "y", "u", "i", "b", "n", "m", "q", "w", "r", "a", "z", "x", "c", "v"].includes(c)) {
-                    newObjects[y][x] = c;
-                } else {
-                    text.value = `Error: invalid objects character "${c}" (${x},${y})`;
-                    return;
-                }
-
-                x++;
-            }
-
-            window.walls = newWalls;
-            window.objects = newObjects;
+            window.contents = newContents;
             centerMap();
             refreshCanvas();
             refreshTextOutput();
@@ -546,21 +506,25 @@
         window.totalHeight = 50;
         window.blockSize = 16;
         window.painting = false;
-        window.walls = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
-        window.objects = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+        window.contents = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
 
         // Event handlers
 
         canvas.addEventListener("mousemove", function (e) {
-            if (window.painting) {
+            if (window.painting && window.operationMode === "walls") {
                 changePositionValue(e);
             }
         }, false);
         canvas.addEventListener("mousedown", function (e) {
             window.painting = true;
-            changePositionValue(e);
+            if (window.operationMode === "walls") {
+                changePositionValue(e);
+            }
         }, false);
-        document.addEventListener("mouseup", function () {
+        document.addEventListener("mouseup", function (e) {
+            if (window.painting && window.operationMode === "objects") {
+                changePositionValue(e);
+            }
             window.painting = false;
         }, false);
 
@@ -573,8 +537,10 @@
         document.getElementById("objectMode").addEventListener("click", switchOperationMode);
         document.getElementById("centerMap1").addEventListener("click", centerMap);
         document.getElementById("centerMap2").addEventListener("click", centerMap);
-        document.getElementById("wallSurround").addEventListener("click", surroundWithAll);
+        document.getElementById("wallSurround").addEventListener("click", surroundWithWalls);
         document.getElementById("newCanvas").addEventListener("click", createNewCanvas);
+        document.getElementById("resetColors1").addEventListener("click", resetColors);
+        document.getElementById("resetColors2").addEventListener("click", resetColors);
 
         // Init
 
