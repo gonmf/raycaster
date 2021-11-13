@@ -7,19 +7,18 @@ static unsigned int door_open_ticks;
 static unsigned int flash_effect_ticks;
 static unsigned int flash_effect_duration;
 
-bool transition_step() {
-    bool ret = false;
+static unsigned int shooting_ticks;
 
+void transition_step() {
     if (door_open_ticks > 0) {
         door_open_ticks--;
-        ret = true;
     }
     if (flash_effect_ticks > 0) {
         flash_effect_ticks--;
-        ret = true;
     }
-
-    return ret;
+    if (shooting_ticks > 0) {
+        shooting_ticks--;
+    }
 }
 
 bool opening_door_transition(double * percentage_open, unsigned int * door_x, unsigned int * door_y) {
@@ -33,10 +32,10 @@ bool opening_door_transition(double * percentage_open, unsigned int * door_x, un
     }
 }
 
-bool open_door_in_front(level_t * level) {
+void open_door_in_front(level_t * level) {
     // do not allow multiple doors opening at once
     if (door_open_ticks > 0) {
-        return false;
+        return;
     }
 
     double target_x = level->observer_x + sin(level->observer_angle / RADIAN_CONSTANT);
@@ -45,7 +44,7 @@ bool open_door_in_front(level_t * level) {
     unsigned int door_y = (unsigned int)(target_y + 0.5);
 
     if (level->content_type[door_x + door_y * level->width] != CONTENT_TYPE_DOOR) {
-        return false;
+        return;
     }
 
     unsigned char door_effect = level->special_effects[door_x + door_y * level->width];
@@ -55,7 +54,7 @@ bool open_door_in_front(level_t * level) {
             level->special_effects[door_x + door_y * level->width] = SPECIAL_EFFECT_NONE;
         } else {
             printf("Door requires key\n");
-            return false;
+            return;
         }
     } else if (door_effect == SPECIAL_EFFECT_REQUIRES_KEY_2) {
         if(level->key_2) {
@@ -63,7 +62,7 @@ bool open_door_in_front(level_t * level) {
             level->special_effects[door_x + door_y * level->width] = SPECIAL_EFFECT_NONE;
         } else {
             printf("Door requires key\n");
-            return false;
+            return;
         }
     }
 
@@ -71,7 +70,6 @@ bool open_door_in_front(level_t * level) {
     opening_door_y = door_y;
     door_open_ticks = DOOR_OPEN_SPEED;
     level->content_type[door_x + door_y * level->width] = CONTENT_TYPE_DOOR_OPEN;
-    return true;
 }
 
 bool short_flash_effect(double * percentage) {
@@ -150,5 +148,21 @@ bool apply_special_effect(level_t * level, bool * exit_found) {
             return true;
         default:
             return false;
+    }
+}
+
+bool shooting_state(unsigned int * step, bool * trigger_shot) {
+    if (shooting_ticks) {
+        *step = shooting_ticks;
+        *trigger_shot = false;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void shooting_start_action() {
+    if (shooting_ticks == 0) {
+        shooting_ticks = SHOOTING_ANIMATION_SPEED;
     }
 }

@@ -3,6 +3,7 @@
 sprite_pack_t * wall_textures;
 sprite_pack_t * objects_sprites;
 sprite_pack_t * enemy_sprites[5];
+sprite_pack_t * weapons_sprites;
 pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
 static double fish_eye_table[VIEWPORT_WIDTH];
@@ -475,10 +476,38 @@ static void fill_in_walls(const level_t * level) {
     }
 }
 
+static void fill_in_weapon(const level_t * level) {
+    unsigned int weapon_id = 1;
+    unsigned int animation_step;
+    unsigned int step;
+    bool trigger_shot;
+
+    if (shooting_state(&step, &trigger_shot)) {
+        animation_step = (SHOOTING_ANIMATION_SPEED - step) / (SHOOTING_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS);
+    } else {
+        animation_step = 0;
+    }
+
+    pixel_t * sprite = weapons_sprites->sprites[animation_step + weapon_id * weapons_sprites->width];
+
+    for (unsigned int y = 0; y < SPRITE_HEIGHT * UI_MULTIPLIER; ++y) {
+        for (unsigned int x = 0; x < SPRITE_WIDTH * UI_MULTIPLIER; ++x) {
+            if (sprite[x / UI_MULTIPLIER + (y / UI_MULTIPLIER) * SPRITE_WIDTH].alpha == 0) {
+                unsigned y2 = y + VIEWPORT_HEIGHT - SPRITE_HEIGHT * UI_MULTIPLIER;
+                unsigned x2 = x + VIEWPORT_WIDTH / 2 - SPRITE_WIDTH * UI_MULTIPLIER / 2;
+
+                fg_buffer[x2 + y2 * VIEWPORT_WIDTH] = sprite[x / UI_MULTIPLIER + (y / UI_MULTIPLIER) * SPRITE_WIDTH];
+            }
+        }
+    }
+}
+
 void paint_scene(const level_t * level) {
     fill_in_background(level);
 
     fill_in_walls(level);
 
     fill_in_objects(level);
+
+    fill_in_weapon(level);
 }

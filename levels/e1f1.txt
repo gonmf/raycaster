@@ -6,7 +6,8 @@ ENEMY_SPRITE_PACK_0
 soldier1
 ENEMY_SPRITE_PACK_1
 soldier2
-
+WEAPONS_SPRITE_PACK
+weapons
 OPEN_DOOR
 4
 16
@@ -37,7 +38,6 @@ KEY_OBJECT_TYPE_0
 KEY_OBJECT_TYPE_1
 3
 4
-
 
 # red,green,blue
 CEIL_COLOR
@@ -112,10 +112,6 @@ A..........DDDD...........A.....a..A
 A.........................A...a..k.A
 A.........................A........A
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-
-
-
-
 
 PLAYER_START_ANGLE
 -90

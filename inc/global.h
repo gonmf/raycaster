@@ -95,6 +95,8 @@ typedef struct __sprite_pack_ {
 #define ENEMY_STATE_DYING 4
 #define ENEMY_STATE_DEAD 5
 
+#define UI_MULTIPLIER 4
+
 #define MAX(X, Y) (X > Y ? X : Y)
 #define MIN(X, Y) (X < Y ? X : Y)
 
@@ -137,10 +139,14 @@ typedef struct __sprite_pack_ {
 #define FINE_RAY_STEP_CONSTANT 0.0078125
 #define ROUGH_RAY_STEP_CONSTANT 0.05
 
+#define SHOOTING_ANIMATION_SPEED 50
+#define SHOOTING_ANIMATION_PARTS 5
+
 // raycaster.c
 extern sprite_pack_t * wall_textures;
 extern sprite_pack_t * objects_sprites;
 extern sprite_pack_t * enemy_sprites[5];
+extern sprite_pack_t * weapons_sprites;
 extern pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
 // color.c
@@ -196,12 +202,14 @@ void init_fish_eye_table();
 void paint_scene(const level_t * level);
 
 // actions.c
-bool transition_step();
+void transition_step();
 bool opening_door_transition(double * percentage_open, unsigned int * door_x, unsigned int * door_y);
-bool open_door_in_front(level_t * level);
+void open_door_in_front(level_t * level);
 bool short_flash_effect(double * percentage);
 void start_flash_effect(unsigned int duration);
 bool apply_special_effect(level_t * level, bool * exit_found);
+bool shooting_state(unsigned int * step, bool * trigger_shot);
+void shooting_start_action();
 
 // ui.c
 void paint_map(const level_t * level);

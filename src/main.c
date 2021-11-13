@@ -70,9 +70,7 @@ static void move_observer(double x_change, double y_change) {
     move_observer2(0.0, y_change);
 }
 
-static bool update_observer_state() {
-    bool needs_refresh = false;
-
+static void update_observer_state() {
     if (!paused) {
         bool keyW = key_is_pressed(sfKeyW);
         bool keyS = key_is_pressed(sfKeyS);
@@ -98,7 +96,6 @@ static bool update_observer_state() {
             double y_change = cos(angle_radians) * mov_value;
 
             move_observer(x_change, y_change);
-            needs_refresh = true;
         }
         if (keyS) {
             double angle_radians = level->observer_angle / RADIAN_CONSTANT;
@@ -106,7 +103,6 @@ static bool update_observer_state() {
             double y_change = cos(angle_radians) * mov_value;
 
             move_observer(-x_change, -y_change);
-            needs_refresh = true;
         }
         if (keyA) {
             double angle_radians = fit_angle(level->observer_angle - 90.0) / RADIAN_CONSTANT;
@@ -114,7 +110,6 @@ static bool update_observer_state() {
             double y_change = cos(angle_radians) * (mov_value / 1.0);
 
             move_observer(x_change, y_change);
-            needs_refresh = true;
         }
         if (keyD) {
             double angle_radians = fit_angle(level->observer_angle + 90.0) / RADIAN_CONSTANT;
@@ -122,7 +117,6 @@ static bool update_observer_state() {
             double y_change = cos(angle_radians) * (mov_value / 1.0);
 
             move_observer(x_change, y_change);
-            needs_refresh = true;
         }
     }
 
@@ -138,7 +132,6 @@ static bool update_observer_state() {
                 set_cursor_visible(true);
             } else {
                 set_cursor_visible(false);
-                needs_refresh = true;
             }
             pause_btn_pressed = false;
         }
@@ -147,9 +140,7 @@ static bool update_observer_state() {
         action_btn_pressed = true;
     } else {
         if (action_btn_pressed) {
-            if (open_door_in_front(level)) {
-                needs_refresh = true;
-            }
+            open_door_in_front(level);
             action_btn_pressed = false;
         }
     }
@@ -159,11 +150,8 @@ static bool update_observer_state() {
         if (map_btn_pressed) {
             show_map = !show_map;
             map_btn_pressed = false;
-            needs_refresh = true;
         }
     }
-
-    return needs_refresh;
 }
 
 static void main_render_loop() {
@@ -172,7 +160,6 @@ static void main_render_loop() {
     unsigned int frames_second = 1;
     long unsigned int last_ms = 0;
     struct timespec spec;
-    bool needs_refresh = true;
 
     while (window_is_open()) {
         if (!paused) {
@@ -188,14 +175,10 @@ static void main_render_loop() {
             frames_second += 1;
             last_ms = ms;
 
-            if (transition_step(level)) {
-                needs_refresh = true;
-            }
+            transition_step(level);
         }
 
-        if (update_observer_state()) {
-            needs_refresh = true;
-        }
+        update_observer_state();
 
         if (!paused) {
             paint_scene(level);
@@ -205,15 +188,13 @@ static void main_render_loop() {
                 brighten_scene(flash_percentage);
             }
 
-            if (needs_refresh) {
-                bool exit_found;
-                apply_special_effect(level, &exit_found);
+            bool exit_found;
+            apply_special_effect(level, &exit_found);
 
-                if (exit_found) {
-                    window_close();
-                    printf("Level exit found\n");
-                    return;
-                }
+            if (exit_found) {
+                window_close();
+                printf("Level exit found\n");
+                return;
             }
 
             if (show_map) {
@@ -239,32 +220,31 @@ static void main_render_loop() {
                 sfKeyCode code = ((sfKeyEvent *)&event)->code;
 
                 remove_key_pressed(code);
+            } else if(paused) {
+                // do nothing
             } else if (event.type == sfEvtMouseMoved) {
                 int move_x = ((sfMouseMoveEvent *)&event)->x - VIEWPORT_WIDTH / 2;
                 int move_y = ((sfMouseMoveEvent *)&event)->y - VIEWPORT_HEIGHT / 2;
 
-                if (!paused) {
-                    if (move_x) {
-                        double angle_change = ((double)move_x) * HORIZONTAL_ROTATION_CONSTANT / VIEWPORT_WIDTH;
-                        level->observer_angle += angle_change;
-                        needs_refresh = true;
-                    }
+                if (move_x) {
+                    double angle_change = ((double)move_x) * HORIZONTAL_ROTATION_CONSTANT / VIEWPORT_WIDTH;
+                    level->observer_angle += angle_change;
+                }
 
-                    if (move_y) {
-                        double angle_change = ((double)move_y) * VERTICAL_ROTATION_CONSTANT / VIEWPORT_HEIGHT;
-                        level->observer_angle2 = MIN(MAX(level->observer_angle2 - angle_change, 1.0), 179.0);
-                        needs_refresh = true;
-                    }
+                if (move_y) {
+                    double angle_change = ((double)move_y) * VERTICAL_ROTATION_CONSTANT / VIEWPORT_HEIGHT;
+                    level->observer_angle2 = MIN(MAX(level->observer_angle2 - angle_change, 1.0), 179.0);
                 }
             }
         }
 
         if (!paused) {
-            if (needs_refresh) {
-                window_center_mouse();
-                window_update_pixels(fg_buffer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, UI_BORDER, UI_BORDER);
-                needs_refresh = false;
+            if (sfMouse_isButtonPressed(sfMouseLeft)) {
+                shooting_start_action();
             }
+
+            window_center_mouse();
+            window_update_pixels(fg_buffer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, UI_BORDER, UI_BORDER);
             window_refresh();
         }
     }
@@ -430,6 +410,10 @@ static void unload_assets() {
             free(enemy_sprites[i]);
             enemy_sprites[i] = NULL;
         }
+    }
+    if (weapons_sprites) {
+        free(weapons_sprites);
+        weapons_sprites = NULL;
     }
 }
 

@@ -31,3 +31,6 @@ https://www.spriters-resource.com/pc_computer/wolfenstein3d/sheet/27846/
 
 Machinegun Soldier, Author Hades666
 https://www.spriters-resource.com/pc_computer/wolfenstein3d/sheet/65590/
+
+Weapons, Author Lotos
+https://www.spriters-resource.com/pc_computer/wolfenstein3d/sheet/27848/

@@ -10,6 +10,7 @@ static bool valid_command(const char * s) {
     if (strcmp(s, "PLAYER_START_ANGLE") == 0) return true;
     if (strcmp(s, "WALLS_SPRITE_PACK") == 0) return true;
     if (strcmp(s, "OBJECTS_SPRITE_PACK") == 0) return true;
+    if (strcmp(s, "WEAPONS_SPRITE_PACK") == 0) return true;
     if (start_with(s, "WALL_TYPE_")) return true;
     if (start_with(s, "FURNITURE_OBJECT_TYPE_")) return true;
     if (start_with(s, "TREASURE_OBJECT_TYPE_")) return true;
@@ -230,6 +231,13 @@ level_t * read_level_info(const char * filename) {
                         }
                         enemy_sprites[type_nr] = calloc(1, sizeof(sprite_pack_t));
                         read_sprite_pack(enemy_sprites[type_nr], line_buffer);
+                        last_command_set = 0;
+                    } else if (strcmp(last_command, "WEAPONS_SPRITE_PACK") == 0) {
+                        if (weapons_sprites) {
+                            error_w_line("duplicated command", line - 1);
+                        }
+                        weapons_sprites = calloc(1, sizeof(sprite_pack_t));
+                        read_sprite_pack(weapons_sprites, line_buffer);
                         last_command_set = 0;
                     } else if (strcmp(last_command, "CEIL_COLOR") == 0) {
                         int val = (int)strtol(line_buffer, NULL, 16);
@@ -588,6 +596,9 @@ level_t * read_level_info(const char * filename) {
     }
     if (!objects_sprites) {
         error_w_line("end of file without objects sprite pack definition", line);
+    }
+    if (!weapons_sprites) {
+        error_w_line("end of file without weapons sprite pack definition", line);
     }
 
     free(buffer);
