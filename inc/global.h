@@ -14,8 +14,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <limits.h>
-
-#define DEBUG 0
+#include "local.h"
 
 #define true 1
 #define false 0
@@ -104,8 +103,8 @@ typedef struct __sprite_pack_ {
 
 #define KEYS_PRESSED_BUFFER_SIZE 16
 
-#define VIEWPORT_WIDTH 1200
-#define VIEWPORT_HEIGHT 600
+#define VIEWPORT_WIDTH 600
+#define VIEWPORT_HEIGHT 300
 #define UI_BORDER 8
 #define UI_BOTTOM 128
 #define WINDOW_TOTAL_WIDTH (VIEWPORT_WIDTH + UI_BORDER + UI_BORDER)

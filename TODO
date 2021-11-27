@@ -1,6 +1,11 @@
 - Enemies
-  - strategic state (waiting, looking for player)
-  - detailed state (moving, shooting)
+  - strategic state (waiting, looking for player/alerted)
+    - in waiting do nothing
+    - in alerted keep track of where last saw player or heard noise
+      - shortest path algorithm to that location (do not recalculate every frame or without the location having changed)
+        - if within a number of steps and in range of fire (without other enemies in middle), shoot
+        - otherwise move closer
+  - detailed state (standing still, moving, shooting)
   - actions/animations
   - shooting
   - dying and leaving an ammo pack behind
