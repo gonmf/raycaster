@@ -281,6 +281,7 @@ static void paint_ui() {
 static void open_level() {
     printf("Level start - press P to pause and Esc to quit\n");
 
+    init_raycaster(level);
     paint_ui();
     paint_scene(level);
 

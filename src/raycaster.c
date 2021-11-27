@@ -6,6 +6,8 @@ sprite_pack_t * enemy_sprites[5];
 sprite_pack_t * weapons_sprites;
 pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
+static char * enemy_angles;
+
 static double fish_eye_table[VIEWPORT_WIDTH];
 
 static unsigned int horizon_offset(const level_t * level) {
@@ -334,6 +336,10 @@ static void fill_in_objects(const level_t * level) {
     unsigned char enemy_type;
     double block_x;
 
+    // We remember enemy angles to make sure in the same frame always the same angle/sprite
+    // is used.
+    memset(enemy_angles, -1, level->enemies_count);
+
     for (unsigned int x = 0; x < VIEWPORT_WIDTH; ++x) {
         double x_angle = fit_angle(fish_eye_table[x] + level->observer_angle);
         block_hit_x = INT_MAX;
@@ -355,19 +361,24 @@ static void fill_in_objects(const level_t * level) {
             unsigned char sprite_id;
 
             if (render_enemy) {
-                unsigned int enemy_angle;
                 int angles_sum;
 
                 switch(level->enemy[enemy].state) {
                     case ENEMY_STATE_STILL:
-                        angles_sum = (unsigned int)(x_angle + level->enemy[enemy].angle + 180 + 23);
-                        enemy_angle = (8 - (((unsigned int)angles_sum) / 45)) % 8;
-                        sprite_id = enemy_angle;
+                        if (enemy_angles[enemy] == -1) {
+                            angles_sum = (unsigned int)(x_angle + level->enemy[enemy].angle + 180 + 23);
+                            enemy_angles[enemy] = (8 - (((unsigned int)angles_sum) / 45)) % 8;
+                        }
+
+                        sprite_id = enemy_angles[enemy];
                         break;
                     case ENEMY_STATE_MOVING:
-                        angles_sum = (unsigned int)(x_angle + level->enemy[enemy].angle + 180 + 23);
-                        enemy_angle = (8 - (((unsigned int)angles_sum) / 45)) % 8;
-                        sprite_id = enemy_angle + level->enemy[enemy].state_step * 8;
+                        if (enemy_angles[enemy] == -1) {
+                            angles_sum = (unsigned int)(x_angle + level->enemy[enemy].angle + 180 + 23);
+                            enemy_angles[enemy] = (8 - (((unsigned int)angles_sum) / 45)) % 8;
+                        }
+
+                        sprite_id = enemy_angles[enemy] + level->enemy[enemy].state_step * 8;
                         break;
                     case ENEMY_STATE_SHOT:
                         sprite_id = 7 + 5 * 8;
@@ -510,4 +521,12 @@ void paint_scene(const level_t * level) {
     fill_in_objects(level);
 
     fill_in_weapon(level);
+}
+
+void init_raycaster(const level_t * level) {
+    if (enemy_angles) {
+        free(enemy_angles);
+    }
+
+    enemy_angles = malloc(level->enemies_count);
 }

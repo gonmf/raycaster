@@ -12,8 +12,8 @@
 ---
 
 - Allow saving and loading ongoing levels
+- Music and sound effects
 - Enemy noise and awareness
 
 Known Bugs
 - Camera is able to get too close against corners of blocks.
-- Object sprites are rendered inverted on the xx axis

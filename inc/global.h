@@ -200,6 +200,7 @@ bool window_poll_event(sfEvent * event);
 // raycaster.c
 void init_fish_eye_table();
 void paint_scene(const level_t * level);
+void init_raycaster(const level_t * level);
 
 // actions.c
 void transition_step();
