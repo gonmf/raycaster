@@ -100,7 +100,7 @@ bool apply_special_effect(level_t * level, bool * exit_found) {
     unsigned int i = rounded_x + rounded_y * level->width;
     unsigned char effect = level->special_effects[i];
 
-    switch(effect) {
+    switch (effect) {
         case SPECIAL_EFFECT_LEVEL_END:
             *exit_found = true;
             return true;
@@ -151,10 +151,21 @@ bool apply_special_effect(level_t * level, bool * exit_found) {
     }
 }
 
-bool shooting_state(unsigned int * step, bool * trigger_shot) {
+bool shooting_state(level_t * level, unsigned int * step, bool * trigger_shot) {
     if (shooting_ticks) {
+        unsigned int animation_step_size = SHOOTING_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
+        if (shooting_ticks == animation_step_size * 3) {
+            if (level->ammo == 0) {
+                shooting_ticks -= 2 * animation_step_size;
+                *trigger_shot = false;
+                printf("Out of ammo\n");
+            } else {
+                level->ammo = level->ammo - 1;
+                *trigger_shot = true;
+                printf("Shot fired! New ammo: %u\n", level->ammo);
+            }
+        }
         *step = shooting_ticks;
-        *trigger_shot = false;
         return true;
     } else {
         return false;

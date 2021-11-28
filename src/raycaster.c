@@ -7,7 +7,7 @@ sprite_pack_t * weapons_sprites;
 pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
 static char * enemy_angles;
-
+static bool trigger_shot;
 static double fish_eye_table[VIEWPORT_WIDTH];
 
 static unsigned int horizon_offset(const level_t * level) {
@@ -114,20 +114,19 @@ static double cast_simple_ray(const level_t * level, double angle, double * bloc
                 int closest_vertice = -1;
                 double min_distance = 0.0;
                 for (int i = 0; i < 4; ++i) {
-                    double distance = sqrt((vertice_x[i] - level->observer_x) * (vertice_x[i] - level->observer_x) + (vertice_y[i] - level->observer_y) * (vertice_y[i] - level->observer_y));
-                    if ((closest_vertice == -1) || (min_distance > distance)) {
+                    double dist = distance(vertice_x[i], vertice_y[i], level->observer_x, level->observer_y);
+                    if ((closest_vertice == -1) || (min_distance > dist)) {
                         closest_vertice = i;
-                        min_distance = distance;
+                        min_distance = dist;
                     }
                 }
 
                 int left_vertice = (closest_vertice + 4 - 1) % 4;
                 int right_vertice = (closest_vertice + 1) % 4;
 
-                double hangle = sqrt((vertice_x[closest_vertice] - curr_x) * (vertice_x[closest_vertice] - curr_x) + (vertice_y[closest_vertice] - curr_y) * (vertice_y[closest_vertice] - curr_y));
-
-                double distance_left = sqrt((vertice_x[left_vertice] - curr_x) * (vertice_x[left_vertice] - curr_x) + (vertice_y[left_vertice] - curr_y) * (vertice_y[left_vertice] - curr_y));
-                double distance_right = sqrt((vertice_x[right_vertice] - curr_x) * (vertice_x[right_vertice] - curr_x) + (vertice_y[right_vertice] - curr_y) * (vertice_y[right_vertice] - curr_y));
+                double hangle = distance(vertice_x[closest_vertice], vertice_y[closest_vertice], curr_x, curr_y);
+                double distance_left = distance(vertice_x[left_vertice], vertice_y[left_vertice], curr_x, curr_y);
+                double distance_right = distance(vertice_x[right_vertice], vertice_y[right_vertice], curr_x, curr_y);
 
                 if (distance_left > distance_right) {
                     hangle = 1.0 - hangle;
@@ -154,10 +153,10 @@ static double cast_simple_ray(const level_t * level, double angle, double * bloc
 
                     double enemy_x = level->enemy[i].x;
                     double enemy_y = level->enemy[i].y;
-                    double distance = sqrt((level->observer_x - enemy_x) * (level->observer_x - enemy_x) + (level->observer_y - enemy_y) * (level->observer_y - enemy_y));
+                    double dist = distance(level->observer_x, level->observer_y, enemy_x, enemy_y);
                     double angle_to_center = atan((level->observer_x - enemy_x) / (level->observer_y - enemy_y)) * RADIAN_CONSTANT;
                     double angle_diff = angle_to_center - angle;
-                    double opposite = tan(angle_diff / RADIAN_CONSTANT) * distance;
+                    double opposite = tan(angle_diff / RADIAN_CONSTANT) * dist;
                     if (fabs(opposite) > 0.5) {
                         continue;
                     }
@@ -165,7 +164,7 @@ static double cast_simple_ray(const level_t * level, double angle, double * bloc
                     *enemy = i;
                     *block_x = 1.0 - MIN(MAX((opposite + 0.5) / 1.0, 0.0), 1.0);
                     *step_count = steps + 1;
-                    return distance;
+                    return dist;
                 }
             }
             continue;
@@ -175,16 +174,16 @@ static double cast_simple_ray(const level_t * level, double angle, double * bloc
         *block_hit_y = rounded_y;
         *enemy = INT_MAX;
 
-        double distance = sqrt((level->observer_x - rounded_x) * (level->observer_x - rounded_x) + (level->observer_y - rounded_y) * (level->observer_y - rounded_y));
+        double dist = distance(level->observer_x, level->observer_y, rounded_x, rounded_y);
         double angle_to_center = atan((level->observer_x - rounded_x) / (level->observer_y - rounded_y)) * RADIAN_CONSTANT;
         double angle_diff = angle_to_center - angle;
-        double opposite = tan(angle_diff / RADIAN_CONSTANT) * distance;
+        double opposite = tan(angle_diff / RADIAN_CONSTANT) * dist;
         if (fabs(opposite) > 0.5) {
             continue;
         }
         *block_x = 1.0 - MIN(MAX((opposite + 0.5) / 1.0, 0.0), 1.0);
         *step_count = steps + 1;
-        return distance;
+        return dist;
     }
 }
 
@@ -235,7 +234,6 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
 
             curr_x -= x_change / 2.0;
             curr_y -= y_change / 2.0;
-            double hangle;
 
             double vertice_x[4];
             double vertice_y[4];
@@ -250,20 +248,20 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
             int closest_vertice = -1;
             double min_distance = 0.0;
             for (int i = 0; i < 4; ++i) {
-                double distance = sqrt((vertice_x[i] - level->observer_x) * (vertice_x[i] - level->observer_x) + (vertice_y[i] - level->observer_y) * (vertice_y[i] - level->observer_y));
-                if ((closest_vertice == -1) || (min_distance > distance)) {
+                double dist = distance(vertice_x[i], vertice_y[i], level->observer_x, level->observer_y);
+                if ((closest_vertice == -1) || (min_distance > dist)) {
                     closest_vertice = i;
-                    min_distance = distance;
+                    min_distance = dist;
                 }
             }
 
             int left_vertice = (closest_vertice + 4 - 1) % 4;
             int right_vertice = (closest_vertice + 1) % 4;
 
-            hangle = sqrt((vertice_x[closest_vertice] - curr_x) * (vertice_x[closest_vertice] - curr_x) + (vertice_y[closest_vertice] - curr_y) * (vertice_y[closest_vertice] - curr_y));
+            double hangle = distance(vertice_x[closest_vertice], vertice_y[closest_vertice], curr_x, curr_y);
 
-            double distance_left = sqrt((vertice_x[left_vertice] - curr_x) * (vertice_x[left_vertice] - curr_x) + (vertice_y[left_vertice] - curr_y) * (vertice_y[left_vertice] - curr_y));
-            double distance_right = sqrt((vertice_x[right_vertice] - curr_x) * (vertice_x[right_vertice] - curr_x) + (vertice_y[right_vertice] - curr_y) * (vertice_y[right_vertice] - curr_y));
+            double distance_left = distance(vertice_x[left_vertice], vertice_y[left_vertice], curr_x, curr_y);
+            double distance_right = distance(vertice_x[right_vertice], vertice_y[right_vertice], curr_x, curr_y);
 
             if (distance_left > distance_right) {
                 hangle = 1.0 - hangle;
@@ -362,8 +360,9 @@ static void fill_in_objects(const level_t * level) {
 
             if (render_enemy) {
                 int angles_sum;
+                unsigned int animation_step;
 
-                switch(level->enemy[enemy].state) {
+                switch (level->enemy[enemy].state) {
                     case ENEMY_STATE_STILL:
                         if (enemy_angles[enemy] == -1) {
                             angles_sum = (unsigned int)(x_angle + level->enemy[enemy].angle + 180 + 23);
@@ -373,6 +372,7 @@ static void fill_in_objects(const level_t * level) {
                         sprite_id = enemy_angles[enemy];
                         break;
                     case ENEMY_STATE_MOVING:
+                        // TODO:
                         if (enemy_angles[enemy] == -1) {
                             angles_sum = (unsigned int)(x_angle + level->enemy[enemy].angle + 180 + 23);
                             enemy_angles[enemy] = (8 - (((unsigned int)angles_sum) / 45)) % 8;
@@ -384,10 +384,12 @@ static void fill_in_objects(const level_t * level) {
                         sprite_id = 7 + 5 * 8;
                         break;
                     case ENEMY_STATE_SHOOTING:
+                        // TODO:
                         sprite_id = level->enemy[enemy].state_step + 5 * 8;
                         break;
                     case ENEMY_STATE_DYING:
-                        sprite_id = level->enemy[enemy].state_step + 5 * 8;
+                        animation_step = ((ENEMY_DYING_ANIMATION_SPEED - level->enemy[enemy].state_step) * ENEMY_DYING_ANIMATION_PARTS) / ENEMY_DYING_ANIMATION_SPEED;
+                        sprite_id = animation_step + 5 * 8;
                         break;
                     default: // dead
                         sprite_id = 4 + 5 * 8;
@@ -395,6 +397,11 @@ static void fill_in_objects(const level_t * level) {
                 }
 
                 enemy_type = level->enemy[enemy].type;
+
+                if (x == VIEWPORT_WIDTH / 2 && trigger_shot) {
+                    hit_enemy(&level->enemy[enemy], distance);
+                    trigger_shot = false;
+                }
             } else {
                 sprite_id = level->texture[block_hit_x + block_hit_y * level->width];
                 level->map_revealed[block_hit_x + block_hit_y * level->width] = true;
@@ -487,15 +494,27 @@ static void fill_in_walls(const level_t * level) {
     }
 }
 
-static void fill_in_weapon(const level_t * level) {
+static void fill_in_weapon(level_t * level) {
     unsigned int weapon_id = 1;
     unsigned int animation_step;
     unsigned int step;
-    bool trigger_shot;
 
-    if (shooting_state(&step, &trigger_shot)) {
-        animation_step = (SHOOTING_ANIMATION_SPEED - step) / (SHOOTING_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS);
+    if (shooting_state(level, &step, &trigger_shot)) {
+        unsigned int animation_step_size = SHOOTING_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
+/*
+        if (animation_step == animation_step_size) {
+            if (level->ammo == 0) {
+
+            } else {
+                level->ammo = level->ammo - 1;
+
+            }
+        }
+*/
+        animation_step = (SHOOTING_ANIMATION_SPEED - step) / animation_step_size;
+
     } else {
+        trigger_shot = false;
         animation_step = 0;
     }
 
@@ -513,7 +532,7 @@ static void fill_in_weapon(const level_t * level) {
     }
 }
 
-void paint_scene(const level_t * level) {
+void paint_scene(level_t * level) {
     fill_in_background(level);
 
     fill_in_walls(level);

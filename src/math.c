@@ -19,3 +19,9 @@ int fit_angle_int(int d) {
     }
     return d;
 }
+
+double distance(double a_x, double a_y, double b_x, double b_y) {
+    double diff_x = a_x - b_x;
+    double diff_y = a_y - b_y;
+    return sqrt(diff_x * diff_x + diff_y * diff_y);
+}

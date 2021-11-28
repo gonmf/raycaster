@@ -483,44 +483,29 @@ level_t * read_level_info(const char * filename) {
                                 map_texture[map_layout_idx] = treasure_obj_types_x[3] + treasure_obj_types_y[3] * objects_sprites->width;
                                 map_special_effects[map_layout_idx] = SPECIAL_EFFECT_SCORE_4;
                             // Enemies
-                            } else if (d == 'a') {
-                                map_enemies[enemy_count].type = 0;
+                            } else if (d == 'a' || d == 'z' || d == 'x' || d == 'c' || d == 'v') {
+                                switch (d) {
+                                    case 'a':
+                                        map_enemies[enemy_count].type = 0;
+                                        break;
+                                    case 'z':
+                                        map_enemies[enemy_count].type = 1;
+                                        break;
+                                    case 'x':
+                                        map_enemies[enemy_count].type = 2;
+                                        break;
+                                    case 'c':
+                                        map_enemies[enemy_count].type = 3;
+                                        break;
+                                    case 'v':
+                                        map_enemies[enemy_count].type = 4;
+                                        break;
+                                }
                                 map_enemies[enemy_count].life = 100;
                                 map_enemies[enemy_count].x = (double)i;
                                 map_enemies_y[enemy_count] = map_size_h;
                                 map_enemies[enemy_count].state = ENEMY_STATE_STILL;
-                                map_enemies[enemy_count].state_step = 0;
-                                enemy_count++;
-                            } else if (d == 'z') {
-                                map_enemies[enemy_count].type = 1;
-                                map_enemies[enemy_count].life = 100;
-                                map_enemies[enemy_count].x = (double)i;
-                                map_enemies_y[enemy_count] = map_size_h;
-                                map_enemies[enemy_count].state = ENEMY_STATE_STILL;
-                                map_enemies[enemy_count].state_step = 0;
-                                enemy_count++;
-                            } else if (d == 'x') {
-                                map_enemies[enemy_count].type = 2;
-                                map_enemies[enemy_count].life = 100;
-                                map_enemies[enemy_count].x = (double)i;
-                                map_enemies_y[enemy_count] = map_size_h;
-                                map_enemies[enemy_count].state = ENEMY_STATE_STILL;
-                                map_enemies[enemy_count].state_step = 0;
-                                enemy_count++;
-                            } else if (d == 'c') {
-                                map_enemies[enemy_count].type = 3;
-                                map_enemies[enemy_count].life = 100;
-                                map_enemies[enemy_count].x = (double)i;
-                                map_enemies_y[enemy_count] = map_size_h;
-                                map_enemies[enemy_count].state = ENEMY_STATE_STILL;
-                                map_enemies[enemy_count].state_step = 0;
-                                enemy_count++;
-                            } else if (d == 'v') {
-                                map_enemies[enemy_count].type = 4;
-                                map_enemies[enemy_count].life = 100;
-                                map_enemies[enemy_count].x = (double)i;
-                                map_enemies_y[enemy_count] = map_size_h;
-                                map_enemies[enemy_count].state = ENEMY_STATE_STILL;
+                                map_enemies[enemy_count].strategic_state = ENEMY_STRATEGIC_STATE_WAITING;
                                 map_enemies[enemy_count].state_step = 0;
                                 enemy_count++;
                             // Furniture
@@ -627,6 +612,7 @@ level_t * read_level_info(const char * filename) {
     ret->door_open_texture = open_door_x + open_door_y * wall_textures->width;
     ret->enemy = NULL; // calloc(ret->enemies_count, sizeof(enemy_t));
     ret->score = 0;
+    ret->ammo = 8;
 #if DEBUG
     ret->key_1 = true;
     ret->key_2 = true;

@@ -27,9 +27,19 @@ typedef struct  __attribute__((__packed__)) __pixel_ {
     unsigned char alpha; // not used but present for performance
 } pixel_t;
 
+typedef struct  __attribute__((__packed__)) __list_ {
+    struct __list_ * next;
+    double angle;
+} list_t;
+
 typedef struct __attribute__((__packed__)) __enemy_ {
     unsigned char type;
-    char life;
+    unsigned char life;
+    unsigned char strategic_state;
+    double goal_x;
+    double goal_y;
+    list_t * moving_plan;
+    // Animation state
     unsigned char state;
     unsigned char state_step;
     double x;
@@ -56,6 +66,7 @@ typedef struct  __level_ {
     enemy_t * enemy;
     bool key_1;
     bool key_2;
+    unsigned int ammo;
 } level_t;
 
 #define SPRITE_WIDTH 64
@@ -93,6 +104,10 @@ typedef struct __sprite_pack_ {
 #define ENEMY_STATE_SHOOTING 3
 #define ENEMY_STATE_DYING 4
 #define ENEMY_STATE_DEAD 5
+
+#define ENEMY_STRATEGIC_STATE_WAITING 0
+#define ENEMY_STRATEGIC_STATE_ALERTED 1
+#define ENEMY_STRATEGIC_STATE_ENGAGED 2
 
 #define UI_MULTIPLIER 4
 
@@ -140,6 +155,9 @@ typedef struct __sprite_pack_ {
 
 #define SHOOTING_ANIMATION_SPEED 50
 #define SHOOTING_ANIMATION_PARTS 5
+#define ENEMY_SHOT_ANIMATION_SPEED 20
+#define ENEMY_DYING_ANIMATION_PARTS 4
+#define ENEMY_DYING_ANIMATION_SPEED 48
 
 // raycaster.c
 extern sprite_pack_t * wall_textures;
@@ -181,6 +199,7 @@ unsigned int file_read(char * dst, unsigned int max_size, const char * filename)
 // math.c
 double fit_angle(double d);
 int fit_angle_int(int d);
+double distance(double a_x, double a_y, double b_x, double b_y);
 
 // string.c
 bool start_with(const char * s, const char * prefix);
@@ -198,7 +217,7 @@ bool window_poll_event(sfEvent * event);
 
 // raycaster.c
 void init_fish_eye_table();
-void paint_scene(const level_t * level);
+void paint_scene(level_t * level);
 void init_raycaster(const level_t * level);
 
 // actions.c
@@ -208,7 +227,7 @@ void open_door_in_front(level_t * level);
 bool short_flash_effect(double * percentage);
 void start_flash_effect(unsigned int duration);
 bool apply_special_effect(level_t * level, bool * exit_found);
-bool shooting_state(unsigned int * step, bool * trigger_shot);
+bool shooting_state(level_t * level, unsigned int * step, bool * trigger_shot);
 void shooting_start_action();
 
 // ui.c
@@ -221,5 +240,8 @@ pixel_t darken_shading(pixel_t color, double factor);
 void brighten_scene(double factor);
 void darken_scene(double factor);
 void init_base_colors();
+
+// game.c
+void hit_enemy(enemy_t * enemy, double distance);
 
 #endif
