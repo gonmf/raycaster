@@ -1,5 +1,5 @@
 raycaster
-*.ppm
+sprites/dump/
 
 # Prerequisites
 *.d

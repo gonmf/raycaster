@@ -536,18 +536,7 @@ static void fill_in_weapon(level_t * level) {
 
     if (shooting_state(level, &step, &trigger_shot)) {
         unsigned int animation_step_size = SHOOTING_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
-/*
-        if (animation_step == animation_step_size) {
-            if (level->ammo == 0) {
-
-            } else {
-                level->ammo = level->ammo - 1;
-
-            }
-        }
-*/
         animation_step = (SHOOTING_ANIMATION_SPEED - step) / animation_step_size;
-
     } else {
         trigger_shot = false;
         animation_step = 0;

@@ -17,6 +17,7 @@ pixel_t shading(pixel_t min_color, pixel_t max_color, double factor) {
     ret.red = (unsigned char)(min_color.red * (1.0 - factor) + max_color.red * factor);
     ret.green = (unsigned char)(min_color.green * (1.0 - factor) + max_color.green * factor);
     ret.blue = (unsigned char)(min_color.blue * (1.0 - factor) + max_color.blue * factor);
+    ret.alpha = 0;
 
     return ret;
 }

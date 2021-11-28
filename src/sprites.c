@@ -37,7 +37,7 @@ static void parse_sprite_pack_metadata(
 
     char * buffer = file_buf;
     unsigned int line = 0;
-    char line_buffer[3];
+    char line_buffer[8];
     line_buffer[0] = 0;
     unsigned int line_pos = 0;
     char c;
@@ -48,7 +48,6 @@ static void parse_sprite_pack_metadata(
             }
 
             int val = atoi(line_buffer);
-
             if (line == 0) {
                 pack->width = validate_sprite_pack_val(val, 64);
             } else if (line == 1) {
@@ -64,6 +63,9 @@ static void parse_sprite_pack_metadata(
             line_buffer[line_pos] = 0;
         } else if (c != '\r') {
             line_buffer[line_pos++] = c;
+            if (line_pos == 8) {
+                error("Invalid sprite pack format");
+            }
             line_buffer[line_pos] = 0;
         }
         buffer++;
@@ -126,10 +128,10 @@ static void read_sprite_pack_pixels(
     free(file_buf);
 }
 
-#if 0
+#if DUMP_SUB_SPRITES
 static void dump_sprite(const pixel_t * image, const char * pack_name, unsigned int x, unsigned int y) {
     char filename[100];
-    sprintf(filename, "sprites/dump_sprite_%s_%ux%u.ppm", pack_name, x, y);
+    sprintf(filename, "sprites/dump/dump_sprite_%s_%ux%u.ppm", pack_name, x, y);
 
     FILE * file = fopen(filename, "w");
 
@@ -154,6 +156,13 @@ static void dump_sprite(const pixel_t * image, const char * pack_name, unsigned 
 void read_sprite_pack(sprite_pack_t * pack, const char * pack_name) {
     printf("Loading %s\n", pack_name);
 
+#if DUMP_SUB_SPRITES
+    struct stat st;
+    if (stat("sprites/dump", &st) == -1) {
+        mkdir("sprites/dump", 0700);
+    }
+#endif
+
     bool has_transparent_color = false;
     unsigned int transparent_color = 0;
 
@@ -164,6 +173,7 @@ void read_sprite_pack(sprite_pack_t * pack, const char * pack_name) {
     pixel_t * pixel_buf = calloc(total_width * total_height, sizeof(pixel_t));
 
     read_sprite_pack_pixels(pixel_buf, pack, has_transparent_color, transparent_color);
+
     for (unsigned int pack_y = 0; pack_y < pack->height; ++pack_y) {
         for (unsigned int pack_x = 0; pack_x < pack->width; ++pack_x) {
             pixel_t * dst = calloc(SPRITE_WIDTH * SPRITE_HEIGHT, sizeof(pixel_t));
@@ -171,7 +181,7 @@ void read_sprite_pack(sprite_pack_t * pack, const char * pack_name) {
 
             read_subsprite(dst, pixel_buf, pack->width, pack_x, pack_y);
 
-#if 0
+#if DUMP_SUB_SPRITES
             dump_sprite(dst, pack_name, pack_x, pack_y);
 #endif
         }

@@ -1,5 +1,5 @@
+- Improved texture mapping: currently only part of it is flexible
 - Enemies
-  - upon death, becoming simple object and allow passing through
   - strategic state (waiting, looking for player/alerted)
     - in waiting do nothing
     - in alerted keep track of where last saw player or heard noise
@@ -9,8 +9,6 @@
   - detailed state (standing still, moving, shooting)
   - actions/animations
   - shooting
-  - dying and leaving an ammo pack behind
-  - Moving projectiles
 - Game UI
 - Config file or UI menu for mouse sensitivity, resolution, FPS
   - Configurable viewport (not ratio)
@@ -20,6 +18,3 @@
 - Allow saving and loading ongoing levels
 - Music and sound effects
 - Enemy noise and awareness
-
-Known Bugs
-- Camera is able to get too close against corners of blocks.

@@ -6,6 +6,7 @@
 #include <SFML/Graphics.h>
 #include <inttypes.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <stdio.h>
@@ -27,18 +28,20 @@ typedef struct  __attribute__((__packed__)) __pixel_ {
     unsigned char alpha; // not used but present for performance
 } pixel_t;
 
+/*
 typedef struct  __attribute__((__packed__)) __list_ {
     struct __list_ * next;
     double angle;
 } list_t;
+*/
 
 typedef struct __attribute__((__packed__)) __enemy_ {
     unsigned char type;
     unsigned char life;
     unsigned char strategic_state;
-    double goal_x;
-    double goal_y;
-    list_t * moving_plan;
+    // double goal_x;
+    // double goal_y;
+    // list_t * moving_plan;
     // Animation state
     unsigned char state;
     unsigned char state_step;
@@ -55,7 +58,7 @@ typedef struct __attribute__((__packed__)) __object_ {
     double y;
 } object_t;
 
-typedef struct  __level_ {
+typedef struct __level_ {
     pixel_t ceil_color;
     pixel_t floor_color;
     unsigned int width;
@@ -89,7 +92,7 @@ typedef struct __sprite_pack_ {
     pixel_t ** sprites; // [columns x rows][pixels_x x pixels_y]
 } sprite_pack_t;
 
-#define EQUAL_PIXEL(A,B) (A.red == B.red && A.green == B.green && A.blue == B.blue && A.alpha == B.alpha)
+#define EQUAL_PIXEL(A,B) (A.red == B.red && A.green == B.green && A.blue == B.blue)
 
 #define CONTENT_TYPE_EMPTY 0
 #define CONTENT_TYPE_WALL 1

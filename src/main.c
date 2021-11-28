@@ -213,12 +213,15 @@ static void update_enemies_state() {
 static void main_render_loop() {
     window_update_pixels(background, WINDOW_TOTAL_WIDTH, WINDOW_TOTAL_HEIGHT, 0, 0);
 
+#if PRINT_FPS
     unsigned int frames_second = 1;
     long unsigned int last_ms = 0;
     struct timespec spec;
+#endif
 
     while (window_is_open()) {
         if (!paused) {
+#if PRINT_FPS
             clock_gettime(CLOCK_REALTIME, &spec);
             long unsigned int ms = spec.tv_nsec / 1000000;
 
@@ -230,7 +233,7 @@ static void main_render_loop() {
 
             frames_second += 1;
             last_ms = ms;
-
+#endif
             transition_step(level);
         }
 
@@ -389,7 +392,7 @@ static bool select_level() {
     unsigned int selection = 0;
     bool quit = false;
 
-    if (levels_listed > 1) {
+    if (!SKIP_LEVEL_SELECT && levels_listed > 1) {
         unsigned int buf_idx;
         char * buf = calloc(MAX_FILE_NAME_SIZ, 1);
 
@@ -485,7 +488,7 @@ int main() {
 
     while (select_level()) {
         open_level();
-#if DEBUG
+#if DEBUG || SKIP_LEVEL_SELECT
         break;
 #endif
         unload_assets();
