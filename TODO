@@ -1,4 +1,3 @@
-- Change object definition to have decimal point location
 - Enemies
   - upon death, becoming simple object and allow passing through
   - strategic state (waiting, looking for player/alerted)

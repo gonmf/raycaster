@@ -1,6 +1,8 @@
 #include "global.h"
 
-void hit_enemy(enemy_t * enemy, double distance) {
+void hit_enemy(level_t * level, unsigned int enemy_i, double distance) {
+    enemy_t * enemy = &level->enemy[enemy_i];
+
     if (enemy->state == ENEMY_STATE_STILL || enemy->state == ENEMY_STATE_MOVING) {
         enemy->state = ENEMY_STATE_SHOT;
         enemy->state_step = ENEMY_SHOT_ANIMATION_SPEED;
@@ -16,8 +18,14 @@ void hit_enemy(enemy_t * enemy, double distance) {
             enemy->life = 0;
             enemy->state = ENEMY_STATE_DYING;
             enemy->state_step = ENEMY_DYING_ANIMATION_SPEED;
+
+            level->object[level->objects_count].type = OBJECT_TYPE_NON_BLOCK;
+            level->object[level->objects_count].texture = 3 + 5 * 5;
+            level->object[level->objects_count].special_effect = SPECIAL_EFFECT_AMMO;
+            level->object[level->objects_count].x = enemy->x;
+            level->object[level->objects_count].y = enemy->y;
+            level->objects_count++;
         }
-        printf("Enemy shot! Life: %u/100 (Lost %u)\n", enemy->life, shot_power);
     }
 }
 

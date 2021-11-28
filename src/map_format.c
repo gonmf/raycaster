@@ -169,13 +169,13 @@ level_t * read_level_info(const char * filename) {
 
     unsigned int enemy_count = 0;
     enemy_t * map_enemies = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, sizeof(enemy_t));
-    unsigned int * map_enemies_y = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, sizeof(unsigned int));
-
     unsigned char * map_content_type = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, 1);
     memset(map_content_type, CONTENT_TYPE_EMPTY, MAX_LEVEL_SIZE * MAX_LEVEL_SIZE);
     unsigned char * map_special_effects = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, 1);
     memset(map_special_effects, SPECIAL_EFFECT_NONE, MAX_LEVEL_SIZE * MAX_LEVEL_SIZE);
     unsigned char * map_texture = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, 1);
+    object_t * map_objects = calloc(MAX_LEVEL_SIZE * MAX_LEVEL_SIZE, sizeof(object_t));
+    unsigned int map_objects_count = 0;
     unsigned int map_layout_idx = 0;
     int player_start_x = -1;
     int player_start_y = -1;
@@ -438,9 +438,12 @@ level_t * read_level_info(const char * filename) {
                                 if (key_1_set) {
                                     error_w_line("duplicate key found", line);
                                 }
-                                map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
-                                map_texture[map_layout_idx] = door_key_x[0] + door_key_y[0] * objects_sprites->width;
-                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_KEY_1;
+                                map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
+                                map_objects[map_objects_count].texture = door_key_x[0] + door_key_y[0] * objects_sprites->width;
+                                map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_KEY_1;
+                                map_objects[map_objects_count].x = (double)i;
+                                map_objects[map_objects_count].y = (double)map_size_h;
+                                map_objects_count++;
                                 key_1_set = true;
                             } else if (d == 'l') {
                                 if (door_key_x[1] == -1) {
@@ -449,39 +452,54 @@ level_t * read_level_info(const char * filename) {
                                 if (key_2_set) {
                                     error_w_line("duplicate key found", line);
                                 }
-                                map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
-                                map_texture[map_layout_idx] = door_key_x[1] + door_key_y[1] * objects_sprites->width;
-                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_KEY_2;
+                                map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
+                                map_objects[map_objects_count].texture = door_key_x[1] + door_key_y[1] * objects_sprites->width;
+                                map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_KEY_2;
+                                map_objects[map_objects_count].x = (double)i;
+                                map_objects[map_objects_count].y = (double)map_size_h;
+                                map_objects_count++;
                                 key_2_set = true;
                             // Treasures
                             } else if (d == 't') {
                                 if (treasure_obj_types_x[0] == -1) {
                                     error_w_line("treasure type 1 texture must be defined prior", line);
                                 }
-                                map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
-                                map_texture[map_layout_idx] = treasure_obj_types_x[0] + treasure_obj_types_y[0] * objects_sprites->width;
-                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_SCORE_1;
+                                map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
+                                map_objects[map_objects_count].texture = treasure_obj_types_x[0] + treasure_obj_types_y[0] * objects_sprites->width;
+                                map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_SCORE_1;
+                                map_objects[map_objects_count].x = (double)i;
+                                map_objects[map_objects_count].y = (double)map_size_h;
+                                map_objects_count++;
                             } else if (d == 'y') {
                                 if (treasure_obj_types_x[1] == -1) {
                                     error_w_line("treasure type 2 texture must be defined prior", line);
                                 }
-                                map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
-                                map_texture[map_layout_idx] = treasure_obj_types_x[1] + treasure_obj_types_y[1] * objects_sprites->width;
-                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_SCORE_2;
+                                map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
+                                map_objects[map_objects_count].texture = treasure_obj_types_x[1] + treasure_obj_types_y[1] * objects_sprites->width;
+                                map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_SCORE_2;
+                                map_objects[map_objects_count].x = (double)i;
+                                map_objects[map_objects_count].y = (double)map_size_h;
+                                map_objects_count++;
                             } else if (d == 'u') {
                                 if (treasure_obj_types_x[2] == -1) {
                                     error_w_line("treasure type 3 texture must be defined prior", line);
                                 }
-                                map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
-                                map_texture[map_layout_idx] = treasure_obj_types_x[2] + treasure_obj_types_y[2] * objects_sprites->width;
-                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_SCORE_3;
+                                map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
+                                map_objects[map_objects_count].texture = treasure_obj_types_x[2] + treasure_obj_types_y[2] * objects_sprites->width;
+                                map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_SCORE_3;
+                                map_objects[map_objects_count].x = (double)i;
+                                map_objects[map_objects_count].y = (double)map_size_h;
+                                map_objects_count++;
                             } else if (d == 'i') {
                                 if (treasure_obj_types_x[3] == -1) {
                                     error_w_line("treasure type 4 texture must be defined prior", line);
                                 }
-                                map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
-                                map_texture[map_layout_idx] = treasure_obj_types_x[3] + treasure_obj_types_y[3] * objects_sprites->width;
-                                map_special_effects[map_layout_idx] = SPECIAL_EFFECT_SCORE_4;
+                                map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
+                                map_objects[map_objects_count].texture = treasure_obj_types_x[3] + treasure_obj_types_y[3] * objects_sprites->width;
+                                map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_SCORE_4;
+                                map_objects[map_objects_count].x = (double)i;
+                                map_objects[map_objects_count].y = (double)map_size_h;
+                                map_objects_count++;
                             // Enemies
                             } else if (d == 'a' || d == 'z' || d == 'x' || d == 'c' || d == 'v') {
                                 switch (d) {
@@ -503,7 +521,7 @@ level_t * read_level_info(const char * filename) {
                                 }
                                 map_enemies[enemy_count].life = 100;
                                 map_enemies[enemy_count].x = (double)i;
-                                map_enemies_y[enemy_count] = map_size_h;
+                                map_enemies[enemy_count].y = map_size_h;
                                 map_enemies[enemy_count].state = ENEMY_STATE_STILL;
                                 map_enemies[enemy_count].strategic_state = ENEMY_STRATEGIC_STATE_WAITING;
                                 map_enemies[enemy_count].state_step = 0;
@@ -514,9 +532,12 @@ level_t * read_level_info(const char * filename) {
                                 if (furniture_obj_types_x[block_id] == -1) {
                                     error_w_line("object type must be defined prior", line);
                                 }
-
-                                map_content_type[map_layout_idx] = CONTENT_TYPE_OBJECT;
-                                map_texture[map_layout_idx] = furniture_obj_types_x[block_id] + furniture_obj_types_y[block_id] * objects_sprites->width;
+                                map_objects[map_objects_count].type = OBJECT_TYPE_BLOCKING;
+                                map_objects[map_objects_count].texture = furniture_obj_types_x[block_id] + furniture_obj_types_y[block_id] * objects_sprites->width;
+                                map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_NONE;
+                                map_objects[map_objects_count].x = (double)i;
+                                map_objects[map_objects_count].y = (double)map_size_h;
+                                map_objects_count++;
                             } else if (d != '.') {
                                 error_w_line("invalid character", line);
                             }
@@ -612,7 +633,7 @@ level_t * read_level_info(const char * filename) {
     ret->door_open_texture = open_door_x + open_door_y * wall_textures->width;
     ret->enemy = NULL; // calloc(ret->enemies_count, sizeof(enemy_t));
     ret->score = 0;
-    ret->ammo = 8;
+    ret->ammo = 10;
 #if DEBUG
     ret->key_1 = true;
     ret->key_2 = true;
@@ -620,6 +641,9 @@ level_t * read_level_info(const char * filename) {
     ret->key_1 = false;
     ret->key_2 = false;
 #endif
+    ret->objects_count = map_objects_count;
+    // map_objects_count + enemy_count because killed enemies drop objects
+    ret->object = calloc(MAX(map_objects_count + enemy_count, 1), sizeof(object_t));
     ret->enemies_count = enemy_count;
     ret->enemy = calloc(MAX(enemy_count, 1), sizeof(enemy_t));
 
@@ -634,16 +658,20 @@ level_t * read_level_info(const char * filename) {
         }
     }
 
+    for (unsigned int i = 0; i < map_objects_count; ++i) {
+        ret->object[i] = map_objects[i];
+        ret->object[i].y = map_size_h - map_objects[i].y - 1;
+    }
     for (unsigned int i = 0; i < enemy_count; ++i) {
         ret->enemy[i] = map_enemies[i];
-        ret->enemy[i].y = (double)(map_size_h - map_enemies_y[i] - 1);
+        ret->enemy[i].y = map_size_h - map_enemies[i].y - 1;
     }
 
     free(map_content_type);
     free(map_texture);
     free(map_special_effects);
+    free(map_objects);
     free(map_enemies);
-    free(map_enemies_y);
 
     unsigned char door_closed_texture = closed_door_x + closed_door_y * wall_textures->width;
     surround_w_safety_walls(ret, door_closed_texture);

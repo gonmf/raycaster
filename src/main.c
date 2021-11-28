@@ -14,15 +14,23 @@ static bool position_blocked(
     bool allow_enter_door, unsigned int door_x, unsigned int door_y
 ) {
     unsigned char content_type = level->content_type[rounded_x + rounded_y * level->width];
-    unsigned char special_effect = level->special_effects[rounded_x + rounded_y * level->width];
-
-    if (content_type == CONTENT_TYPE_WALL || (content_type == CONTENT_TYPE_OBJECT && special_effect == SPECIAL_EFFECT_NONE) || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
         return true;
+    }
+
+    for (unsigned int i = 0; i < level->objects_count; ++i) {
+        if (rounded_x == (unsigned int)(level->object[i].x + 0.5) && rounded_y == (unsigned int)(level->object[i].y + 0.5)) {
+            if (level->object[i].type == OBJECT_TYPE_BLOCKING) {
+                return true;
+            }
+        }
     }
 
     for (unsigned int i = 0; i < level->enemies_count; ++i) {
         if (rounded_x == (unsigned int)(level->enemy[i].x + 0.5) && rounded_y == (unsigned int)(level->enemy[i].y + 0.5)) {
-            return true;
+            if (level->enemy[i].state != ENEMY_STATE_DEAD) {
+                return true;
+            }
         }
     }
 

@@ -49,12 +49,15 @@ void paint_map(const level_t * level) {
                     paint_part(color_gray, x, y, offset_x, offset_y);
                 } else if (content_type == CONTENT_TYPE_DOOR || content_type == CONTENT_TYPE_DOOR_OPEN) {
                     paint_part(color_cyan, x, y, offset_x, offset_y);
+                /*
+                TODO: paint blocking objects
                 } else if (content_type == CONTENT_TYPE_OBJECT) {
                     if (level->special_effects[x + iy * level->width] == SPECIAL_EFFECT_NONE) {
                         paint_part(color_gray, x, y, offset_x, offset_y);
                     } else {
                         paint_part(color_gold, x, y, offset_x, offset_y);
                     }
+                */
                 }
             }
         }

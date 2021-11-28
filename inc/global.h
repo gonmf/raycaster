@@ -47,6 +47,14 @@ typedef struct __attribute__((__packed__)) __enemy_ {
     double angle;
 } enemy_t;
 
+typedef struct __attribute__((__packed__)) __object_ {
+    unsigned char type;
+    unsigned char texture;
+    unsigned char special_effect;
+    double x;
+    double y;
+} object_t;
+
 typedef struct  __level_ {
     pixel_t ceil_color;
     pixel_t floor_color;
@@ -62,6 +70,8 @@ typedef struct  __level_ {
     unsigned char * special_effects;
     bool * map_revealed;
     unsigned char door_open_texture;
+    unsigned int objects_count;
+    object_t * object;
     unsigned int enemies_count;
     enemy_t * enemy;
     bool key_1;
@@ -85,7 +95,9 @@ typedef struct __sprite_pack_ {
 #define CONTENT_TYPE_WALL 1
 #define CONTENT_TYPE_DOOR 2
 #define CONTENT_TYPE_DOOR_OPEN 3
-#define CONTENT_TYPE_OBJECT 4
+
+#define OBJECT_TYPE_BLOCKING 0
+#define OBJECT_TYPE_NON_BLOCK 1
 
 #define SPECIAL_EFFECT_NONE 0
 #define SPECIAL_EFFECT_LEVEL_END 1
@@ -97,6 +109,7 @@ typedef struct __sprite_pack_ {
 #define SPECIAL_EFFECT_REQUIRES_KEY_2 7
 #define SPECIAL_EFFECT_KEY_1 8
 #define SPECIAL_EFFECT_KEY_2 9
+#define SPECIAL_EFFECT_AMMO 10
 
 #define ENEMY_STATE_STILL 0
 #define ENEMY_STATE_MOVING 1
@@ -242,6 +255,6 @@ void darken_scene(double factor);
 void init_base_colors();
 
 // game.c
-void hit_enemy(enemy_t * enemy, double distance);
+void hit_enemy(level_t * level, unsigned int enemy_i, double distance);
 
 #endif

@@ -1,5 +1,12 @@
 #include "global.h"
 
+
+typedef struct  __obj_distance_ {
+    bool is_object;
+    unsigned int i;
+    double val;
+} obj_distance_t;
+
 sprite_pack_t * wall_textures;
 sprite_pack_t * objects_sprites;
 sprite_pack_t * enemy_sprites[5];
@@ -8,6 +15,7 @@ pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
 static char * enemy_angles;
 static bool trigger_shot;
+static obj_distance_t * sorted_distances;
 static double fish_eye_table[VIEWPORT_WIDTH];
 
 static unsigned int horizon_offset(const level_t * level) {
@@ -51,7 +59,11 @@ static void fill_in_background(const level_t * level) {
     }
 }
 
-static double cast_simple_ray(const level_t * level, double angle, double * block_x, unsigned int * block_hit_x, unsigned int * block_hit_y, unsigned int * enemy, unsigned int * step_count) {
+static int obj_distance_compare(const void * a, const void * b) {
+  return ((const obj_distance_t *)a)->val > ((const obj_distance_t *)b)->val;
+}
+
+static double cast_simple_ray(const level_t * level, double angle, double * block_x, unsigned int * object, unsigned int * enemy, unsigned int * step_count) {
     double angle_radians = angle / RADIAN_CONSTANT;
     double x_change = sin(angle_radians) * ROUGH_RAY_STEP_CONSTANT;
     double y_change = cos(angle_radians) * ROUGH_RAY_STEP_CONSTANT;
@@ -83,12 +95,8 @@ static double cast_simple_ray(const level_t * level, double angle, double * bloc
         if (rounded_x == initial_x && rounded_y == initial_y) {
             continue;
         }
-        if (rounded_x == *block_hit_x && rounded_y == *block_hit_y) {
-            continue;
-        }
 
         bool opening_this_door = opening_door && opening_door_x == rounded_x && opening_door_y == rounded_y;
-
         if (opening_this_door && skipped_door) {
             continue;
         }
@@ -144,46 +152,73 @@ static double cast_simple_ray(const level_t * level, double angle, double * bloc
             } else {
                 continue;
             }
-        } else if (content_type == CONTENT_TYPE_EMPTY) {
-            for (unsigned int i = 0; i < level->enemies_count; ++i) {
-                if (rounded_x == (unsigned int)(level->enemy[i].x + 0.5) && rounded_y == (unsigned int)(level->enemy[i].y + 0.5)) {
-                    if (*enemy == i) {
-                        continue;
-                    }
+        } else { // CONTENT_TYPE_EMPTY
+            unsigned int sorted_count = 0;
 
-                    double enemy_x = level->enemy[i].x;
-                    double enemy_y = level->enemy[i].y;
-                    double dist = distance(level->observer_x, level->observer_y, enemy_x, enemy_y);
-                    double angle_to_center = atan((level->observer_x - enemy_x) / (level->observer_y - enemy_y)) * RADIAN_CONSTANT;
-                    double angle_diff = angle_to_center - angle;
-                    double opposite = tan(angle_diff / RADIAN_CONSTANT) * dist;
-                    if (fabs(opposite) > 0.5) {
+            for (unsigned int i = 0; i < level->objects_count; ++i) {
+                if (*object == i) {
                         continue;
                     }
-                    *block_hit_x = INT_MAX;
-                    *enemy = i;
-                    *block_x = 1.0 - MIN(MAX((opposite + 0.5) / 1.0, 0.0), 1.0);
-                    *step_count = steps + 1;
-                    return dist;
+                double target_x = level->object[i].x;
+                double target_y = level->object[i].y;
+                double dist = distance(target_x, target_y, curr_x, curr_y);
+                if (dist > 0.5) { continue; }
+
+                sorted_distances[sorted_count].is_object = true;
+                sorted_distances[sorted_count].val = dist;
+                sorted_distances[sorted_count].i = i;
+                sorted_count++;
+            }
+            for (unsigned int i = 0; i < level->enemies_count; ++i) {
+                if (*enemy == i) {
+                        continue;
+                    }
+                double target_x = level->enemy[i].x;
+                double target_y = level->enemy[i].y;
+                double dist = distance(target_x, target_y, curr_x, curr_y);
+                if (dist > 0.5) { continue; }
+
+                sorted_distances[sorted_count].is_object = false;
+                sorted_distances[sorted_count].val = dist;
+                sorted_distances[sorted_count].i = i;
+                sorted_count++;
+            }
+
+            if (sorted_count > 1) {
+                qsort(sorted_distances, sorted_count, sizeof(obj_distance_t), obj_distance_compare);
+            }
+
+            for (unsigned int i = 0; i < sorted_count; ++i) {
+                double target_x;
+                double target_y;
+                if (sorted_distances[i].is_object) {
+                    target_x = level->object[sorted_distances[i].i].x;
+                    target_y = level->object[sorted_distances[i].i].y;
+                } else {
+                    target_x = level->enemy[sorted_distances[i].i].x;
+                    target_y = level->enemy[sorted_distances[i].i].y;
                 }
+                double obs_dist = distance(level->observer_x, level->observer_y, target_x, target_y);
+                double angle_to_center = atan((level->observer_x - target_x) / (level->observer_y - target_y)) * RADIAN_CONSTANT;
+                double angle_diff = angle_to_center - angle;
+                double opposite = tan(angle_diff / RADIAN_CONSTANT) * obs_dist;
+                if (fabs(opposite) > 0.5) {
+                    continue;
+                }
+
+                if (sorted_distances[i].is_object) {
+                    *object = sorted_distances[i].i;
+                    *enemy = INT_MAX;
+                } else {
+                    *object = INT_MAX;
+                    *enemy = sorted_distances[i].i;
+                }
+                *block_x = 1.0 - MIN(MAX((opposite + 0.5) / 1.0, 0.0), 1.0);
+                *step_count = steps + 1;
+                return obs_dist;
             }
             continue;
         }
-
-        *block_hit_x = rounded_x;
-        *block_hit_y = rounded_y;
-        *enemy = INT_MAX;
-
-        double dist = distance(level->observer_x, level->observer_y, rounded_x, rounded_y);
-        double angle_to_center = atan((level->observer_x - rounded_x) / (level->observer_y - rounded_y)) * RADIAN_CONSTANT;
-        double angle_diff = angle_to_center - angle;
-        double opposite = tan(angle_diff / RADIAN_CONSTANT) * dist;
-        if (fabs(opposite) > 0.5) {
-            continue;
-        }
-        *block_x = 1.0 - MIN(MAX((opposite + 0.5) / 1.0, 0.0), 1.0);
-        *step_count = steps + 1;
-        return dist;
     }
 }
 
@@ -326,9 +361,8 @@ static void block_color(pixel_t * dst, double block_x, double block_y, double in
     *dst = darken_shading(src, intensity);
 }
 
-static void fill_in_objects(const level_t * level) {
-    unsigned int block_hit_x;
-    unsigned int block_hit_y = INT_MAX;
+static void fill_in_objects(level_t * level) {
+    unsigned int object = INT_MAX;
     unsigned int enemy = INT_MAX;
     unsigned int viewport_mid = horizon_offset(level);
     unsigned char enemy_type;
@@ -340,17 +374,17 @@ static void fill_in_objects(const level_t * level) {
 
     for (unsigned int x = 0; x < VIEWPORT_WIDTH; ++x) {
         double x_angle = fit_angle(fish_eye_table[x] + level->observer_angle);
-        block_hit_x = INT_MAX;
+        object = INT_MAX;
         enemy = INT_MAX;
 
         unsigned int min_step_count = 0;
         while(1) {
-            double distance = cast_simple_ray(level, x_angle, &block_x, &block_hit_x, &block_hit_y, &enemy, &min_step_count);
+            double distance = cast_simple_ray(level, x_angle, &block_x, &object, &enemy, &min_step_count);
             if (distance <= 0.0) {
                 break;
             }
 
-            bool render_enemy = block_hit_x == INT_MAX;
+            bool render_enemy = enemy != INT_MAX;
             distance *= cos((x_angle - level->observer_angle) / RADIAN_CONSTANT);
             distance = MAX(distance, 0.0);
 
@@ -399,12 +433,13 @@ static void fill_in_objects(const level_t * level) {
                 enemy_type = level->enemy[enemy].type;
 
                 if (x == VIEWPORT_WIDTH / 2 && trigger_shot) {
-                    hit_enemy(&level->enemy[enemy], distance);
-                    trigger_shot = false;
+                    if (level->enemy[enemy].state != ENEMY_STATE_DYING && level->enemy[enemy].state != ENEMY_STATE_DEAD) {
+                        hit_enemy(level, enemy, distance);
+                        trigger_shot = false;
+                    }
                 }
-            } else {
-                sprite_id = level->texture[block_hit_x + block_hit_y * level->width];
-                level->map_revealed[block_hit_x + block_hit_y * level->width] = true;
+            } else { // render object
+                sprite_id = level->object[object].texture;
             }
 
             unsigned int end_y = (unsigned int)(block_size * VIEWPORT_HEIGHT / 2.0);
@@ -546,6 +581,11 @@ void init_raycaster(const level_t * level) {
     if (enemy_angles) {
         free(enemy_angles);
     }
+    if (sorted_distances) {
+        free(sorted_distances);
+    }
 
     enemy_angles = malloc(level->enemies_count);
+    // level->enemies_count * 2 because dead enemies create an object
+    sorted_distances = malloc((level->objects_count + level->enemies_count * 2) * sizeof(obj_distance_t));
 }
