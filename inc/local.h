@@ -1,6 +1,7 @@
 #ifndef LOCAL_H
 #define LOCAL_H
 
+// Ratio to base window size of 600x300
 #define WINDOW_UPSCALE 2.0
 
 #define PRINT_FPS 1

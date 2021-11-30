@@ -3,20 +3,11 @@
 static bool valid_command(const char * s) {
     if (strcmp(s, "CEIL_COLOR") == 0) return true;
     if (strcmp(s, "FLOOR_COLOR") == 0) return true;
-    if (strcmp(s, "OPEN_DOOR") == 0) return true;
-    if (strcmp(s, "CLOSED_DOOR") == 0) return true;
     if (strcmp(s, "LAYOUT") == 0) return true;
     if (strcmp(s, "OBJECTS") == 0) return true;
     if (strcmp(s, "PLAYER_START_ANGLE") == 0) return true;
-    if (strcmp(s, "WALLS_SPRITE_PACK") == 0) return true;
-    if (strcmp(s, "OBJECTS_SPRITE_PACK") == 0) return true;
-    if (strcmp(s, "WEAPONS_SPRITE_PACK") == 0) return true;
     if (start_with(s, "WALL_TYPE_")) return true;
     if (start_with(s, "FURNITURE_OBJECT_TYPE_")) return true;
-    if (start_with(s, "TREASURE_OBJECT_TYPE_")) return true;
-    if (start_with(s, "LOCKED_DOOR_TYPE_")) return true;
-    if (start_with(s, "KEY_OBJECT_TYPE_")) return true;
-    if (start_with(s, "ENEMY_SPRITE_PACK_")) return true;
 
     return false;
 }
@@ -57,7 +48,7 @@ static void validate_object_placement(const level_t * level) {
     }
 }
 
-static void surround_w_safety_walls(level_t * level, unsigned char door_closed_texture) {
+static void surround_w_safety_walls(level_t * level) {
     unsigned int x;
     unsigned int y;
     for (x = 0; x < level->width; ++x) {
@@ -65,7 +56,7 @@ static void surround_w_safety_walls(level_t * level, unsigned char door_closed_t
         if (level->content_type[x + y * level->width] == CONTENT_TYPE_DOOR) {
             fprintf(stderr, "WARNING: door on the edge converted to wall (%u,%u)\n", x, y);
             level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
-            level->texture[x + y * level->width] = door_closed_texture;
+            level->texture[x + y * level->width] = CLOSED_DOOR_TEXTURE;
         }
         if (level->content_type[x + y * level->width] != CONTENT_TYPE_WALL) {
             fprintf(stderr, "WARNING: empty space on the edge converted to wall (%u,%u)\n", x, y);
@@ -76,7 +67,7 @@ static void surround_w_safety_walls(level_t * level, unsigned char door_closed_t
         if (level->content_type[x + y * level->width] == CONTENT_TYPE_DOOR) {
             fprintf(stderr, "WARNING: door on the edge converted to wall (%u,%u)\n", x, y);
             level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
-            level->texture[x + y * level->width] = door_closed_texture;
+            level->texture[x + y * level->width] = CLOSED_DOOR_TEXTURE;
         }
         if (level->content_type[x + y * level->width] != CONTENT_TYPE_WALL) {
             fprintf(stderr, "WARNING: empty space on the edge converted to wall (%u,%u)\n", x, y);
@@ -89,7 +80,7 @@ static void surround_w_safety_walls(level_t * level, unsigned char door_closed_t
         if (level->content_type[x + y * level->width] == CONTENT_TYPE_DOOR) {
             fprintf(stderr, "WARNING: door on the edge converted to wall (%u,%u)\n", x, y);
             level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
-            level->texture[x + y * level->width] = door_closed_texture;
+            level->texture[x + y * level->width] = CLOSED_DOOR_TEXTURE;
         }
         if (level->content_type[x + y * level->width] != CONTENT_TYPE_WALL) {
             fprintf(stderr, "WARNING: empty space on the edge converted to wall (%u,%u)\n", x, y);
@@ -100,7 +91,7 @@ static void surround_w_safety_walls(level_t * level, unsigned char door_closed_t
         if (level->content_type[x + y * level->width] == CONTENT_TYPE_DOOR) {
             fprintf(stderr, "WARNING: door on the edge converted to wall (%u,%u)\n", x, y);
             level->content_type[x + y * level->width] = CONTENT_TYPE_WALL;
-            level->texture[x + y * level->width] = door_closed_texture;
+            level->texture[x + y * level->width] = CLOSED_DOOR_TEXTURE;
         }
         if (level->content_type[x + y * level->width] != CONTENT_TYPE_WALL) {
             fprintf(stderr, "WARNING: empty space on the edge converted to wall (%u,%u)\n", x, y);
@@ -125,27 +116,13 @@ level_t * read_level_info(const char * filename) {
     int floor_color_r = -1;
     int floor_color_g = -1;
     int floor_color_b = -1;
-    bool locked_door_1_set = false;
-    bool key_1_set = false;
-    bool locked_door_2_set = false;
-    bool key_2_set = false;
 
     // "wall" texture IDs:
-    int open_door_x = -1;
-    int open_door_y = -1;
-    int closed_door_x = -1;
-    int closed_door_y = -1;
     int wall_types_x[10];
     int wall_types_y[10];
     for (unsigned int i = 0; i < 10; ++i) {
         wall_types_x[i] = -1;
         wall_types_y[i] = -1;
-    }
-    int locked_door_x[2];
-    int locked_door_y[2];
-    for (unsigned int i = 0; i < 2; ++i) {
-        locked_door_x[i] = -1;
-        locked_door_y[i] = -1;
     }
     // "object" texture IDs:
     int furniture_obj_types_x[10];
@@ -153,18 +130,6 @@ level_t * read_level_info(const char * filename) {
     for (unsigned int i = 0; i < 10; ++i) {
         furniture_obj_types_x[i] = -1;
         furniture_obj_types_y[i] = -1;
-    }
-    int treasure_obj_types_x[4];
-    int treasure_obj_types_y[4];
-    for (unsigned int i = 0; i < 4; ++i) {
-        treasure_obj_types_x[i] = -1;
-        treasure_obj_types_y[i] = -1;
-    }
-    int door_key_x[2];
-    int door_key_y[2];
-    for (unsigned int i = 0; i < 2; ++i) {
-        door_key_x[i] = -1;
-        door_key_y[i] = -1;
     }
 
     unsigned int enemy_count = 0;
@@ -179,7 +144,7 @@ level_t * read_level_info(const char * filename) {
     unsigned int map_layout_idx = 0;
     int player_start_x = -1;
     int player_start_y = -1;
-    int player_start_angle = -36;
+    int player_start_angle = 0;
     int type_nr = 0;
     bool exit_placed = false;
     char last_command[MAX_LEVEL_SIZE + 1];
@@ -209,37 +174,7 @@ level_t * read_level_info(const char * filename) {
                 } else if (!last_command_set) {
                     error_w_line("unexpected argument; expected command", line);
                 } else {
-                    if (strcmp(last_command, "WALLS_SPRITE_PACK") == 0) {
-                        if (wall_textures) {
-                            error_w_line("duplicated command", line - 1);
-                        }
-                        wall_textures = calloc(1, sizeof(sprite_pack_t));
-                        read_sprite_pack(wall_textures, line_buffer);
-                        last_command_set = 0;
-                    } else if (strcmp(last_command, "OBJECTS_SPRITE_PACK") == 0) {
-                        if (objects_sprites) {
-                            error_w_line("duplicated command", line - 1);
-                        }
-                        objects_sprites = calloc(1, sizeof(sprite_pack_t));
-                        read_sprite_pack(objects_sprites, line_buffer);
-                        last_command_set = 0;
-                    } else if (start_with(last_command, "ENEMY_SPRITE_PACK_")) {
-                        type_nr = atoi(last_command + strlen("ENEMY_SPRITE_PACK_"));
-                        validate_scalar(type_nr, 0, 5, line);
-                        if (enemy_sprites[type_nr]) {
-                            error_w_line("duplicated command", line - 1);
-                        }
-                        enemy_sprites[type_nr] = calloc(1, sizeof(sprite_pack_t));
-                        read_sprite_pack(enemy_sprites[type_nr], line_buffer);
-                        last_command_set = 0;
-                    } else if (strcmp(last_command, "WEAPONS_SPRITE_PACK") == 0) {
-                        if (weapons_sprites) {
-                            error_w_line("duplicated command", line - 1);
-                        }
-                        weapons_sprites = calloc(1, sizeof(sprite_pack_t));
-                        read_sprite_pack(weapons_sprites, line_buffer);
-                        last_command_set = 0;
-                    } else if (strcmp(last_command, "CEIL_COLOR") == 0) {
+                    if (strcmp(last_command, "CEIL_COLOR") == 0) {
                         int val = (int)strtol(line_buffer, NULL, 16);
                         validate_scalar(val, 0, 0xffffff, line);
 
@@ -255,36 +190,7 @@ level_t * read_level_info(const char * filename) {
                         floor_color_g = (val >> 8) & 0xff;
                         floor_color_b = val & 0xff;
                         last_command_set = 0;
-                    } else if (strcmp(last_command, "OPEN_DOOR") == 0) {
-                        if (!wall_textures) {
-                            error_w_line("command must be preceded by sprite pack definition", line - 1);
-                        }
-                        if (last_command_uses == 0) {
-                            open_door_x = atoi(line_buffer);
-                            validate_scalar(open_door_x, 0, wall_textures->width - 1, line);
-                            last_command_uses++;
-                        } else {
-                            open_door_y = atoi(line_buffer);
-                            validate_scalar(open_door_y, 0, wall_textures->height - 1, line);
-                            last_command_set = 0;
-                        }
-                    } else if (strcmp(last_command, "CLOSED_DOOR") == 0) {
-                        if (!wall_textures) {
-                            error_w_line("command must be preceded by sprite pack definition", line - 1);
-                        }
-                        if (last_command_uses == 0) {
-                            closed_door_x = atoi(line_buffer);
-                            validate_scalar(closed_door_x, 0, wall_textures->width - 1, line);
-                            last_command_uses++;
-                        } else {
-                            closed_door_y = atoi(line_buffer);
-                            validate_scalar(closed_door_y, 0, wall_textures->height - 1, line);
-                            last_command_set = 0;
-                        }
                     } else if (start_with(last_command, "WALL_TYPE_")) {
-                        if (!wall_textures) {
-                            error_w_line("command must be preceded by sprite pack definition", line - 1);
-                        }
                         if (last_command_uses == 0) {
                             type_nr = (last_command + strlen("WALL_TYPE_"))[0] - 'A';
                             validate_scalar(type_nr, 0, 10, line);
@@ -300,9 +206,6 @@ level_t * read_level_info(const char * filename) {
                             last_command_set = 0;
                         }
                     } else if (start_with(last_command, "FURNITURE_OBJECT_TYPE_")) {
-                        if (!objects_sprites) {
-                            error_w_line("command must be preceded by sprite pack definition", line - 1);
-                        }
                         if (last_command_uses == 0) {
                             type_nr = atoi(last_command + strlen("FURNITURE_OBJECT_TYPE_"));
                             validate_scalar(type_nr, 0, 10, line);
@@ -317,64 +220,7 @@ level_t * read_level_info(const char * filename) {
                             validate_scalar(furniture_obj_types_y[type_nr], 0, objects_sprites->height - 1, line);
                             last_command_set = 0;
                         }
-                    } else if (start_with(last_command, "TREASURE_OBJECT_TYPE_")) {
-                        if (!objects_sprites) {
-                            error_w_line("command must be preceded by sprite pack definition", line - 1);
-                        }
-                        if (last_command_uses == 0) {
-                            type_nr = atoi(last_command + strlen("TREASURE_OBJECT_TYPE_"));
-                            validate_scalar(type_nr, 0, 4, line);
-                            if (treasure_obj_types_x[type_nr] != -1) {
-                                error_w_line("duplicated command", line - 1);
-                            }
-                            treasure_obj_types_x[type_nr] = atoi(line_buffer);
-                            validate_scalar(treasure_obj_types_x[type_nr], 0, objects_sprites->width - 1, line);
-                            last_command_uses++;
-                        } else {
-                            treasure_obj_types_y[type_nr] = atoi(line_buffer);
-                            validate_scalar(treasure_obj_types_y[type_nr], 0, objects_sprites->height - 1, line);
-                            last_command_set = 0;
-                        }
-                    } else if (start_with(last_command, "KEY_OBJECT_TYPE_")) {
-                        if (!objects_sprites) {
-                            error_w_line("command must be preceded by sprite pack definition", line - 1);
-                        }
-                        if (last_command_uses == 0) {
-                            type_nr = atoi(last_command + strlen("KEY_OBJECT_TYPE_"));
-                            validate_scalar(type_nr, 0, 4, line);
-                            if (door_key_x[type_nr] != -1) {
-                                error_w_line("duplicated command", line - 1);
-                            }
-                            door_key_x[type_nr] = atoi(line_buffer);
-                            validate_scalar(door_key_x[type_nr], 0, objects_sprites->width - 1, line);
-                            last_command_uses++;
-                        } else {
-                            door_key_y[type_nr] = atoi(line_buffer);
-                            validate_scalar(door_key_y[type_nr], 0, objects_sprites->height - 1, line);
-                            last_command_set = 0;
-                        }
-                    } else if (start_with(last_command, "LOCKED_DOOR_TYPE_")) {
-                        if (!wall_textures) {
-                            error_w_line("command must be preceded by sprite pack definition", line - 1);
-                        }
-                        if (last_command_uses == 0) {
-                            type_nr = atoi(last_command + strlen("LOCKED_DOOR_TYPE_"));
-                            validate_scalar(type_nr, 0, 4, line);
-                            if (locked_door_x[type_nr] != -1) {
-                                error_w_line("duplicated command", line - 1);
-                            }
-                            locked_door_x[type_nr] = atoi(line_buffer);
-                            validate_scalar(locked_door_x[type_nr], 0, wall_textures->width - 1, line);
-                            last_command_uses++;
-                        } else {
-                            locked_door_y[type_nr] = atoi(line_buffer);
-                            validate_scalar(locked_door_y[type_nr], 0, wall_textures->height - 1, line);
-                            last_command_set = 0;
-                        }
                     } else if (strcmp(last_command, "LAYOUT") == 0) {
-                        if (!wall_textures || !objects_sprites) {
-                            error_w_line("command must be preceded by sprite pack definition", line - 1);
-                        }
                         int size_w = strlen(line_buffer);
                         if (size_w < MIN_LEVEL_SIZE || size_w > MAX_LEVEL_SIZE) {
                             error_w_line("invalid map width", line);
@@ -391,27 +237,16 @@ level_t * read_level_info(const char * filename) {
 
                             // Doors
                             if (d == 'K') {
-                                if (closed_door_y == -1) {
-                                    error_w_line("closed door texture must be defined prior", line);
-                                }
                                 map_content_type[map_layout_idx] = CONTENT_TYPE_DOOR;
-                                map_texture[map_layout_idx] = closed_door_x + closed_door_y * wall_textures->width;
+                                map_texture[map_layout_idx] = CLOSED_DOOR_TEXTURE;
                             } else if (d == 'L') {
-                                if (locked_door_y[0] == -1) {
-                                    error_w_line("closed door texture must be defined prior", line);
-                                }
                                 map_content_type[map_layout_idx] = CONTENT_TYPE_DOOR;
-                                map_texture[map_layout_idx] = locked_door_x[0] + locked_door_y[0] * wall_textures->width;
+                                map_texture[map_layout_idx] = LOCKED_DOOR_1_TEXTURE;
                                 map_special_effects[map_layout_idx] = SPECIAL_EFFECT_REQUIRES_KEY_1;
-                                locked_door_1_set = true;
                             } else if (d == 'M') {
-                                if (locked_door_y[1] == -1) {
-                                    error_w_line("closed door texture must be defined prior", line);
-                                }
                                 map_content_type[map_layout_idx] = CONTENT_TYPE_DOOR;
-                                map_texture[map_layout_idx] = locked_door_x[1] + locked_door_y[1] * wall_textures->width;
+                                map_texture[map_layout_idx] = LOCKED_DOOR_2_TEXTURE;
                                 map_special_effects[map_layout_idx] = SPECIAL_EFFECT_REQUIRES_KEY_2;
-                                locked_door_2_set = true;
                             // Walls
                             } else if ((d - 'A') >= 0 && (d - 'A') < 10) {
                                 unsigned char block_id = d - 'A';
@@ -432,70 +267,44 @@ level_t * read_level_info(const char * filename) {
                                 exit_placed = true;
                             // Door keys
                             } else if (d == 'k') {
-                                if (door_key_x[0] == -1) {
-                                    error_w_line("key 1 texture must be defined prior", line);
-                                }
-                                if (key_1_set) {
-                                    error_w_line("duplicate key found", line);
-                                }
                                 map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
-                                map_objects[map_objects_count].texture = door_key_x[0] + door_key_y[0] * objects_sprites->width;
+                                map_objects[map_objects_count].texture = DOOR_KEY_1_TEXTURE;
                                 map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_KEY_1;
                                 map_objects[map_objects_count].x = (double)i;
                                 map_objects[map_objects_count].y = (double)map_size_h;
                                 map_objects_count++;
-                                key_1_set = true;
                             } else if (d == 'l') {
-                                if (door_key_x[1] == -1) {
-                                    error_w_line("key 2 texture must be defined prior", line);
-                                }
-                                if (key_2_set) {
-                                    error_w_line("duplicate key found", line);
-                                }
                                 map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
-                                map_objects[map_objects_count].texture = door_key_x[1] + door_key_y[1] * objects_sprites->width;
+                                map_objects[map_objects_count].texture = DOOR_KEY_2_TEXTURE;
                                 map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_KEY_2;
                                 map_objects[map_objects_count].x = (double)i;
                                 map_objects[map_objects_count].y = (double)map_size_h;
                                 map_objects_count++;
-                                key_2_set = true;
                             // Treasures
                             } else if (d == 't') {
-                                if (treasure_obj_types_x[0] == -1) {
-                                    error_w_line("treasure type 1 texture must be defined prior", line);
-                                }
                                 map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
-                                map_objects[map_objects_count].texture = treasure_obj_types_x[0] + treasure_obj_types_y[0] * objects_sprites->width;
+                                map_objects[map_objects_count].texture = TREASURE_1_TEXTURE;
                                 map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_SCORE_1;
                                 map_objects[map_objects_count].x = (double)i;
                                 map_objects[map_objects_count].y = (double)map_size_h;
                                 map_objects_count++;
                             } else if (d == 'y') {
-                                if (treasure_obj_types_x[1] == -1) {
-                                    error_w_line("treasure type 2 texture must be defined prior", line);
-                                }
                                 map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
-                                map_objects[map_objects_count].texture = treasure_obj_types_x[1] + treasure_obj_types_y[1] * objects_sprites->width;
+                                map_objects[map_objects_count].texture = TREASURE_2_TEXTURE;
                                 map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_SCORE_2;
                                 map_objects[map_objects_count].x = (double)i;
                                 map_objects[map_objects_count].y = (double)map_size_h;
                                 map_objects_count++;
                             } else if (d == 'u') {
-                                if (treasure_obj_types_x[2] == -1) {
-                                    error_w_line("treasure type 3 texture must be defined prior", line);
-                                }
                                 map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
-                                map_objects[map_objects_count].texture = treasure_obj_types_x[2] + treasure_obj_types_y[2] * objects_sprites->width;
+                                map_objects[map_objects_count].texture = TREASURE_3_TEXTURE;
                                 map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_SCORE_3;
                                 map_objects[map_objects_count].x = (double)i;
                                 map_objects[map_objects_count].y = (double)map_size_h;
                                 map_objects_count++;
                             } else if (d == 'i') {
-                                if (treasure_obj_types_x[3] == -1) {
-                                    error_w_line("treasure type 4 texture must be defined prior", line);
-                                }
                                 map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
-                                map_objects[map_objects_count].texture = treasure_obj_types_x[3] + treasure_obj_types_y[3] * objects_sprites->width;
+                                map_objects[map_objects_count].texture = TREASURE_4_TEXTURE;
                                 map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_SCORE_4;
                                 map_objects[map_objects_count].x = (double)i;
                                 map_objects[map_objects_count].y = (double)map_size_h;
@@ -585,26 +394,8 @@ level_t * read_level_info(const char * filename) {
     if (player_start_x < 0) {
         error_w_line("end of file with player start position not defined", line);
     }
-    if (open_door_y < 0) {
-        error_w_line("end of file without open door texture defined", line);
-    }
-    if (closed_door_y < 0) {
-        error_w_line("end of file without closed door texture defined", line);
-    }
     if (!exit_placed) {
         error("invalid map design - no exits");
-    }
-    if (locked_door_1_set != key_1_set || locked_door_2_set != key_2_set) {
-        error("invalid map design - mismatch between locked doors and keys");
-    }
-    if (!wall_textures) {
-        error_w_line("end of file without wall textures sprite pack definition", line);
-    }
-    if (!objects_sprites) {
-        error_w_line("end of file without objects sprite pack definition", line);
-    }
-    if (!weapons_sprites) {
-        error_w_line("end of file without weapons sprite pack definition", line);
     }
 
     free(buffer);
@@ -630,7 +421,7 @@ level_t * read_level_info(const char * filename) {
     ret->texture = calloc(ret->width * ret->height, 1);
     ret->special_effects = calloc(ret->width * ret->height, 1);
     ret->map_revealed = calloc(ret->width * ret->height, 1);
-    ret->door_open_texture = open_door_x + open_door_y * wall_textures->width;
+    ret->door_open_texture = OPEN_DOOR_TEXTURE;
     ret->enemy = NULL; // calloc(ret->enemies_count, sizeof(enemy_t));
     ret->score = 0;
     ret->ammo = 10;
@@ -673,8 +464,7 @@ level_t * read_level_info(const char * filename) {
     free(map_objects);
     free(map_enemies);
 
-    unsigned char door_closed_texture = closed_door_x + closed_door_y * wall_textures->width;
-    surround_w_safety_walls(ret, door_closed_texture);
+    surround_w_safety_walls(ret);
     validate_door_placement(ret);
     validate_object_placement(ret);
 

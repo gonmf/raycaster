@@ -151,9 +151,22 @@ typedef struct __sprite_pack_ {
 #define MAX_FILE_NAME_SIZ (4 * 1024) // 4KiB
 #define MAX_FILE_SIZE (8 * 1024 * 1024) // 8MiB
 
-#define TEXTURE_PACK_NAME "wall_textures"
-#define OBJECTS_PACK_NAME "objects"
-#define SAFETY_WALL_TEXTURE 7
+#define CLOSED_DOOR_TEXTURE (2 + 16 * 6)
+#define OPEN_DOOR_TEXTURE (4 + 16 * 6)
+#define LOCKED_DOOR_1_TEXTURE (2 + 17 * 6)
+#define LOCKED_DOOR_2_TEXTURE (3 + 17 * 6)
+#define DOOR_KEY_1_TEXTURE (2 + 4 * 5)
+#define DOOR_KEY_2_TEXTURE (3 + 4 * 5)
+#define TREASURE_1_TEXTURE (1 + 6 * 5)
+#define TREASURE_2_TEXTURE (2 + 6 * 5)
+#define TREASURE_3_TEXTURE (3 + 6 * 5)
+#define TREASURE_4_TEXTURE (4 + 6 * 5)
+#define SAFETY_WALL_TEXTURE (0 + 0 * 6)
+
+#define ENEMY_SHOT_TEXTURE (7 + 5 * 8)
+#define ENEMY_SHOOTING_TEXTURE (0 + 6 * 8)
+#define ENEMY_DYING_TEXTURE (0 + 5 * 8)
+#define ENEMY_DEAD_TEXTURE (4 + 5 * 8)
 
 #define DOOR_OPEN_SPEED 80
 #define TREASURE_PICKUP_FLASH_DURATION 8
@@ -178,9 +191,8 @@ typedef struct __sprite_pack_ {
 // raycaster.c
 extern sprite_pack_t * wall_textures;
 extern sprite_pack_t * objects_sprites;
-extern sprite_pack_t * enemy_sprites[5];
-extern sprite_pack_t * weapons_sprites;
 extern pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
+void load_textures();
 
 // color.c
 extern pixel_t color_white;

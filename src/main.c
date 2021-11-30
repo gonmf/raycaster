@@ -455,27 +455,10 @@ static void unload_assets() {
         free(level);
         level = NULL;
     }
+
     if (background) {
         free(background);
         background = NULL;
-    }
-    if (wall_textures) {
-        free(wall_textures);
-        wall_textures = NULL;
-    }
-    if (objects_sprites) {
-        free(objects_sprites);
-        objects_sprites = NULL;
-    }
-    for (int i = 0; i < 5; ++i) {
-        if (enemy_sprites[i]) {
-            free(enemy_sprites[i]);
-            enemy_sprites[i] = NULL;
-        }
-    }
-    if (weapons_sprites) {
-        free(weapons_sprites);
-        weapons_sprites = NULL;
     }
 }
 
@@ -485,6 +468,7 @@ int main() {
 #endif
     init_base_colors();
     init_fish_eye_table();
+    load_textures();
 
     while (select_level()) {
         open_level();

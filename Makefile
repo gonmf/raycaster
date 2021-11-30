@@ -10,4 +10,4 @@ debug:
 	$(CC) src/*.c -Iinc -o raycaster $(CFLAGS) -O0 -g $(LDFLAGS)
 # valgrind ./raycaster --track-origins=yes
 clean:
-	$(RM) raycaster *.ppm
+	$(RM) -rf raycaster sprites/dump

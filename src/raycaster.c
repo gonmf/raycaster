@@ -9,8 +9,8 @@ typedef struct  __obj_distance_ {
 
 sprite_pack_t * wall_textures;
 sprite_pack_t * objects_sprites;
-sprite_pack_t * enemy_sprites[5];
-sprite_pack_t * weapons_sprites;
+static sprite_pack_t * enemy_sprites[5];
+static sprite_pack_t * weapons_sprites;
 pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
 static char * enemy_angles;
@@ -365,7 +365,7 @@ static void fill_in_objects(level_t * level) {
     unsigned int object = INT_MAX;
     unsigned int enemy = INT_MAX;
     unsigned int viewport_mid = horizon_offset(level);
-    unsigned char enemy_type;
+    unsigned char enemy_type = 0;
     double block_x;
 
     // We remember enemy angles to make sure in the same frame always the same angle/sprite
@@ -415,18 +415,18 @@ static void fill_in_objects(level_t * level) {
                         sprite_id = enemy_angles[enemy] + level->enemy[enemy].state_step * 8;
                         break;
                     case ENEMY_STATE_SHOT:
-                        sprite_id = 7 + 5 * 8;
+                        sprite_id = ENEMY_SHOT_TEXTURE;
                         break;
                     case ENEMY_STATE_SHOOTING:
                         // TODO:
-                        sprite_id = level->enemy[enemy].state_step + 5 * 8;
+                        sprite_id = level->enemy[enemy].state_step + ENEMY_SHOOTING_TEXTURE;
                         break;
                     case ENEMY_STATE_DYING:
                         animation_step = ((ENEMY_DYING_ANIMATION_SPEED - level->enemy[enemy].state_step) * ENEMY_DYING_ANIMATION_PARTS) / ENEMY_DYING_ANIMATION_SPEED;
-                        sprite_id = animation_step + 5 * 8;
+                        sprite_id = animation_step + ENEMY_DYING_TEXTURE;
                         break;
                     default: // dead
-                        sprite_id = 4 + 5 * 8;
+                        sprite_id = ENEMY_DEAD_TEXTURE;
                         break;
                 }
 
@@ -564,6 +564,25 @@ void paint_scene(level_t * level) {
     fill_in_objects(level);
 
     fill_in_weapon(level);
+}
+
+void load_textures() {
+    wall_textures = calloc(1, sizeof(sprite_pack_t));
+    read_sprite_pack(wall_textures, "walls");
+    objects_sprites = calloc(1, sizeof(sprite_pack_t));
+    read_sprite_pack(objects_sprites, "objects");
+    enemy_sprites[0] = calloc(1, sizeof(sprite_pack_t));
+    read_sprite_pack(enemy_sprites[0], "soldier1");
+    enemy_sprites[1] = calloc(1, sizeof(sprite_pack_t));
+    read_sprite_pack(enemy_sprites[1], "soldier2");
+    // enemy_sprites[2] = calloc(1, sizeof(sprite_pack_t));
+    // read_sprite_pack(enemy_sprites[2], "soldier3");
+    // enemy_sprites[3] = calloc(1, sizeof(sprite_pack_t));
+    // read_sprite_pack(enemy_sprites[3], "soldier4");
+    // enemy_sprites[4] = calloc(1, sizeof(sprite_pack_t));
+    // read_sprite_pack(enemy_sprites[4], "soldier5");
+    weapons_sprites = calloc(1, sizeof(sprite_pack_t));
+    read_sprite_pack(weapons_sprites, "weapons");
 }
 
 void init_raycaster(const level_t * level) {
