@@ -1,20 +1,11 @@
-- Improved texture mapping: currently only part of it is flexible
-- Enemies
-  - strategic state (waiting, looking for player/alerted)
-    - in waiting do nothing
-    - in alerted keep track of where last saw player or heard noise
-      - shortest path algorithm to that location (do not recalculate every frame or without the location having changed)
-        - if within a number of steps and in range of fire (without other enemies in middle), shoot
-        - otherwise move closer
-  - detailed state (standing still, moving, shooting)
-  - actions/animations
-  - shooting
+- Painting blocking objects in map
+- Enemy proper calculation of when in range, instead of just by distance
+- Enemy shooting actually hitting player
+- Player death possibility
+- Enemy becoming in alert state upon seeing player or hearing noise (noise in close proximity)
+- Knife weapon - no noise, no ammo
 - Game UI
 - Config file or UI menu for mouse sensitivity, resolution, FPS
   - Configurable viewport (not ratio)
-
----
-
 - Allow saving and loading ongoing levels
 - Music and sound effects
-- Enemy noise and awareness

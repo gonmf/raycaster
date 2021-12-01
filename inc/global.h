@@ -28,23 +28,15 @@ typedef struct  __attribute__((__packed__)) __pixel_ {
     unsigned char alpha; // not used but present for performance
 } pixel_t;
 
-/*
-typedef struct  __attribute__((__packed__)) __list_ {
-    struct __list_ * next;
-    double angle;
-} list_t;
-*/
-
 typedef struct __attribute__((__packed__)) __enemy_ {
     unsigned char type;
     unsigned char life;
     unsigned char strategic_state;
-    // double goal_x;
-    // double goal_y;
-    // list_t * moving_plan;
+    double moving_dir_x;
+    double moving_dir_y;
     // Animation state
     unsigned char state;
-    unsigned char state_step;
+    unsigned char animation_step;
     double x;
     double y;
     double angle;
@@ -117,9 +109,10 @@ typedef struct __sprite_pack_ {
 #define ENEMY_STATE_STILL 0
 #define ENEMY_STATE_MOVING 1
 #define ENEMY_STATE_SHOT 2
-#define ENEMY_STATE_SHOOTING 3
-#define ENEMY_STATE_DYING 4
-#define ENEMY_STATE_DEAD 5
+#define ENEMY_STATE_ALERT 3
+#define ENEMY_STATE_SHOOTING 4
+#define ENEMY_STATE_DYING 5
+#define ENEMY_STATE_DEAD 6
 
 #define ENEMY_STRATEGIC_STATE_WAITING 0
 #define ENEMY_STRATEGIC_STATE_ALERTED 1
@@ -164,7 +157,9 @@ typedef struct __sprite_pack_ {
 #define SAFETY_WALL_TEXTURE (0 + 0 * 6)
 
 #define ENEMY_SHOT_TEXTURE (7 + 5 * 8)
-#define ENEMY_SHOOTING_TEXTURE (0 + 6 * 8)
+#define ENEMY_ALERT_TEXTURE (0 + 6 * 8)
+#define ENEMY_MOVING_TEXTURE (0 + 1 * 8)
+#define ENEMY_SHOOTING_TEXTURE (1 + 6 * 8)
 #define ENEMY_DYING_TEXTURE (0 + 5 * 8)
 #define ENEMY_DEAD_TEXTURE (4 + 5 * 8)
 
@@ -187,6 +182,12 @@ typedef struct __sprite_pack_ {
 #define ENEMY_SHOT_ANIMATION_SPEED 20
 #define ENEMY_DYING_ANIMATION_PARTS 4
 #define ENEMY_DYING_ANIMATION_SPEED 48
+#define ENEMY_SHOOTING_ANIMATION_PARTS 2
+#define ENEMY_SHOOTING_ANIMATION_SPEED 48
+#define ENEMY_MOVING_ANIMATION_PARTS 4
+#define ENEMY_MOVING_ANIMATION_SPEED 100
+
+#define ENEMY_SHOOTING_MAX_DISTANCE 8
 
 // raycaster.c
 extern sprite_pack_t * wall_textures;
@@ -271,5 +272,7 @@ void init_base_colors();
 
 // game.c
 void hit_enemy(level_t * level, unsigned int enemy_i, double distance);
+void update_enemies_state(level_t * level);
+void init_game_buffers(const level_t * level);
 
 #endif

@@ -4,7 +4,7 @@
 // Ratio to base window size of 600x300
 #define WINDOW_UPSCALE 2.0
 
-#define PRINT_FPS 1
+#define PRINT_FPS 0
 
 #define SKIP_LEVEL_SELECT 0
 

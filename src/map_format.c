@@ -333,7 +333,7 @@ level_t * read_level_info(const char * filename) {
                                 map_enemies[enemy_count].y = map_size_h;
                                 map_enemies[enemy_count].state = ENEMY_STATE_STILL;
                                 map_enemies[enemy_count].strategic_state = ENEMY_STRATEGIC_STATE_WAITING;
-                                map_enemies[enemy_count].state_step = 0;
+                                map_enemies[enemy_count].animation_step = 0;
                                 enemy_count++;
                             // Furniture
                             } else if ((d - '0') >= 0 && (d - '0') < 10) {

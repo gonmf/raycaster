@@ -406,23 +406,26 @@ static void fill_in_objects(level_t * level) {
                         sprite_id = enemy_angles[enemy];
                         break;
                     case ENEMY_STATE_MOVING:
-                        // TODO:
                         if (enemy_angles[enemy] == -1) {
                             angles_sum = (unsigned int)(x_angle + level->enemy[enemy].angle + 180 + 23);
                             enemy_angles[enemy] = (8 - (((unsigned int)angles_sum) / 45)) % 8;
                         }
 
-                        sprite_id = enemy_angles[enemy] + level->enemy[enemy].state_step * 8;
+                        animation_step = ((ENEMY_MOVING_ANIMATION_SPEED - level->enemy[enemy].animation_step) * ENEMY_MOVING_ANIMATION_PARTS) / ENEMY_MOVING_ANIMATION_SPEED;
+                        sprite_id = enemy_angles[enemy] + animation_step * 8 + ENEMY_MOVING_TEXTURE;
                         break;
                     case ENEMY_STATE_SHOT:
                         sprite_id = ENEMY_SHOT_TEXTURE;
                         break;
+                    case ENEMY_STATE_ALERT:
+                        sprite_id = ENEMY_ALERT_TEXTURE;
+                        break;
                     case ENEMY_STATE_SHOOTING:
-                        // TODO:
-                        sprite_id = level->enemy[enemy].state_step + ENEMY_SHOOTING_TEXTURE;
+                        animation_step = ((ENEMY_SHOOTING_ANIMATION_SPEED - level->enemy[enemy].animation_step) * ENEMY_SHOOTING_ANIMATION_PARTS) / ENEMY_SHOOTING_ANIMATION_SPEED;
+                        sprite_id = animation_step + ENEMY_SHOOTING_TEXTURE;
                         break;
                     case ENEMY_STATE_DYING:
-                        animation_step = ((ENEMY_DYING_ANIMATION_SPEED - level->enemy[enemy].state_step) * ENEMY_DYING_ANIMATION_PARTS) / ENEMY_DYING_ANIMATION_SPEED;
+                        animation_step = ((ENEMY_DYING_ANIMATION_SPEED - level->enemy[enemy].animation_step) * ENEMY_DYING_ANIMATION_PARTS) / ENEMY_DYING_ANIMATION_SPEED;
                         sprite_id = animation_step + ENEMY_DYING_TEXTURE;
                         break;
                     default: // dead

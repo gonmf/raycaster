@@ -141,42 +141,49 @@ bool apply_special_effect(level_t * level, bool * exit_found) {
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
                 level->score += 1;
+                printf("New score: %u\n", level->score);
                 return true;
             case SPECIAL_EFFECT_SCORE_2:
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
                 level->score += 2;
+                printf("New score: %u\n", level->score);
                 return true;
             case SPECIAL_EFFECT_SCORE_3:
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
                 level->score += 4;
+                printf("New score: %u\n", level->score);
                 return true;
             case SPECIAL_EFFECT_SCORE_4:
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
                 level->score += 10;
+                printf("New score: %u\n", level->score);
                 return true;
             case SPECIAL_EFFECT_KEY_1:
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
                 level->key_1 = true;
+                printf("Key 1 found\n");
                 return true;
             case SPECIAL_EFFECT_KEY_2:
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
                 level->key_2 = true;
+                printf("Key 2 found\n");
                 return true;
             case SPECIAL_EFFECT_AMMO:
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION);
                 level->ammo += 8;
+                printf("New ammo: %u\n", level->ammo);
                 return true;
             default:
                 error("Unknown special effect applicable to object");

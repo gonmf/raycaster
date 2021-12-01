@@ -162,54 +162,6 @@ static void update_observer_state() {
     }
 }
 
-static void decrement_state_step(enemy_t * enemy) {
-    if (enemy->state_step > 0) {
-        enemy->state_step--;
-    }
-}
-
-static void update_enemies_state() {
-    for (unsigned int enemy_i = 0; enemy_i < level->enemies_count; ++enemy_i) {
-        enemy_t * enemy = &level->enemy[enemy_i];
-        /*
-        if (enemy->strategic_state == ENEMY_STRATEGIC_STATE_WAITING) {
-            if ((rand() % 1000) == 0) {
-                printf("Enemy %u on alert\n", enemy_i);
-                enemy->strategic_state = ENEMY_STRATEGIC_STATE_ALERTED;
-            }
-            continue;
-        }
-        if (enemy->strategic_state == ENEMY_STRATEGIC_STATE_ALERTED) {
-
-        }
-        */
-        switch (enemy->state) {
-        case ENEMY_STATE_STILL:
-            break;
-        case ENEMY_STATE_MOVING:
-            // TODO:
-            break;
-        case ENEMY_STATE_SHOT:
-            decrement_state_step(enemy);
-            if (enemy->state_step == 0) {
-                enemy->state = ENEMY_STATE_STILL;
-            }
-            break;
-        case ENEMY_STATE_SHOOTING:
-            // TODO:
-            break;
-        case ENEMY_STATE_DYING:
-            decrement_state_step(enemy);
-            if (enemy->state_step == 0) {
-                enemy->state = ENEMY_STATE_DEAD;
-            }
-            break;
-        default: // dead
-            break;
-        }
-    }
-}
-
 static void main_render_loop() {
     window_update_pixels(background, WINDOW_TOTAL_WIDTH, WINDOW_TOTAL_HEIGHT, 0, 0);
 
@@ -239,9 +191,9 @@ static void main_render_loop() {
 
         update_observer_state();
 
-        update_enemies_state();
-
         if (!paused) {
+            update_enemies_state(level);
+
             paint_scene(level);
 
             double flash_percentage;
@@ -343,6 +295,7 @@ static void open_level() {
     printf("Level start - press P to pause and Esc to quit\n");
 
     init_raycaster(level);
+    init_game_buffers(level);
     paint_ui();
     paint_scene(level);
 
