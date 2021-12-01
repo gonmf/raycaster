@@ -1,4 +1,3 @@
-- Painting blocking objects in map
 - Enemy proper calculation of when in range, instead of just by distance
 - Enemy becoming in alert state upon seeing player or hearing noise (noise in close proximity)
 - Knife weapon - no noise, no ammo
