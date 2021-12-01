@@ -164,10 +164,14 @@ static void update_observer_state() {
 
 static void game_over_animation() {
     unsigned int duration = GAME_OVER_ANIMATION_SPEED;
-    set_cursor_visible(false);
 
-    while (duration-- > 0 && window_is_open()) {
-        double factor = ((GAME_OVER_ANIMATION_SPEED - duration) / 3.0) / GAME_OVER_ANIMATION_SPEED;
+    while (window_is_open()) {
+        if (duration-- > 0) {
+            window_close();
+            return;
+        }
+
+        double factor = ((GAME_OVER_ANIMATION_SPEED - duration) / 4.0) / GAME_OVER_ANIMATION_SPEED;
         scene_shading(color_dark_red, factor);
 
         sfEvent event;
@@ -196,7 +200,6 @@ static void main_render_loop() {
     while (window_is_open()) {
         if (level->life == 0) {
             game_over_animation();
-            window_close();
             return;
         }
 
@@ -234,8 +237,8 @@ static void main_render_loop() {
             apply_special_effect(level, &exit_found);
 
             if (exit_found) {
-                window_close();
                 printf("Level exit found\n");
+                window_close();
                 return;
             }
 
@@ -442,6 +445,8 @@ static void unload_assets() {
         free(background);
         background = NULL;
     }
+
+    clear_keys_pressed();
 }
 
 int main() {

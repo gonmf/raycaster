@@ -1,8 +1,9 @@
-- Enemy proper calculation of when in range, instead of just by distance
-- Enemy becoming in alert state upon seeing player or hearing noise (noise in close proximity)
+- Enemy proper calculation of when in view, instead of just by distance (currently shooting through doors/walls)
 - Knife weapon - no noise, no ammo
 - Game UI
 - Config file or UI menu for mouse sensitivity, resolution, FPS
   - Configurable viewport (not ratio)
 - Allow saving and loading ongoing levels
 - Music and sound effects
+- Sound crossing walls?/doors to alert enemies on other side
+- Allow enemies to open doors

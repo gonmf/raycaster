@@ -167,7 +167,8 @@ typedef struct __sprite_pack_ {
 #define DOOR_OPEN_SPEED 80
 #define TREASURE_PICKUP_FLASH_DURATION 8
 #define PLAYER_SHOT_FLASH_DURATION 8
-#define GAME_OVER_ANIMATION_SPEED 400
+#define GAME_OVER_ANIMATION_SPEED 200
+#define ENEMY_ALERT_PROXIMITY 10
 
 // Voodoo:
 #define MOVEMENT_CONSTANT 0.07
@@ -193,6 +194,7 @@ typedef struct __sprite_pack_ {
 #define ENEMY_MOVING_ANIMATION_SPEED 100
 
 #define ENEMY_SHOOTING_MAX_DISTANCE 8
+#define ENEMY_VIEWING_DISTANCE 10
 
 // raycaster.c
 extern sprite_pack_t * wall_textures;
@@ -227,6 +229,7 @@ void error_w_line(const char * s, unsigned int line);
 void add_key_pressed(sfKeyCode code);
 void remove_key_pressed(sfKeyCode code);
 bool key_is_pressed(sfKeyCode code);
+void clear_keys_pressed();
 
 // file_io.c
 unsigned int file_read(char * dst, unsigned int max_size, const char * filename);
@@ -275,6 +278,7 @@ pixel_t darken_shading(pixel_t color, double factor);
 void init_base_colors();
 
 // game.c
+void alert_enemies_in_proximity(const level_t * level, unsigned int distance);
 void hit_enemy(level_t * level, unsigned int enemy_i, double distance);
 void update_enemies_state(level_t * level);
 void init_game_buffers(const level_t * level);

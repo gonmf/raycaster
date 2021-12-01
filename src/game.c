@@ -59,13 +59,6 @@ static void decrement_animation_step(enemy_t * enemy) {
     }
 }
 
-static bool enemy_in_range(const level_t * level, enemy_t * enemy) {
-    double dist = distance(enemy->x, enemy->y, level->observer_x, level->observer_y);
-
-    // TODO: don't just test the distance
-    return dist < ENEMY_SHOOTING_MAX_DISTANCE;
-}
-
 static void fill_in_player_dist_map(const level_t * level, unsigned int x, unsigned int y, int steps) {
     unsigned int width = level->width;
     unsigned int height = level->height;
@@ -73,17 +66,14 @@ static void fill_in_player_dist_map(const level_t * level, unsigned int x, unsig
     if (x >= width || y >= height) {
         return;
     }
-    if (player_dist_map[x + y * width] == -2) {
+    if (player_dist_map[x + y * width] == -1) { // blocked by wall or blocking object
         return;
     }
     if (level->content_type[x + y * width] == CONTENT_TYPE_WALL || level->content_type[x + y * width] == CONTENT_TYPE_DOOR) {
         return;
     }
-    if (player_dist_map[x + y * width] != -1 && player_dist_map[x + y * width] <= steps) {
+    if (player_dist_map[x + y * width] <= steps) {
         return;
-    }
-    if (player_dist_map[x + y * width] == -3) {
-        steps += 5;
     }
 
     player_dist_map[x + y * width] = steps;
@@ -114,7 +104,7 @@ static void pick_target_coord(
     }
 
     int dist = player_dist_map[goal_x + goal_y * level->width];
-    if (dist <= 0) {
+    if (dist == -1) {
         return;
     }
     dist /= 10;
@@ -136,28 +126,54 @@ static void calc_enemy_distances_to_player(const level_t * level) {
     if (player_dist_map_x == rounded_x && player_dist_map_y == rounded_y) {
         return;
     }
-    // -1 for not explored, -2 for blocked by object, -3 for difficult to traverse
+    // -1 for path blocked
     for (unsigned int i = 0; i < width * height; ++i) {
-        player_dist_map[i] = -1;
-    }
-    for (unsigned int i = 0; i < level->enemies_count; ++i) {
-        unsigned int x = (unsigned int)(level->enemy[i].x + 0.5);
-        unsigned int y = (unsigned int)(level->enemy[i].y + 0.5);
-
-        player_dist_map[x + y * level->width] = -3;
+        player_dist_map[i] = INT_MAX;
     }
     for (unsigned int i = 0; i < level->objects_count; ++i) {
         unsigned int x = (unsigned int)(level->object[i].x + 0.5);
         unsigned int y = (unsigned int)(level->object[i].y + 0.5);
 
         if (level->object[i].type == OBJECT_TYPE_BLOCKING) {
-            player_dist_map[x + y * level->width] = -2;
-        } else {
-            player_dist_map[x + y * level->width] = -3;
+            player_dist_map[x + y * level->width] = -1;
         }
     }
 
     fill_in_player_dist_map(level, rounded_x, rounded_y, 0);
+
+    for (unsigned int i = 0; i < level->enemies_count; ++i) {
+        unsigned int x = (unsigned int)(level->enemy[i].x + 0.5);
+        unsigned int y = (unsigned int)(level->enemy[i].y + 0.5);
+
+        player_dist_map[x + y * level->width] += 10;
+    }
+    for (unsigned int i = 0; i < level->objects_count; ++i) {
+        unsigned int x = (unsigned int)(level->object[i].x + 0.5);
+        unsigned int y = (unsigned int)(level->object[i].y + 0.5);
+
+        if (!level->object[i].type == OBJECT_TYPE_BLOCKING) {
+            player_dist_map[x + y * level->width] += 10;
+        }
+    }
+}
+
+void alert_enemies_in_proximity(const level_t * level, unsigned int distance) {
+    calc_enemy_distances_to_player(level);
+
+    for (unsigned int i = 0; i < level->enemies_count; ++i) {
+        enemy_t * enemy = &level->enemy[i];
+
+        if (enemy->strategic_state == ENEMY_STRATEGIC_STATE_WAITING) {
+            unsigned int x = (unsigned int)(enemy->x + 0.5);
+            unsigned int y = (unsigned int)(enemy->y + 0.5);
+
+            int dist = player_dist_map[x + y * level->width];
+
+            if (dist > 0 && dist < (int)(distance * 10)) {
+                enemy->strategic_state = ENEMY_STRATEGIC_STATE_ALERTED;
+            }
+        }
+    }
 }
 
 static bool make_movement_plan(const level_t * level, enemy_t * enemy) {
@@ -196,14 +212,26 @@ static bool make_movement_plan(const level_t * level, enemy_t * enemy) {
     return true;
 }
 
+static bool in_enemy_view(level_t * level, enemy_t * enemy) {
+    double x = level->observer_x - enemy->x;
+    double y = level->observer_y - enemy->y;
+
+    double angle = fit_angle(atan(y / x) * RADIAN_CONSTANT);
+    if (x < 0.0) {
+        angle -= 180.0;
+    }
+
+    angle += enemy->angle;
+
+    return angle > 15.0 && angle < 65.0;
+}
+
 void update_enemies_state(level_t * level) {
     player_dist_map_x = UINT_MAX; // force regen of map if needed
-    bool in_range_calcd = false;
-    bool in_range = false;
 
     for (unsigned int enemy_i = 0; enemy_i < level->enemies_count; ++enemy_i) {
-        in_range_calcd = false;
         enemy_t * enemy = &level->enemy[enemy_i];
+        double enemy_distance = distance(enemy->x, enemy->y, level->observer_x, level->observer_y);
 
         switch (enemy->state) {
         case ENEMY_STATE_STILL:
@@ -215,9 +243,7 @@ void update_enemies_state(level_t * level) {
             enemy->x += enemy->moving_dir_x;
             enemy->y += enemy->moving_dir_y;
             if (enemy->animation_step == 0) {
-                in_range = enemy_in_range(level, enemy);
-
-                if (in_range) {
+                if (enemy_distance < ENEMY_SHOOTING_MAX_DISTANCE) {
                     enemy->animation_step = ENEMY_SHOOTING_ANIMATION_SPEED;
                     enemy->state = ENEMY_STATE_SHOOTING;
                 } else {
@@ -228,9 +254,7 @@ void update_enemies_state(level_t * level) {
         case ENEMY_STATE_SHOT:
             decrement_animation_step(enemy);
             if (enemy->animation_step == 0) {
-                in_range = enemy_in_range(level, enemy);
-
-                if (in_range) {
+                if (enemy_distance < ENEMY_SHOOTING_MAX_DISTANCE) {
                     enemy->animation_step = ENEMY_SHOOTING_ANIMATION_SPEED;
                     enemy->state = ENEMY_STATE_SHOOTING;
                 } else {
@@ -243,9 +267,7 @@ void update_enemies_state(level_t * level) {
             if (enemy->animation_step == (ENEMY_SHOOTING_ANIMATION_SPEED * ENEMY_SHOOTING_ACTIVATION_PART) / ENEMY_SHOOTING_ANIMATION_PARTS) {
                 hit_player(level, enemy);
             } else if (enemy->animation_step == 0) {
-                in_range = enemy_in_range(level, enemy);
-
-                if (in_range) {
+                if (enemy_distance < ENEMY_SHOOTING_MAX_DISTANCE) {
                     enemy->animation_step = ENEMY_SHOOTING_ANIMATION_SPEED;
                     enemy->state = ENEMY_STATE_SHOOTING;
                 } else {
@@ -263,14 +285,26 @@ void update_enemies_state(level_t * level) {
             break;
         }
 
-        if ((enemy->state != ENEMY_STATE_STILL && enemy->state != ENEMY_STATE_ALERT) || enemy->strategic_state == ENEMY_STRATEGIC_STATE_WAITING) {
+        if (enemy->state != ENEMY_STATE_STILL && enemy->state != ENEMY_STATE_ALERT) {
             continue;
         }
+        if (enemy->strategic_state == ENEMY_STRATEGIC_STATE_WAITING) {
+            if (enemy_distance < ENEMY_VIEWING_DISTANCE && in_enemy_view(level, enemy)) {
+                enemy->strategic_state = ENEMY_STRATEGIC_STATE_ALERTED;
+            }
+        }
 
-        in_range = in_range_calcd ? in_range : enemy_in_range(level, enemy);
+        if (enemy->strategic_state == ENEMY_STRATEGIC_STATE_ENGAGED) {
+            if (enemy_distance < ENEMY_SHOOTING_MAX_DISTANCE) {
+                enemy->state = ENEMY_STATE_SHOOTING;
+                enemy->animation_step = ENEMY_SHOOTING_ANIMATION_SPEED;
+            } else {
+                enemy->strategic_state = ENEMY_STRATEGIC_STATE_ALERTED;
+            }
+        }
 
         if (enemy->strategic_state == ENEMY_STRATEGIC_STATE_ALERTED) {
-            if (in_range) {
+            if (enemy_distance < ENEMY_SHOOTING_MAX_DISTANCE) {
                 enemy->strategic_state = ENEMY_STRATEGIC_STATE_ENGAGED;
             } else {
                 if (make_movement_plan(level, enemy)) {
@@ -279,15 +313,6 @@ void update_enemies_state(level_t * level) {
                 } else {
                     // on alert but out of range and unable to find a valid path to player
                 }
-            }
-        }
-
-        if (enemy->strategic_state == ENEMY_STRATEGIC_STATE_ENGAGED) {
-            if (in_range) {
-                enemy->state = ENEMY_STATE_SHOOTING;
-                enemy->animation_step = ENEMY_SHOOTING_ANIMATION_SPEED;
-            } else {
-                enemy->strategic_state = ENEMY_STRATEGIC_STATE_ALERTED;
             }
         }
     }

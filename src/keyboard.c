@@ -37,3 +37,7 @@ bool key_is_pressed(sfKeyCode code) {
 
     return false;
 }
+
+void clear_keys_pressed() {
+    keys_pressed_count = 0;
+}

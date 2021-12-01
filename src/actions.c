@@ -205,6 +205,7 @@ bool shooting_state(level_t * level, unsigned int * step, bool * trigger_shot) {
                 *trigger_shot = false;
                 printf("Out of ammo\n");
             } else {
+                alert_enemies_in_proximity(level, ENEMY_ALERT_PROXIMITY);
                 level->ammo -= 1;
                 *trigger_shot = true;
                 printf("New ammo: %u\n", level->ammo);
