@@ -31,9 +31,9 @@ Input | Action
 Keys `WASD` | Move character
 _mouse movement_ | Move camera
 Key `E` | Open doors
-Key `M` | Open map
+Key `M` | Toggle map
 Key `P` | Pause game
-Key `Esc` | Close game
+Key `Esc` | Close level
 
 ## Screenshots
 ![1](https://user-images.githubusercontent.com/5512054/144130039-ef11e0ec-2871-4ec4-831c-2d3f1b0302c8.png)

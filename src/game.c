@@ -22,7 +22,7 @@ void hit_enemy(level_t * level, unsigned int enemy_i, double distance) {
             if (enemy->strategic_state == ENEMY_STRATEGIC_STATE_WAITING) {
                 enemy->strategic_state = ENEMY_STRATEGIC_STATE_ALERTED;
             }
-            printf("Enemy #%u health: %u\n", enemy_i, enemy->life);
+            printf("Enemy #%u health: %u%%\n", enemy_i, enemy->life);
         } else {
             enemy->life = 0;
             enemy->state = ENEMY_STATE_DYING;
@@ -36,6 +36,20 @@ void hit_enemy(level_t * level, unsigned int enemy_i, double distance) {
             level->objects_count++;
             printf("Enemy #%u killed\n", enemy_i);
         }
+    }
+}
+
+static void hit_player(level_t * level, enemy_t * enemy) {
+    double dist = distance(enemy->x, enemy->y, level->observer_x, level->observer_y);
+
+    unsigned char shot_power = MAX(MIN((unsigned int)(18 / dist) + 18, 50), 18) / 2;
+    if (level->life > shot_power) {
+        level->life -= shot_power;
+        start_flash_effect(PLAYER_SHOT_FLASH_DURATION, &color_dark_red);
+        printf("Hit! Health: %u%%\n", level->life);
+    } else {
+        level->life = 0;
+        printf("Game over\n");
     }
 }
 
@@ -226,7 +240,9 @@ void update_enemies_state(level_t * level) {
             break;
         case ENEMY_STATE_SHOOTING:
             decrement_animation_step(enemy);
-            if (enemy->animation_step == 0) {
+            if (enemy->animation_step == (ENEMY_SHOOTING_ANIMATION_SPEED * ENEMY_SHOOTING_ACTIVATION_PART) / ENEMY_SHOOTING_ANIMATION_PARTS) {
+                hit_player(level, enemy);
+            } else if (enemy->animation_step == 0) {
                 in_range = enemy_in_range(level, enemy);
 
                 if (in_range) {

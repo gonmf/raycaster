@@ -55,6 +55,7 @@ typedef struct __level_ {
     pixel_t floor_color;
     unsigned int width;
     unsigned int height;
+    unsigned char life;
     double observer_x;
     double observer_y;
     double observer_angle;
@@ -165,6 +166,8 @@ typedef struct __sprite_pack_ {
 
 #define DOOR_OPEN_SPEED 80
 #define TREASURE_PICKUP_FLASH_DURATION 8
+#define PLAYER_SHOT_FLASH_DURATION 8
+#define GAME_OVER_ANIMATION_SPEED 400
 
 // Voodoo:
 #define MOVEMENT_CONSTANT 0.07
@@ -179,11 +182,13 @@ typedef struct __sprite_pack_ {
 
 #define SHOOTING_ANIMATION_SPEED 50
 #define SHOOTING_ANIMATION_PARTS 5
+#define SHOOTING_ACTIVATION_PART 3
 #define ENEMY_SHOT_ANIMATION_SPEED 20
 #define ENEMY_DYING_ANIMATION_PARTS 4
 #define ENEMY_DYING_ANIMATION_SPEED 48
 #define ENEMY_SHOOTING_ANIMATION_PARTS 2
-#define ENEMY_SHOOTING_ANIMATION_SPEED 48
+#define ENEMY_SHOOTING_ANIMATION_SPEED 60
+#define ENEMY_SHOOTING_ACTIVATION_PART 1
 #define ENEMY_MOVING_ANIMATION_PARTS 4
 #define ENEMY_MOVING_ANIMATION_SPEED 100
 
@@ -200,6 +205,7 @@ extern pixel_t color_white;
 extern pixel_t color_gray;
 extern pixel_t color_black;
 extern pixel_t color_red;
+extern pixel_t color_dark_red;
 extern pixel_t color_blue;
 extern pixel_t color_cyan;
 extern pixel_t color_gold;
@@ -253,8 +259,8 @@ void init_raycaster(const level_t * level);
 void transition_step();
 bool opening_door_transition(double * percentage_open, unsigned int * door_x, unsigned int * door_y);
 void open_door_in_front(level_t * level);
-bool short_flash_effect(double * percentage);
-void start_flash_effect(unsigned int duration);
+bool short_flash_effect(double * percentage, pixel_t * color);
+void start_flash_effect(unsigned int duration, pixel_t * color);
 bool apply_special_effect(level_t * level, bool * exit_found);
 bool shooting_state(level_t * level, unsigned int * step, bool * trigger_shot);
 void shooting_start_action();
@@ -264,10 +270,8 @@ void paint_map(const level_t * level);
 
 // color.c
 pixel_t shading(pixel_t min_color, pixel_t max_color, double factor);
-pixel_t brighten_shading(pixel_t color, double factor);
+void scene_shading(pixel_t color, double factor);
 pixel_t darken_shading(pixel_t color, double factor);
-void brighten_scene(double factor);
-void darken_scene(double factor);
 void init_base_colors();
 
 // game.c

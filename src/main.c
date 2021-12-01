@@ -134,7 +134,7 @@ static void update_observer_state() {
         if (pause_btn_pressed) {
             paused = !paused;
             if (paused) {
-                darken_scene(0.5);
+                scene_shading(color_black, 0.5);
                 window_update_pixels(fg_buffer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, UI_BORDER, UI_BORDER);
                 window_refresh();
                 set_cursor_visible(true);
@@ -162,6 +162,28 @@ static void update_observer_state() {
     }
 }
 
+static void game_over_animation() {
+    unsigned int duration = GAME_OVER_ANIMATION_SPEED;
+    set_cursor_visible(false);
+
+    while (duration-- > 0 && window_is_open()) {
+        double factor = ((GAME_OVER_ANIMATION_SPEED - duration) / 3.0) / GAME_OVER_ANIMATION_SPEED;
+        scene_shading(color_dark_red, factor);
+
+        sfEvent event;
+        while (window_poll_event(&event)) {
+            if (event.type == sfEvtClosed) {
+                window_close();
+                return;
+            }
+        }
+
+        window_center_mouse();
+        window_update_pixels(fg_buffer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, UI_BORDER, UI_BORDER);
+        window_refresh();
+    }
+}
+
 static void main_render_loop() {
     window_update_pixels(background, WINDOW_TOTAL_WIDTH, WINDOW_TOTAL_HEIGHT, 0, 0);
 
@@ -172,6 +194,12 @@ static void main_render_loop() {
 #endif
 
     while (window_is_open()) {
+        if (level->life == 0) {
+            game_over_animation();
+            window_close();
+            return;
+        }
+
         if (!paused) {
 #if PRINT_FPS
             clock_gettime(CLOCK_REALTIME, &spec);
@@ -197,8 +225,9 @@ static void main_render_loop() {
             paint_scene(level);
 
             double flash_percentage;
-            if (short_flash_effect(&flash_percentage)) {
-                brighten_scene(flash_percentage);
+            pixel_t flash_color;
+            if (short_flash_effect(&flash_percentage, &flash_color)) {
+                scene_shading(flash_color, flash_percentage);
             }
 
             bool exit_found;
@@ -233,7 +262,7 @@ static void main_render_loop() {
                 sfKeyCode code = ((sfKeyEvent *)&event)->code;
 
                 remove_key_pressed(code);
-            } else if(paused) {
+            } else if (paused) {
                 // do nothing
             } else if (event.type == sfEvtMouseMoved) {
                 int move_x = ((sfMouseMoveEvent *)&event)->x - VIEWPORT_WIDTH / 2;

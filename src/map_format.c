@@ -402,6 +402,7 @@ level_t * read_level_info(const char * filename) {
 
     level_t * ret = (level_t *)calloc(sizeof(level_t), 1);
 
+    ret->life = 100;
     ret->width = map_size_w;
     ret->height = map_size_h;
     ret->observer_x = (double)player_start_x;
