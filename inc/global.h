@@ -195,6 +195,7 @@ typedef struct __sprite_pack_ {
 
 #define ENEMY_SHOOTING_MAX_DISTANCE 8
 #define ENEMY_VIEWING_DISTANCE 10
+#define ENEMY_FIELD_OF_VIEW 70
 
 // raycaster.c
 extern sprite_pack_t * wall_textures;

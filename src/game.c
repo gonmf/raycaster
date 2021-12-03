@@ -230,7 +230,7 @@ static bool in_enemy_view(level_t * level, enemy_t * enemy) {
 
     angle += enemy->angle;
 
-    return angle > 15.0 && angle < 65.0;
+    return angle > 90.0 - (ENEMY_FIELD_OF_VIEW / 2.0) && angle < 90.0 + (ENEMY_FIELD_OF_VIEW / 2.0);
 }
 
 static bool in_shooting_distance(double distance) {
