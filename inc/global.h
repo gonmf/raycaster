@@ -184,11 +184,11 @@ typedef struct __sprite_pack_ {
 #define SHOOTING_ANIMATION_SPEED 50
 #define SHOOTING_ANIMATION_PARTS 5
 #define SHOOTING_ACTIVATION_PART 3
-#define ENEMY_SHOT_ANIMATION_SPEED 20
+#define ENEMY_SHOT_ANIMATION_SPEED 25
 #define ENEMY_DYING_ANIMATION_PARTS 4
 #define ENEMY_DYING_ANIMATION_SPEED 48
 #define ENEMY_SHOOTING_ANIMATION_PARTS 2
-#define ENEMY_SHOOTING_ANIMATION_SPEED 60
+#define ENEMY_SHOOTING_ANIMATION_SPEED 70
 #define ENEMY_SHOOTING_ACTIVATION_PART 1
 #define ENEMY_MOVING_ANIMATION_PARTS 4
 #define ENEMY_MOVING_ANIMATION_SPEED 100
@@ -222,6 +222,7 @@ void read_sprite_pack(sprite_pack_t * pack, const char * pack_name);
 level_t * read_level_info(const char * filename);
 
 // utils.c
+bool random_one_in(unsigned int n);
 void error(const char * s);
 void error_w_line(const char * s, unsigned int line);
 

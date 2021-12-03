@@ -22,7 +22,6 @@ void hit_enemy(level_t * level, unsigned int enemy_i, double distance) {
             if (enemy->strategic_state == ENEMY_STRATEGIC_STATE_WAITING) {
                 enemy->strategic_state = ENEMY_STRATEGIC_STATE_ALERTED;
             }
-            printf("Enemy #%u health: %u%%\n", enemy_i, enemy->life);
         } else {
             enemy->life = 0;
             enemy->state = ENEMY_STATE_DYING;
@@ -34,13 +33,21 @@ void hit_enemy(level_t * level, unsigned int enemy_i, double distance) {
             level->object[level->objects_count].x = enemy->x;
             level->object[level->objects_count].y = enemy->y;
             level->objects_count++;
-            printf("Enemy #%u killed\n", enemy_i);
         }
     }
 }
 
 static void hit_player(level_t * level, enemy_t * enemy) {
     double dist = distance(enemy->x, enemy->y, level->observer_x, level->observer_y);
+
+    // 2: 100% accuracy
+    // ENEMY_SHOOTING_MAX_DISTANCE: 33% accuracy
+    double accuracy = (1.0 - (MAX(dist, 2.0) - 2.0) / (ENEMY_SHOOTING_MAX_DISTANCE - 2)) * 0.67 + 0.33;
+    bool hit = rand() / ((double)RAND_MAX) < accuracy;
+
+    if (!hit) {
+        return;
+    }
 
     unsigned char shot_power = MAX(MIN((unsigned int)(18 / dist) + 18, 50), 18) / 2;
     if (level->life > shot_power) {
@@ -226,6 +233,44 @@ static bool in_enemy_view(level_t * level, enemy_t * enemy) {
     return angle > 15.0 && angle < 65.0;
 }
 
+static bool in_shooting_distance(double distance) {
+    if (distance < ENEMY_SHOOTING_MAX_DISTANCE - 2) {
+        return true;
+    }
+    if (distance < ENEMY_SHOOTING_MAX_DISTANCE) {
+        return random_one_in(2) || random_one_in(2); // probability 75%
+    }
+    return false;
+}
+
+static bool has_line_of_fire(const level_t * level, const enemy_t * enemy, double distance) {
+    double x = level->observer_x - enemy->x;
+    double y = level->observer_y - enemy->y;
+
+    double angle_radians = atan(y / x);// * RADIAN_CONSTANT);
+    double x_change = cos(angle_radians) * 0.1;
+    double y_change = sin(angle_radians) * 0.1;
+    double curr_x = enemy->x;
+    double curr_y = enemy->y;
+
+    unsigned int steps = (unsigned int)(distance / 0.1);
+
+    for (unsigned int i = 0; i <= steps; ++i) {
+        curr_x += x_change;
+        curr_y += y_change;
+
+        unsigned int rounded_x = (unsigned int)(curr_x + 0.5);
+        unsigned int rounded_y = (unsigned int)(curr_y + 0.5);
+
+        unsigned int content_type = level->content_type[rounded_x + rounded_y * level->width];
+        if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void update_enemies_state(level_t * level) {
     player_dist_map_x = UINT_MAX; // force regen of map if needed
 
@@ -243,7 +288,7 @@ void update_enemies_state(level_t * level) {
             enemy->x += enemy->moving_dir_x;
             enemy->y += enemy->moving_dir_y;
             if (enemy->animation_step == 0) {
-                if (enemy_distance < ENEMY_SHOOTING_MAX_DISTANCE) {
+                if (in_shooting_distance(enemy_distance) && has_line_of_fire(level, enemy, enemy_distance)) {
                     enemy->animation_step = ENEMY_SHOOTING_ANIMATION_SPEED;
                     enemy->state = ENEMY_STATE_SHOOTING;
                 } else {
@@ -254,7 +299,7 @@ void update_enemies_state(level_t * level) {
         case ENEMY_STATE_SHOT:
             decrement_animation_step(enemy);
             if (enemy->animation_step == 0) {
-                if (enemy_distance < ENEMY_SHOOTING_MAX_DISTANCE) {
+                if (in_shooting_distance(enemy_distance) && has_line_of_fire(level, enemy, enemy_distance)) {
                     enemy->animation_step = ENEMY_SHOOTING_ANIMATION_SPEED;
                     enemy->state = ENEMY_STATE_SHOOTING;
                 } else {
@@ -267,7 +312,7 @@ void update_enemies_state(level_t * level) {
             if (enemy->animation_step == (ENEMY_SHOOTING_ANIMATION_SPEED * ENEMY_SHOOTING_ACTIVATION_PART) / ENEMY_SHOOTING_ANIMATION_PARTS) {
                 hit_player(level, enemy);
             } else if (enemy->animation_step == 0) {
-                if (enemy_distance < ENEMY_SHOOTING_MAX_DISTANCE) {
+                if (in_shooting_distance(enemy_distance) && has_line_of_fire(level, enemy, enemy_distance)) {
                     enemy->animation_step = ENEMY_SHOOTING_ANIMATION_SPEED;
                     enemy->state = ENEMY_STATE_SHOOTING;
                 } else {
@@ -295,7 +340,7 @@ void update_enemies_state(level_t * level) {
         }
 
         if (enemy->strategic_state == ENEMY_STRATEGIC_STATE_ENGAGED) {
-            if (enemy_distance < ENEMY_SHOOTING_MAX_DISTANCE) {
+            if (in_shooting_distance(enemy_distance) && has_line_of_fire(level, enemy, enemy_distance)) {
                 enemy->state = ENEMY_STATE_SHOOTING;
                 enemy->animation_step = ENEMY_SHOOTING_ANIMATION_SPEED;
             } else {
@@ -304,7 +349,7 @@ void update_enemies_state(level_t * level) {
         }
 
         if (enemy->strategic_state == ENEMY_STRATEGIC_STATE_ALERTED) {
-            if (enemy_distance < ENEMY_SHOOTING_MAX_DISTANCE) {
+            if (in_shooting_distance(enemy_distance) && has_line_of_fire(level, enemy, enemy_distance)) {
                 enemy->strategic_state = ENEMY_STRATEGIC_STATE_ENGAGED;
             } else {
                 if (make_movement_plan(level, enemy)) {

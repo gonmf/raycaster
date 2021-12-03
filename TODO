@@ -1,4 +1,3 @@
-- Enemy proper calculation of when in view, instead of just by distance (currently shooting through doors/walls)
 - Knife weapon - no noise, no ammo
 - Game UI
 - Config file or UI menu for mouse sensitivity, resolution, FPS
@@ -7,3 +6,5 @@
 - Music and sound effects
 - Sound crossing walls?/doors to alert enemies on other side
 - Allow enemies to open doors
+- Rename level->observer something else
+- Put soldiers on alert based on proximity to another alert soldier

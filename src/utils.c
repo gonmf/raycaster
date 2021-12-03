@@ -1,5 +1,9 @@
 #include "global.h"
 
+bool random_one_in(unsigned int n) {
+    return (rand() % n) == 0;
+}
+
 void error(const char * s) {
     fprintf(stderr, "ERROR: %s\n", s);
     exit(EXIT_FAILURE);
