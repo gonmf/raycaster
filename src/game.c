@@ -29,7 +29,7 @@ void hit_enemy(level_t * level, unsigned int enemy_i, double distance) {
             enemy->animation_step = ENEMY_DYING_ANIMATION_SPEED;
 
             level->object[level->objects_count].type = OBJECT_TYPE_NON_BLOCK;
-            level->object[level->objects_count].texture = 3 + 5 * 5;
+            level->object[level->objects_count].texture = SMALL_AMMO_TEXTURE;
             level->object[level->objects_count].special_effect = SPECIAL_EFFECT_AMMO;
             level->object[level->objects_count].x = enemy->x;
             level->object[level->objects_count].y = enemy->y;
@@ -248,11 +248,13 @@ static bool make_movement_plan(const level_t * level, enemy_t * enemy) {
         error("unexpected error in path finding");
     }
 
-    double final_target_x = ((double)target_x) - 0.15 + 0.3 * (rand() / ((double)RAND_MAX));
-    double final_target_y = ((double)target_y) - 0.15 + 0.3 * (rand() / ((double)RAND_MAX));
+    double final_target_x = ((double)target_x) - 0.2 + 0.4 * (rand() / ((double)RAND_MAX));
+    double final_target_y = ((double)target_y) - 0.2 + 0.4 * (rand() / ((double)RAND_MAX));
 
-    enemy->moving_dir_x = (final_target_x - enemy->x) / ENEMY_MOVING_ANIMATION_SPEED;
-    enemy->moving_dir_y = (final_target_y - enemy->y) / ENEMY_MOVING_ANIMATION_SPEED;
+    double distance_to_target = distance(final_target_x, final_target_y, enemy->x, enemy->y);
+
+    enemy->moving_dir_x = (final_target_x - enemy->x) / (ENEMY_MOVING_ANIMATION_SPEED * distance_to_target);
+    enemy->moving_dir_y = (final_target_y - enemy->y) / (ENEMY_MOVING_ANIMATION_SPEED * distance_to_target);
     enemy->angle = angle;
 
     return true;
@@ -286,20 +288,20 @@ static bool has_line_of_fire(const level_t * level, const enemy_t * enemy, doubl
     double x = level->observer_x - enemy->x;
     double y = level->observer_y - enemy->y;
 
-    double angle_radians = atan(y / x);// * RADIAN_CONSTANT);
-    double x_change = cos(angle_radians) * 0.1;
-    double y_change = sin(angle_radians) * 0.1;
-    double curr_x = enemy->x;
-    double curr_y = enemy->y;
+    double angle_radians = atan(y / x);
+    double x_change = cos(angle_radians) * ROUGH_RAY_STEP_CONSTANT;
+    double y_change = sin(angle_radians) * ROUGH_RAY_STEP_CONSTANT;
+    double curr_x = enemy->x + 0.5;
+    double curr_y = enemy->y + 0.5;
 
-    unsigned int steps = (unsigned int)(distance / 0.1);
+    unsigned int steps = (unsigned int)(distance / ROUGH_RAY_STEP_CONSTANT);
 
     for (unsigned int i = 0; i <= steps; ++i) {
         curr_x += x_change;
         curr_y += y_change;
 
-        unsigned int rounded_x = (unsigned int)(curr_x + 0.5);
-        unsigned int rounded_y = (unsigned int)(curr_y + 0.5);
+        unsigned int rounded_x = (unsigned int)curr_x;
+        unsigned int rounded_y = (unsigned int)curr_y;
 
         unsigned int content_type = level->content_type[rounded_x + rounded_y * level->width];
         if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR) {

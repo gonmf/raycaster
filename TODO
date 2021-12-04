@@ -1,16 +1,21 @@
-- Put soldiers on alert based on proximity to another alert soldier
-
-- Bug: diagonal movement is ~40% faster than normal which looks bad
-
 - Map editor able to specify initial enemy angle
 
 - Knife weapon - no noise, no ammo
 - More enemy types
 
+---
+
 - Game UI
   - Menu for mouse sensitivity, resolution, FPS
   - Configurable viewport (not ratio)
 - Allow saving and loading ongoing levels
+
+---
+
+- Put soldiers on alert based on proximity to another alert soldier
+
+- Bug: when multiple objects are too close, they may obscure each other in raytracing even though transparent
+- Bug: ray tracing of dead enemies next to walls/doors may clip them
 
 - Music and sound effects
 

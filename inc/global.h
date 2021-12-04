@@ -155,6 +155,7 @@ typedef struct __sprite_pack_ {
 #define TREASURE_2_TEXTURE (2 + 6 * 5)
 #define TREASURE_3_TEXTURE (3 + 6 * 5)
 #define TREASURE_4_TEXTURE (4 + 6 * 5)
+#define SMALL_AMMO_TEXTURE (3 + 5 * 5)
 #define SAFETY_WALL_TEXTURE (0 + 0 * 6)
 
 #define ENEMY_SHOT_TEXTURE (7 + 5 * 8)

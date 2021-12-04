@@ -107,52 +107,48 @@ static double cast_simple_ray(const level_t * level, double angle, double * bloc
 
         if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR) {
             return -1;
-        } else if (content_type == CONTENT_TYPE_DOOR_OPEN) {
-            if (opening_this_door) {
-                curr_x -= x_change / 2.0;
-                curr_y -= y_change / 2.0;
-                double vertice_x[4];
-                double vertice_y[4];
-                vertice_x[0] = ((double)rounded_x) + 0.5;
-                vertice_y[0] = ((double)rounded_y) + 0.5;
-                vertice_x[1] = ((double)rounded_x) + 0.5;
-                vertice_y[1] = ((double)rounded_y) - 0.5;
-                vertice_x[2] = ((double)rounded_x) - 0.5;
-                vertice_y[2] = ((double)rounded_y) - 0.5;
-                vertice_x[3] = ((double)rounded_x) - 0.5;
-                vertice_y[3] = ((double)rounded_y) + 0.5;
-                int closest_vertice = -1;
-                double min_distance = 0.0;
-                for (int i = 0; i < 4; ++i) {
-                    double dist = distance(vertice_x[i], vertice_y[i], level->observer_x, level->observer_y);
-                    if ((closest_vertice == -1) || (min_distance > dist)) {
-                        closest_vertice = i;
-                        min_distance = dist;
-                    }
+        } else if (content_type == CONTENT_TYPE_DOOR_OPEN && opening_this_door) {
+            curr_x -= x_change / 2.0;
+            curr_y -= y_change / 2.0;
+            double vertice_x[4];
+            double vertice_y[4];
+            vertice_x[0] = ((double)rounded_x) + 0.5;
+            vertice_y[0] = ((double)rounded_y) + 0.5;
+            vertice_x[1] = ((double)rounded_x) + 0.5;
+            vertice_y[1] = ((double)rounded_y) - 0.5;
+            vertice_x[2] = ((double)rounded_x) - 0.5;
+            vertice_y[2] = ((double)rounded_y) - 0.5;
+            vertice_x[3] = ((double)rounded_x) - 0.5;
+            vertice_y[3] = ((double)rounded_y) + 0.5;
+            int closest_vertice = -1;
+            double min_distance = 0.0;
+            for (int i = 0; i < 4; ++i) {
+                double dist = distance(vertice_x[i], vertice_y[i], level->observer_x, level->observer_y);
+                if ((closest_vertice == -1) || (min_distance > dist)) {
+                    closest_vertice = i;
+                    min_distance = dist;
                 }
+            }
 
-                int left_vertice = (closest_vertice + 4 - 1) % 4;
-                int right_vertice = (closest_vertice + 1) % 4;
+            int left_vertice = (closest_vertice + 4 - 1) % 4;
+            int right_vertice = (closest_vertice + 1) % 4;
 
-                double hangle = distance(vertice_x[closest_vertice], vertice_y[closest_vertice], curr_x, curr_y);
-                double distance_left = distance(vertice_x[left_vertice], vertice_y[left_vertice], curr_x, curr_y);
-                double distance_right = distance(vertice_x[right_vertice], vertice_y[right_vertice], curr_x, curr_y);
+            double hangle = distance(vertice_x[closest_vertice], vertice_y[closest_vertice], curr_x, curr_y);
+            double distance_left = distance(vertice_x[left_vertice], vertice_y[left_vertice], curr_x, curr_y);
+            double distance_right = distance(vertice_x[right_vertice], vertice_y[right_vertice], curr_x, curr_y);
 
-                if (distance_left > distance_right) {
-                    hangle = 1.0 - hangle;
-                }
+            if (distance_left > distance_right) {
+                hangle = 1.0 - hangle;
+            }
 
-                hangle = MIN(MAX(hangle, 0.0), 1.0);
-                if (hangle < percentage_open) {
-                    skipped_door = true;
-                    curr_x += x_change / 2.0;
-                    curr_y += y_change / 2.0;
-                    continue;
-                } else {
-                    return -1;
-                }
-            } else {
+            hangle = MIN(MAX(hangle, 0.0), 1.0);
+            if (hangle < percentage_open) {
+                skipped_door = true;
+                curr_x += x_change / 2.0;
+                curr_y += y_change / 2.0;
                 continue;
+            } else {
+                return -1;
             }
         } else { // CONTENT_TYPE_EMPTY
             if (!object_locations[rounded_x + rounded_y * level->width]) continue;
@@ -381,7 +377,6 @@ static void refresh_object_cache(const level_t * level) {
         unsigned int y = (unsigned int)(level->enemy[i].y + 0.5);
 
         object_locations[x + y * level->width] = true;
-
         if (x > 0) {
             object_locations[x - 1 + y * level->width] = true;
         }
