@@ -1,10 +1,22 @@
+- Put soldiers on alert based on proximity to another alert soldier
+
+- Bug: diagonal movement is ~40% faster than normal which looks bad
+
+- Map editor able to specify initial enemy angle
+
 - Knife weapon - no noise, no ammo
+- More enemy types
+
 - Game UI
-- Config file or UI menu for mouse sensitivity, resolution, FPS
+  - Menu for mouse sensitivity, resolution, FPS
   - Configurable viewport (not ratio)
 - Allow saving and loading ongoing levels
+
 - Music and sound effects
-- Sound crossing walls?/doors to alert enemies on other side
+
+- Design some better levels
+
 - Allow enemies to open doors
+  - Noise crossing walls/doors to alert enemies on other side
+
 - Rename level->observer something else
-- Put soldiers on alert based on proximity to another alert soldier

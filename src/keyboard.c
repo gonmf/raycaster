@@ -38,6 +38,10 @@ bool key_is_pressed(sfKeyCode code) {
     return false;
 }
 
+bool player_moving() {
+    return key_is_pressed(sfKeyW) || key_is_pressed(sfKeyS) || key_is_pressed(sfKeyA) || key_is_pressed(sfKeyD);
+}
+
 void clear_keys_pressed() {
     keys_pressed_count = 0;
 }

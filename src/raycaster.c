@@ -17,6 +17,8 @@ static char * enemy_angles;
 static bool trigger_shot;
 static obj_distance_t * sorted_distances;
 static double fish_eye_table[VIEWPORT_WIDTH];
+static bool * object_locations;
+static bool object_locations_refresh_required;
 
 static unsigned int horizon_offset(const level_t * level) {
     double vertical_multiplier = level->observer_angle2 / 90.0;
@@ -153,6 +155,8 @@ static double cast_simple_ray(const level_t * level, double angle, double * bloc
                 continue;
             }
         } else { // CONTENT_TYPE_EMPTY
+            if (!object_locations[rounded_x + rounded_y * level->width]) continue;
+
             unsigned int sorted_count = 0;
 
             for (unsigned int i = 0; i < level->objects_count; ++i) {
@@ -361,7 +365,47 @@ static void block_color(pixel_t * dst, double block_x, double block_y, double in
     *dst = darken_shading(src, intensity);
 }
 
+void invalidate_objects_cache() {
+    object_locations_refresh_required = true;
+}
+
+static void refresh_object_cache(const level_t * level) {
+    if (!object_locations_refresh_required) {
+        return;
+    }
+
+    object_locations_refresh_required = false;
+    memset(object_locations, false, level->width * level->height * sizeof(bool));
+    for (unsigned int i = 0; i < level->enemies_count; ++i) {
+        unsigned int x = (unsigned int)(level->enemy[i].x + 0.5);
+        unsigned int y = (unsigned int)(level->enemy[i].y + 0.5);
+
+        object_locations[x + y * level->width] = true;
+
+        if (x > 0) {
+            object_locations[x - 1 + y * level->width] = true;
+        }
+        if (x < level->width - 1) {
+            object_locations[x + 1 + y * level->width] = true;
+        }
+        if (y > 0) {
+            object_locations[x + (y - 1) * level->width] = true;
+        }
+        if (y < level->height - 1) {
+            object_locations[x + (y + 1) * level->width] = true;
+        }
+    }
+    for (unsigned int i = 0; i < level->objects_count; ++i) {
+        unsigned int x = (unsigned int)(level->object[i].x + 0.5);
+        unsigned int y = (unsigned int)(level->object[i].y + 0.5);
+
+        object_locations[x + y * level->width] = true;
+    }
+}
+
 static void fill_in_objects(level_t * level) {
+    refresh_object_cache(level);
+
     unsigned int object = INT_MAX;
     unsigned int enemy = INT_MAX;
     unsigned int viewport_mid = horizon_offset(level);
@@ -595,8 +639,14 @@ void init_raycaster(const level_t * level) {
     if (sorted_distances) {
         free(sorted_distances);
     }
+    if (object_locations) {
+        free(object_locations);
+    }
 
     enemy_angles = malloc(level->enemies_count);
     // level->enemies_count * 2 because dead enemies create an object
     sorted_distances = malloc((level->objects_count + level->enemies_count * 2) * sizeof(obj_distance_t));
+
+    object_locations = malloc(level->width * level->height * sizeof(bool));
+    object_locations_refresh_required = true;
 }

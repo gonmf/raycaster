@@ -231,6 +231,7 @@ void error_w_line(const char * s, unsigned int line);
 void add_key_pressed(sfKeyCode code);
 void remove_key_pressed(sfKeyCode code);
 bool key_is_pressed(sfKeyCode code);
+bool player_moving();
 void clear_keys_pressed();
 
 // file_io.c
@@ -259,6 +260,7 @@ bool window_poll_event(sfEvent * event);
 void init_fish_eye_table();
 void paint_scene(level_t * level);
 void init_raycaster(const level_t * level);
+void invalidate_objects_cache();
 
 // actions.c
 void transition_step();

@@ -51,18 +51,14 @@ void open_door_in_front(level_t * level) {
     unsigned char door_effect = level->special_effects[door_x + door_y * level->width];
     if (door_effect == SPECIAL_EFFECT_REQUIRES_KEY_1) {
         if(level->key_1) {
-            printf("Key used\n");
             level->special_effects[door_x + door_y * level->width] = SPECIAL_EFFECT_NONE;
         } else {
-            printf("Door requires key\n");
             return;
         }
     } else if (door_effect == SPECIAL_EFFECT_REQUIRES_KEY_2) {
         if(level->key_2) {
-            printf("Key used\n");
             level->special_effects[door_x + door_y * level->width] = SPECIAL_EFFECT_NONE;
         } else {
-            printf("Door requires key\n");
             return;
         }
     }
@@ -144,49 +140,42 @@ bool apply_special_effect(level_t * level, bool * exit_found) {
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
                 level->score += 1;
-                printf("New score: %u\n", level->score);
                 return true;
             case SPECIAL_EFFECT_SCORE_2:
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
                 level->score += 2;
-                printf("New score: %u\n", level->score);
                 return true;
             case SPECIAL_EFFECT_SCORE_3:
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
                 level->score += 4;
-                printf("New score: %u\n", level->score);
                 return true;
             case SPECIAL_EFFECT_SCORE_4:
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
                 level->score += 10;
-                printf("New score: %u\n", level->score);
                 return true;
             case SPECIAL_EFFECT_KEY_1:
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
                 level->key_1 = true;
-                printf("Key 1 found\n");
                 return true;
             case SPECIAL_EFFECT_KEY_2:
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
                 level->key_2 = true;
-                printf("Key 2 found\n");
                 return true;
             case SPECIAL_EFFECT_AMMO:
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
                 level->ammo += 8;
-                printf("New ammo: %u\n", level->ammo);
                 return true;
             default:
                 error("Unknown special effect applicable to object");
@@ -203,12 +192,10 @@ bool shooting_state(level_t * level, unsigned int * step, bool * trigger_shot) {
             if (level->ammo == 0) {
                 shooting_ticks -= 2 * animation_step_size;
                 *trigger_shot = false;
-                printf("Out of ammo\n");
             } else {
                 alert_enemies_in_proximity(level, ENEMY_ALERT_PROXIMITY);
                 level->ammo -= 1;
                 *trigger_shot = true;
-                printf("New ammo: %u\n", level->ammo);
             }
         }
         *step = shooting_ticks;

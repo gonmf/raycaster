@@ -191,11 +191,9 @@ static void game_over_animation() {
 static void main_render_loop() {
     window_update_pixels(background, WINDOW_TOTAL_WIDTH, WINDOW_TOTAL_HEIGHT, 0, 0);
 
-#if PRINT_FPS
     unsigned int frames_second = 1;
     long unsigned int last_ms = 0;
     struct timespec spec;
-#endif
 
     while (window_is_open()) {
         if (level->life == 0) {
@@ -204,19 +202,17 @@ static void main_render_loop() {
         }
 
         if (!paused) {
-#if PRINT_FPS
             clock_gettime(CLOCK_REALTIME, &spec);
             long unsigned int ms = spec.tv_nsec / 1000000;
 
             if (last_ms > ms) {
-                printf("FPS=%u   \r", frames_second);
+                printf("FPS=%3u Life=%3u%% Ammo=%u Score=%u    \r", frames_second, level->life, level->ammo, level->score);
                 fflush(stdout);
                 frames_second = 1;
             }
 
             frames_second += 1;
             last_ms = ms;
-#endif
             transition_step(level);
         }
 
