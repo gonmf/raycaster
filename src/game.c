@@ -195,29 +195,6 @@ void alert_enemies_in_proximity(const level_t * level, unsigned int distance) {
     }
 }
 
-static void debug_path(const level_t * level, const enemy_t * enemy) {
-    unsigned int rounded_x = (unsigned int)(level->observer_x + 0.5);
-    unsigned int rounded_y = (unsigned int)(level->observer_y + 0.5);
-    unsigned int rounded_enemy_x = (unsigned int)(enemy->x + 0.5);
-    unsigned int rounded_enemy_y = (unsigned int)(enemy->y + 0.5);
-
-    for (unsigned int y = 0; y < level->height; ++y) {
-        for (unsigned int x = 0; x < level->width; ++x) {
-            if (player_dist_map[x + y * level->width] == INT_MAX) {
-                printf("  ?  ");
-            } else if (rounded_x == x && rounded_y == y) {
-                printf("{%3d}", player_dist_map[x + y * level->width]);
-            } else if (rounded_enemy_x == x && rounded_enemy_y == y) {
-                printf("[%3d]", player_dist_map[x + y * level->width]);
-            } else {
-                printf(" %3d ", player_dist_map[x + y * level->width]);
-            }
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-
 static bool is_empty(const level_t * level, unsigned int x, unsigned int y) {
     if (x < level->width && y < level->height) {
         return level->content_type[x + y * level->width] == CONTENT_TYPE_EMPTY || level->content_type[x + y * level->width] == CONTENT_TYPE_DOOR_OPEN;

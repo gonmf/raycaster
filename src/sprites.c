@@ -162,8 +162,6 @@ static void dump_sprite(
 #endif
 
 void read_sprite_pack(sprite_pack_t * pack, const char * pack_name) {
-    printf("Loading %s\n", pack_name);
-
 #if DUMP_SUB_SPRITES
     struct stat st;
     if (stat("sprites/dump", &st) == -1) {

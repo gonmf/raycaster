@@ -9,29 +9,23 @@ FLOOR_COLOR
 # the argument is the (x,y) coords of the subsprite of the respective
 # sprite pack (wall textures or objects)
 WALL_TYPE_A
-2
-11
+0
+0
 WALL_TYPE_B
-4
-12
+0
+7
 WALL_TYPE_C
+4
 0
-14
 WALL_TYPE_D
-0
-12
+2
+1
 WALL_TYPE_E
-1
-17
+2
+0
 WALL_TYPE_F
+2
 0
-0
-WALL_TYPE_G
-2
-2
-WALL_TYPE_H
-2
-1
 
 FURNITURE_OBJECT_TYPE_1
 4
@@ -65,7 +59,7 @@ A.....A..AaA.......AAABA.AAA......A
 A.....B..................KeA......A
 A.....A.t.y.u.i.aABAABAABAAA......A
 A.....AA.......AAA................A
-A......AAGABAAAA..................A
+A......AAAABAAAA..................A
 A.................................A
 A.................................A
 A.................................A

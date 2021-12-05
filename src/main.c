@@ -200,9 +200,12 @@ static void update_observer_state() {
 static void game_over_animation() {
     unsigned int duration = GAME_OVER_ANIMATION_SPEED;
 
-    while (window_is_open()) {
+    while (true) {
+        if (!window_is_open()) {
+            exit(EXIT_SUCCESS);
+        }
+
         if (duration-- == 0) {
-            window_close();
             return;
         }
 
@@ -212,7 +215,6 @@ static void game_over_animation() {
         sfEvent event;
         while (window_poll_event(&event)) {
             if (event.type == sfEvtClosed) {
-                window_close();
                 return;
             }
         }
@@ -236,7 +238,7 @@ static void write_text_ui() {
     screen_write(buffer, VIEWPORT_WIDTH - UI_PADDING - strlen(buffer) * font_sprites->sprite_size, UI_PADDING);
 
     // Bottom left corner: Health and lives
-    snprintf(buffer, 20, "%3u%% ~ %u", level->life, 3);
+    snprintf(buffer, 20, "%3u%% ~ %u", level->life, level->lives);
     screen_write(buffer, UI_PADDING, VIEWPORT_HEIGHT - UI_PADDING - font_sprites->sprite_size);
 
     // Bottom right corner: Weapon and ammo
@@ -269,7 +271,11 @@ static void main_render_loop() {
     long unsigned int last_ms = 0;
     struct timespec spec;
 
-    while (window_is_open()) {
+    while (true) {
+        if (!window_is_open()) {
+            exit(EXIT_SUCCESS);
+        }
+
         if (level->life == 0) {
             game_over_animation();
             return;
@@ -307,8 +313,6 @@ static void main_render_loop() {
             apply_special_effect(level, &exit_found);
 
             if (exit_found) {
-                printf("Level exit found\n");
-                window_close();
                 return;
             }
 
@@ -320,13 +324,15 @@ static void main_render_loop() {
         sfEvent event;
         while (window_poll_event(&event)) {
             if (event.type == sfEvtClosed) {
-                window_close();
                 return;
             } else if (event.type == sfEvtKeyPressed) {
                 sfKeyCode code = ((sfKeyEvent *)&event)->code;
 
                 if (code == sfKeyEscape) {
-                    window_close();
+                    // TODO: pause and ask to confirm leaving the game
+                    level->life = 0;
+                    level->lives = 0;
+                    game_over_animation();
                     return;
                 }
 
@@ -366,103 +372,11 @@ static void main_render_loop() {
 }
 
 static void open_level() {
-    printf("Level start - press P to pause and Esc to quit\n");
-
     init_raycaster(level);
     init_game_buffers(level);
     paint_scene(level);
 
-    window_start();
-
     main_render_loop();
-
-    printf("Level closed\n");
-}
-
-
-static int valid_level_file_name(const char * s) {
-    return !(s[0] == 0 || s[0] == '.' || s[0] == '/' || s[0] == '\\');
-}
-
-static bool select_level() {
-    DIR * dir = opendir("./levels");
-    struct dirent * entry;
-
-    if (!dir) {
-        error("Could not open directory \"./levels\"");
-    }
-
-    printf("\nLevels found:\n");
-    char * levels[99];
-    unsigned int levels_listed = 0;
-
-    while (levels_listed < 99 && (entry = readdir(dir)) != NULL) {
-        if (valid_level_file_name(entry->d_name)) {
-            levels[levels_listed] = calloc(MAX_FILE_NAME_SIZ, 1);
-            strncpy(levels[levels_listed], entry->d_name, MAX_FILE_NAME_SIZ);
-
-            printf("%3u - %s\n", levels_listed + 1, levels[levels_listed]);
-
-            levels_listed++;
-        }
-    }
-
-    closedir(dir);
-
-    if (levels_listed == 0) {
-        error("No levels found");
-    }
-
-    printf("\nSelect level (Q to quit)\n");
-
-    unsigned int selection = 0;
-    bool quit = false;
-
-    if (!SKIP_LEVEL_SELECT && levels_listed > 1) {
-        unsigned int buf_idx;
-        char * buf = calloc(MAX_FILE_NAME_SIZ, 1);
-
-        while(1) {
-            printf("> ");
-            fflush(stdout);
-
-            buf_idx = 0;
-            while (buf_idx < MAX_FILE_NAME_SIZ - 1) {
-                char c = getchar();
-                if (c == 0 || c == '\n') {
-                    break;
-                }
-                buf[buf_idx++] = c;
-            }
-            buf[buf_idx] = 0;
-
-            if (strcmp(buf, "q") == 0 || strcmp(buf, "Q") == 0) {
-                quit = true;
-                break;
-            }
-
-            selection = (unsigned int)atoi(buf);
-            if (selection >= 1 && selection <= levels_listed) {
-                selection--;
-                break;
-            } else {
-                printf("Invalid input\n");
-            }
-        }
-        free(buf);
-    } else {
-        printf("> 1\n");
-    }
-
-    if (!quit) {
-        level = read_level_info(levels[selection]);
-    }
-
-    for (unsigned int i = 0; i < levels_listed; ++i) {
-        free(levels[i]);
-    }
-
-    return !quit;
 }
 
 static void unload_assets() {
@@ -489,23 +403,85 @@ static void unload_assets() {
     clear_keys_pressed();
 }
 
+static void start_new_game() {
+    char * buffer = calloc(100, 1);
+    file_read(buffer, 100, "levels/info.txt");
+    int levels = atoi(buffer);
+    if (levels <= 0 || levels > 99) {
+        error("Invalid number of levels");
+    }
+    int level_i = 0;
+
+    unsigned int lives = 3;
+    unsigned int life = 100;
+    unsigned int ammo = 10;
+    unsigned int score = 0;
+    unsigned int weapon = 1;
+    unsigned int weapons_available = 3;
+
+    unsigned score_before_dying;
+
+    while (level_i < levels) {
+        snprintf(buffer, 100, "%u.txt", level_i);
+        level = read_level_info(buffer);
+        level->lives = lives;
+        level->life = life;
+        level->ammo = ammo;
+        score_before_dying = score;
+        level->score = score;
+        level->weapon = weapon;
+        level->weapons_available = weapons_available;
+        open_level();
+
+        if (level->life == 0) {
+            if (level->lives == 0) {
+                break;
+            } else {
+                level->lives -= 1;
+                level->life = 100;
+                level->ammo = 10;
+                level->score = score_before_dying;
+                level->weapon = 1;
+                level->weapons_available = 3;
+            }
+        } else {
+            level_i += 1;
+        }
+
+        lives = level->lives;
+        life = level->life;
+        ammo = level->ammo;
+        score = level->score;
+        weapon = level->weapon;
+        weapons_available = level->weapons_available;
+        unload_assets();
+    }
+}
+
+static bool main_screen_loop() {
+    while (true) {
+        if (!window_is_open()) {
+            exit(EXIT_SUCCESS);
+        }
+
+        // render_main_menu();
+        start_new_game();
+        break;
+    }
+
+    return false;
+}
+
 int main() {
-#if DEBUG
-    printf("Running in debug mode\n");
-#endif
     init_base_colors();
     init_fish_eye_table();
     load_textures();
 
-    while (select_level()) {
-        open_level();
-#if DEBUG || SKIP_LEVEL_SELECT
-        break;
-#endif
-        unload_assets();
-    }
+    window_start();
+    while (main_screen_loop()) {
 
-    printf("Goodbye\n");
+    }
+    window_close();
 
     return EXIT_SUCCESS;
 }

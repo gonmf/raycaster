@@ -48,6 +48,7 @@ static bool get_pos(char c, unsigned int * sprite_x, unsigned int * sprite_y) {
         return true;
     }
     error("Unsupported font character");
+    return false;
 }
 
 static void screen_write_char(const pixel_t * sprite, unsigned int screen_x, unsigned int screen_y) {
@@ -67,8 +68,8 @@ static void screen_write_char(const pixel_t * sprite, unsigned int screen_x, uns
 
 void screen_write(const char * str, unsigned int screen_x, unsigned int screen_y) {
     char c;
-    unsigned int sprite_x;
-    unsigned int sprite_y;
+    unsigned int sprite_x = 0;
+    unsigned int sprite_y = 0;
     while ((c = *str)) {
         if (get_pos(c, &sprite_x, &sprite_y)) {
             pixel_t * sprite = font_sprites->sprites[sprite_x + sprite_y * font_sprites->width];

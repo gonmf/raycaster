@@ -402,7 +402,6 @@ level_t * read_level_info(const char * filename) {
 
     level_t * ret = (level_t *)calloc(sizeof(level_t), 1);
 
-    ret->life = 100;
     ret->width = map_size_w;
     ret->height = map_size_h;
     ret->observer_x = (double)player_start_x;
@@ -424,19 +423,8 @@ level_t * read_level_info(const char * filename) {
     ret->map_revealed = calloc(ret->width * ret->height, 1);
     ret->door_open_texture = OPEN_DOOR_TEXTURE;
     ret->enemy = NULL;
-    ret->score = 0;
-    ret->weapon = 1;
-#if DEBUG
-    ret->weapons_available = 15;
-    ret->ammo = 80;
-    ret->key_1 = true;
-    ret->key_2 = true;
-#else
-    ret->weapons_available = 3;
-    ret->ammo = 10;
     ret->key_1 = false;
     ret->key_2 = false;
-#endif
     ret->objects_count = map_objects_count;
     ret->object = calloc(MAX(map_objects_count + enemy_count, 1), sizeof(object_t));
     ret->enemies_count = enemy_count;
