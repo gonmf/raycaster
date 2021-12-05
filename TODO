@@ -1,29 +1,45 @@
+- during play, show level number on corner
+
+- finish game UI
+  - main menu
+  - load savegame (pick save slot)
+  - options
+    - screen size only for now
+      - add background if screen size does not respect hardcoded ratio of 2:1
+  - quit
+  - while playing
+    - show paused message and P toggle to unpause
+    - ask to confirm quitting to main menu
+    - ask to save game between levels, and at will with F2 (pick save slot)
+  - add credits somewhere
+
+- Add flag to skip straight to new game
+
 - More enemy types
+  - Melee dogs
+  - SMG soldiers
+  - Officers
 - More weapon and ammo pack types
+   - On picking new and higher weapon, switch to it
 
----
+- Life packs
 
-- Map editor able to specify initial enemy angle
+- Tweak enemy and movement speed, enemy hit power, accuracy, and other things by comparison to wolf3d (replicate E1M1): currently game is very hard
 
----
+- Add more data to level pack(s): like text to be shown between missions and what background music should play
+  - Add transition effects
 
-- Game UI
-  - Menu for mouse sensitivity, resolution, FPS
-  - Configurable viewport (not ratio)
-- Allow saving and loading ongoing levels
-
----
-
-- Put soldiers on alert based on proximity to another alert soldier, or to another enemy shooting
-
-- Bug: when multiple objects are too close, they may obscure each other in raytracing even though transparent
-- Bug: ray tracing of dead enemies next to walls/doors may clip them
+- Change map editor to be able to specify initial enemy and player angles
 
 - Music and sound effects
 
-- Design some better levels
+- Design some better levels: replicate E1M1 for testing purposes
 
 - Allow enemies to open doors
   - Noise crossing walls/doors to alert enemies on other side
+
+- Put soldiers on alert based on proximity to another alert soldier, or to another enemy shooting
+
+- Split game state from level struct
 
 - Rename level->observer something else
