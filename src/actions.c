@@ -10,7 +10,10 @@ static pixel_t * flash_effect_color;
 
 static unsigned int shooting_ticks;
 
-void transition_step() {
+static unsigned int weapon_transition_ticks;
+static unsigned char weapon_transition_weapon_nr;
+
+void transition_step(level_t * level) {
     if (door_open_ticks > 0) {
         door_open_ticks--;
     }
@@ -20,6 +23,27 @@ void transition_step() {
     if (shooting_ticks > 0) {
         shooting_ticks--;
     }
+    if (weapon_transition_ticks > 0) {
+        weapon_transition_ticks--;
+        if (weapon_transition_ticks == WEAPON_SWITCH_SPEED / 2) {
+            level->weapon = weapon_transition_weapon_nr;
+        }
+    }
+}
+
+void start_weapon_transition(unsigned char weapon_nr) {
+    if (weapon_transition_ticks == 0) {
+        weapon_transition_ticks = WEAPON_SWITCH_SPEED;
+        weapon_transition_weapon_nr = weapon_nr;
+    }
+}
+
+bool weapon_transition(double * percentage) {
+    if (weapon_transition_ticks > 0) {
+        *percentage = ((double)(WEAPON_SWITCH_SPEED - weapon_transition_ticks)) / WEAPON_SWITCH_SPEED;
+        return true;
+    }
+    return false;
 }
 
 bool opening_door_transition(double * percentage_open, unsigned int * door_x, unsigned int * door_y) {
@@ -189,13 +213,15 @@ bool shooting_state(level_t * level, unsigned int * step, bool * trigger_shot) {
     if (shooting_ticks) {
         unsigned int animation_step_size = SHOOTING_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
         if (shooting_ticks == animation_step_size * SHOOTING_ACTIVATION_PART) {
-            if (level->ammo == 0) {
+            if (level->ammo > 0 || level->weapon == 0) {
+                if (level->weapon > 0) {
+                    alert_enemies_in_proximity(level, ENEMY_ALERT_PROXIMITY);
+                    level->ammo -= 1;
+                }
+                *trigger_shot = true;
+            } else {
                 shooting_ticks -= 2 * animation_step_size;
                 *trigger_shot = false;
-            } else {
-                alert_enemies_in_proximity(level, ENEMY_ALERT_PROXIMITY);
-                level->ammo -= 1;
-                *trigger_shot = true;
             }
         }
         *step = shooting_ticks;
@@ -207,6 +233,11 @@ bool shooting_state(level_t * level, unsigned int * step, bool * trigger_shot) {
 
 void shooting_start_action() {
     if (shooting_ticks == 0) {
-        shooting_ticks = SHOOTING_ANIMATION_SPEED;
+        double weapon_switch_percentage;
+        bool weapon_switching = weapon_transition(&weapon_switch_percentage);
+
+        if (!weapon_switching) {
+            shooting_ticks = SHOOTING_ANIMATION_SPEED;
+        }
     }
 }

@@ -476,7 +476,9 @@ static void fill_in_objects(level_t * level) {
 
                 if (x == VIEWPORT_WIDTH / 2 && trigger_shot) {
                     if (level->enemy[enemy].state != ENEMY_STATE_DYING && level->enemy[enemy].state != ENEMY_STATE_DEAD) {
-                        hit_enemy(level, enemy, distance);
+                        if (level->weapon > 0 || distance < 1.2) { // not a knife or in close quarters
+                            hit_enemy(level, enemy, distance);
+                        }
                         trigger_shot = false;
                     }
                 }
@@ -572,9 +574,11 @@ static void fill_in_walls(const level_t * level) {
 }
 
 static void fill_in_weapon(level_t * level) {
-    unsigned int weapon_id = 1;
+    unsigned int weapon_id = level->weapon;
     unsigned int animation_step;
     unsigned int step;
+    double weapon_switch_percentage;
+    bool weapon_switching = weapon_transition(&weapon_switch_percentage);
 
     if (shooting_state(level, &step, &trigger_shot)) {
         unsigned int animation_step_size = SHOOTING_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
@@ -585,12 +589,16 @@ static void fill_in_weapon(level_t * level) {
     }
 
     pixel_t * sprite = weapons_sprites->sprites[animation_step + weapon_id * weapons_sprites->width];
+    double shift = weapon_switching ? (weapon_switch_percentage <= 0.5 ? weapon_switch_percentage * 2 : 2.0 - weapon_switch_percentage * 2) : 0;
 
     for (unsigned int y = 0; y < SPRITE_HEIGHT * UI_MULTIPLIER; ++y) {
         for (unsigned int x = 0; x < SPRITE_WIDTH * UI_MULTIPLIER; ++x) {
             if (sprite[x / UI_MULTIPLIER + (y / UI_MULTIPLIER) * SPRITE_WIDTH].alpha == 0) {
-                unsigned y2 = y + VIEWPORT_HEIGHT - SPRITE_HEIGHT * UI_MULTIPLIER;
-                unsigned x2 = x + VIEWPORT_WIDTH / 2 - SPRITE_WIDTH * UI_MULTIPLIER / 2;
+                unsigned int y2 = y + VIEWPORT_HEIGHT - (SPRITE_HEIGHT - ((unsigned int)(shift * SPRITE_HEIGHT))) * UI_MULTIPLIER;
+                if (y2 >= VIEWPORT_HEIGHT) {
+                    continue;
+                }
+                unsigned int x2 = x + VIEWPORT_WIDTH / 2 - SPRITE_WIDTH * UI_MULTIPLIER / 2;
 
                 fg_buffer[x2 + y2 * VIEWPORT_WIDTH] = sprite[x / UI_MULTIPLIER + (y / UI_MULTIPLIER) * SPRITE_WIDTH];
             }

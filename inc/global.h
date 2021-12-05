@@ -72,6 +72,8 @@ typedef struct __level_ {
     enemy_t * enemy;
     bool key_1;
     bool key_2;
+    unsigned char weapon;
+    unsigned char weapons_available;
     unsigned int ammo;
 } level_t;
 
@@ -166,6 +168,7 @@ typedef struct __sprite_pack_ {
 #define ENEMY_DEAD_TEXTURE (4 + 5 * 8)
 
 #define DOOR_OPEN_SPEED 80
+#define WEAPON_SWITCH_SPEED 80
 #define TREASURE_PICKUP_FLASH_DURATION 8
 #define PLAYER_SHOT_FLASH_DURATION 8
 #define GAME_OVER_ANIMATION_SPEED 200
@@ -264,7 +267,9 @@ void init_raycaster(const level_t * level);
 void invalidate_objects_cache();
 
 // actions.c
-void transition_step();
+void transition_step(level_t * level);
+void start_weapon_transition(unsigned char weapon_nr);
+bool weapon_transition(double * percentage);
 bool opening_door_transition(double * percentage_open, unsigned int * door_x, unsigned int * door_y);
 void open_door_in_front(level_t * level);
 bool short_flash_effect(double * percentage, pixel_t * color);
@@ -283,6 +288,8 @@ pixel_t darken_shading(pixel_t color, double factor);
 void init_base_colors();
 
 // game.c
+void make_weapon_available(level_t * level, unsigned char weapon_nr);
+void switch_weapon(level_t * level, unsigned char new_weapon_nr);
 void alert_enemies_in_proximity(const level_t * level, unsigned int distance);
 void hit_enemy(level_t * level, unsigned int enemy_i, double distance);
 void update_enemies_state(level_t * level);

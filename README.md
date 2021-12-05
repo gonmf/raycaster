@@ -30,6 +30,8 @@ Input | Action
 --- | ---
 Keys `WASD` | Move character
 _mouse movement_ | Move camera
+_mouse left click_ | Shoot weapon
+Keys `1234` | Select weapon
 Key `E` | Open doors
 Key `M` | Toggle map
 Key `P` | Pause game

@@ -7,6 +7,10 @@ static bool pause_btn_pressed = false;
 static bool paused = false;
 static bool action_btn_pressed = false;
 static bool map_btn_pressed = false;
+static bool key_1_pressed = false;
+static bool key_2_pressed = false;
+static bool key_3_pressed = false;
+static bool key_4_pressed = false;
 static bool show_map = false;
 
 static bool position_blocked(
@@ -158,6 +162,38 @@ static void update_observer_state() {
         if (map_btn_pressed) {
             show_map = !show_map;
             map_btn_pressed = false;
+        }
+    }
+    if (key_is_pressed(sfKeyNum1)) {
+        key_1_pressed = true;
+    } else {
+        if (key_1_pressed) {
+            switch_weapon(level, 0);
+            key_1_pressed = false;
+        }
+    }
+    if (key_is_pressed(sfKeyNum2)) {
+        key_2_pressed = true;
+    } else {
+        if (key_2_pressed) {
+            switch_weapon(level, 1);
+            key_2_pressed = false;
+        }
+    }
+    if (key_is_pressed(sfKeyNum3)) {
+        key_3_pressed = true;
+    } else {
+        if (key_3_pressed) {
+            switch_weapon(level, 2);
+            key_3_pressed = false;
+        }
+    }
+    if (key_is_pressed(sfKeyNum4)) {
+        key_4_pressed = true;
+    } else {
+        if (key_4_pressed) {
+            switch_weapon(level, 3);
+            key_4_pressed = false;
         }
     }
 }
@@ -425,6 +461,10 @@ static void unload_assets() {
     paused = false;
     action_btn_pressed = false;
     map_btn_pressed = false;
+    key_1_pressed = false;
+    key_2_pressed = false;
+    key_3_pressed = false;
+    key_4_pressed = false;
     show_map = false;
 
     if (level) {

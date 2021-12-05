@@ -1,7 +1,9 @@
-- Map editor able to specify initial enemy angle
-
-- Knife weapon - no noise, no ammo
 - More enemy types
+- More weapon and ammo pack types
+
+---
+
+- Map editor able to specify initial enemy angle
 
 ---
 
@@ -12,7 +14,7 @@
 
 ---
 
-- Put soldiers on alert based on proximity to another alert soldier
+- Put soldiers on alert based on proximity to another alert soldier, or to another enemy shooting
 
 - Bug: when multiple objects are too close, they may obscure each other in raytracing even though transparent
 - Bug: ray tracing of dead enemies next to walls/doors may clip them
