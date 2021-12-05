@@ -8,6 +8,7 @@ Each image must be accompanied by a text file with the exact following format:
 ```
 number of columns
 number of rows
+sprite width and height in pixels
 1 or 0 indicating if a color should be made transparent
 color to be made transparent or ignored
 ```
@@ -20,17 +21,20 @@ they will be automatically loaded and unloaded.
 
 Bellow is where the original files were downloaded from:
 
-Wall Textures, Author Ultimecia
+Wall Textures, Author "Ultimecia"
 https://www.textures-resource.com/pc_computer/wolf3d/texture/1375/
 
-Objects, Author Lotos
+Objects, Author "Lotos"
 https://www.spriters-resource.com/pc_computer/wolfenstein3d/sheet/29106/
 
-Normal Soldier, Author Lotos
+Normal Soldier, Author "Lotos"
 https://www.spriters-resource.com/pc_computer/wolfenstein3d/sheet/27846/
 
-Machinegun Soldier, Author Hades666
+Machinegun Soldier, Author "Hades666"
 https://www.spriters-resource.com/pc_computer/wolfenstein3d/sheet/65590/
 
-Weapons, Author Lotos
+Weapons, Author "Lotos"
 https://www.spriters-resource.com/pc_computer/wolfenstein3d/sheet/27848/
+
+Font (red), Author "Dinner Sonic"
+https://www.spriters-resource.com/arcade/mjmoonwalker/sheet/37799/

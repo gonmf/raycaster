@@ -19,13 +19,13 @@ void set_cursor_visible(bool visible) {
 void window_start() {
     sfVideoMode screen_video_mode;
     screen_video_mode = sfVideoMode_getDesktopMode();
-    if (screen_video_mode.width < WINDOW_TOTAL_WIDTH || screen_video_mode.height < WINDOW_TOTAL_HEIGHT) {
+    if (screen_video_mode.width < VIEWPORT_WIDTH || screen_video_mode.height < VIEWPORT_HEIGHT) {
         error("Screen resolution too small for viewport");
     }
 
     sfVideoMode desired_video_mode;
-    desired_video_mode.width = (unsigned int)(WINDOW_TOTAL_WIDTH * WINDOW_UPSCALE);
-    desired_video_mode.height = (unsigned int)(WINDOW_TOTAL_HEIGHT * WINDOW_UPSCALE);
+    desired_video_mode.width = (unsigned int)(VIEWPORT_WIDTH * WINDOW_UPSCALE);
+    desired_video_mode.height = (unsigned int)(VIEWPORT_HEIGHT * WINDOW_UPSCALE);
     desired_video_mode.bitsPerPixel = 32;
 
     window = sfRenderWindow_create(desired_video_mode, "Raycaster", sfClose, NULL);
@@ -39,7 +39,7 @@ void window_start() {
     set_cursor_visible(false);
     window_center_mouse();
 
-    texture = sfTexture_create((unsigned int)(WINDOW_TOTAL_WIDTH * WINDOW_UPSCALE), (unsigned int)(WINDOW_TOTAL_HEIGHT * WINDOW_UPSCALE));
+    texture = sfTexture_create((unsigned int)(VIEWPORT_WIDTH * WINDOW_UPSCALE), (unsigned int)(VIEWPORT_HEIGHT * WINDOW_UPSCALE));
     sprite = sfSprite_create();
     sfSprite_setTexture(sprite, texture, sfFalse);
 
@@ -64,8 +64,8 @@ bool window_is_open() {
     return window && sfRenderWindow_isOpen(window);
 }
 
-void window_update_pixels(const pixel_t * pixels, unsigned int width, unsigned int height, unsigned int offset_x, unsigned int offset_y) {
-    sfTexture_updateFromPixels(texture, (sfUint8 *)pixels, width, height, offset_x, offset_y);
+void window_update_pixels(const pixel_t * pixels) {
+    sfTexture_updateFromPixels(texture, (sfUint8 *)pixels, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 0, 0);
     sfRenderWindow_drawSprite(window, sprite, &renderStates);
 }
 

@@ -77,13 +77,11 @@ typedef struct __level_ {
     unsigned int ammo;
 } level_t;
 
-#define SPRITE_WIDTH 64
-#define SPRITE_HEIGHT 64
-
 typedef struct __sprite_pack_ {
     char name[16];
     unsigned char width;
     unsigned char height;
+    unsigned int sprite_size;
     pixel_t ** sprites; // [columns x rows][pixels_x x pixels_y]
 } sprite_pack_t;
 
@@ -121,7 +119,7 @@ typedef struct __sprite_pack_ {
 #define ENEMY_STRATEGIC_STATE_ALERTED 1
 #define ENEMY_STRATEGIC_STATE_ENGAGED 2
 
-#define UI_MULTIPLIER 4
+#define WEAPON_SPRITE_MULTIPLIER 4
 
 #define MAX(X, Y) (X > Y ? X : Y)
 #define MIN(X, Y) (X < Y ? X : Y)
@@ -132,11 +130,7 @@ typedef struct __sprite_pack_ {
 
 #define VIEWPORT_WIDTH 600
 #define VIEWPORT_HEIGHT 300
-#define UI_BORDER 8
-#define UI_BOTTOM 128
-#define WINDOW_TOTAL_WIDTH (VIEWPORT_WIDTH + UI_BORDER + UI_BORDER)
-#define WINDOW_TOTAL_HEIGHT (VIEWPORT_HEIGHT + UI_BORDER + UI_BOTTOM)
-#define UI_BG_COLOR "0,111,112"
+#define UI_PADDING 10
 #define MAX_FPS 120
 #define FIELD_OF_VIEW 72 // degrees
 #define MAP_BLOCK_SIZE 8
@@ -204,6 +198,7 @@ typedef struct __sprite_pack_ {
 // raycaster.c
 extern sprite_pack_t * wall_textures;
 extern sprite_pack_t * objects_sprites;
+extern sprite_pack_t * font_sprites;
 extern pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 void load_textures();
 
@@ -255,8 +250,7 @@ void set_cursor_visible(bool visible);
 void window_start();
 void window_close();
 bool window_is_open();
-void window_update_pixels(const pixel_t * pixels, unsigned int width, unsigned int height,
-    unsigned int offset_x, unsigned int offset_y);
+void window_update_pixels(const pixel_t * pixels);
 void window_refresh();
 bool window_poll_event(sfEvent * event);
 
@@ -294,5 +288,8 @@ void alert_enemies_in_proximity(const level_t * level, unsigned int distance);
 void hit_enemy(level_t * level, unsigned int enemy_i, double distance);
 void update_enemies_state(level_t * level);
 void init_game_buffers(const level_t * level);
+
+// font.c
+void screen_write(const char * s, unsigned int x, unsigned int y);
 
 #endif

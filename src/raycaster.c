@@ -11,6 +11,8 @@ sprite_pack_t * wall_textures;
 sprite_pack_t * objects_sprites;
 static sprite_pack_t * enemy_sprites[5];
 static sprite_pack_t * weapons_sprites;
+sprite_pack_t * font_sprites;
+
 pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
 static char * enemy_angles;
@@ -330,10 +332,10 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
 }
 
 static void enemy_color(pixel_t * dst, double sprite_x, double sprite_y, double intensity, unsigned char sprite_type, unsigned char enemy_type) {
-    unsigned int x = (unsigned int)(SPRITE_WIDTH * sprite_x);
-    unsigned int y = (unsigned int)(SPRITE_HEIGHT * sprite_y);
+    unsigned int x = (unsigned int)(enemy_sprites[enemy_type]->sprite_size * sprite_x);
+    unsigned int y = (unsigned int)(enemy_sprites[enemy_type]->sprite_size * sprite_y);
 
-    pixel_t src = enemy_sprites[enemy_type]->sprites[sprite_type][x + y * SPRITE_WIDTH];
+    pixel_t src = enemy_sprites[enemy_type]->sprites[sprite_type][x + y * enemy_sprites[enemy_type]->sprite_size];
     // alpha == 1 is used as indicator another object's pixel was already painted
     if (src.alpha == 0 && dst->alpha == 0) {
         *dst = darken_shading(src, intensity);
@@ -342,10 +344,10 @@ static void enemy_color(pixel_t * dst, double sprite_x, double sprite_y, double 
 }
 
 static void object_color(pixel_t * dst, double sprite_x, double sprite_y, double intensity, unsigned char sprite_type) {
-    unsigned int x = (unsigned int)(SPRITE_WIDTH * sprite_x);
-    unsigned int y = (unsigned int)(SPRITE_HEIGHT * sprite_y);
+    unsigned int x = (unsigned int)(objects_sprites->sprite_size * sprite_x);
+    unsigned int y = (unsigned int)(objects_sprites->sprite_size * sprite_y);
 
-    pixel_t src = objects_sprites->sprites[sprite_type][x + y * SPRITE_WIDTH];
+    pixel_t src = objects_sprites->sprites[sprite_type][x + y * objects_sprites->sprite_size];
     // alpha == 1 is used as indicator another object's pixel was already painted
     if (src.alpha == 0 && dst->alpha == 0) {
         *dst = darken_shading(src, intensity);
@@ -354,10 +356,10 @@ static void object_color(pixel_t * dst, double sprite_x, double sprite_y, double
 }
 
 static void block_color(pixel_t * dst, double block_x, double block_y, double intensity, unsigned char block_type) {
-    unsigned int x = (unsigned int)(SPRITE_WIDTH * block_x);
-    unsigned int y = (unsigned int)(SPRITE_HEIGHT * block_y);
+    unsigned int x = (unsigned int)(wall_textures->sprite_size * block_x);
+    unsigned int y = (unsigned int)(wall_textures->sprite_size * block_y);
 
-    pixel_t src = wall_textures->sprites[block_type][x + y * SPRITE_WIDTH];
+    pixel_t src = wall_textures->sprites[block_type][x + y * wall_textures->sprite_size];
     *dst = darken_shading(src, intensity);
 }
 
@@ -591,16 +593,16 @@ static void fill_in_weapon(level_t * level) {
     pixel_t * sprite = weapons_sprites->sprites[animation_step + weapon_id * weapons_sprites->width];
     double shift = weapon_switching ? (weapon_switch_percentage <= 0.5 ? weapon_switch_percentage * 2 : 2.0 - weapon_switch_percentage * 2) : 0;
 
-    for (unsigned int y = 0; y < SPRITE_HEIGHT * UI_MULTIPLIER; ++y) {
-        for (unsigned int x = 0; x < SPRITE_WIDTH * UI_MULTIPLIER; ++x) {
-            if (sprite[x / UI_MULTIPLIER + (y / UI_MULTIPLIER) * SPRITE_WIDTH].alpha == 0) {
-                unsigned int y2 = y + VIEWPORT_HEIGHT - (SPRITE_HEIGHT - ((unsigned int)(shift * SPRITE_HEIGHT))) * UI_MULTIPLIER;
+    for (unsigned int y = 0; y < weapons_sprites->sprite_size * WEAPON_SPRITE_MULTIPLIER; ++y) {
+        for (unsigned int x = 0; x < weapons_sprites->sprite_size * WEAPON_SPRITE_MULTIPLIER; ++x) {
+            if (sprite[x / WEAPON_SPRITE_MULTIPLIER + (y / WEAPON_SPRITE_MULTIPLIER) * weapons_sprites->sprite_size].alpha == 0) {
+                unsigned int y2 = y + VIEWPORT_HEIGHT - (weapons_sprites->sprite_size - ((unsigned int)(shift * weapons_sprites->sprite_size))) * WEAPON_SPRITE_MULTIPLIER;
                 if (y2 >= VIEWPORT_HEIGHT) {
                     continue;
                 }
-                unsigned int x2 = x + VIEWPORT_WIDTH / 2 - SPRITE_WIDTH * UI_MULTIPLIER / 2;
+                unsigned int x2 = x + VIEWPORT_WIDTH / 2 - weapons_sprites->sprite_size * WEAPON_SPRITE_MULTIPLIER / 2;
 
-                fg_buffer[x2 + y2 * VIEWPORT_WIDTH] = sprite[x / UI_MULTIPLIER + (y / UI_MULTIPLIER) * SPRITE_WIDTH];
+                fg_buffer[x2 + y2 * VIEWPORT_WIDTH] = sprite[x / WEAPON_SPRITE_MULTIPLIER + (y / WEAPON_SPRITE_MULTIPLIER) * weapons_sprites->sprite_size];
             }
         }
     }
@@ -633,6 +635,8 @@ void load_textures() {
     // read_sprite_pack(enemy_sprites[4], "soldier5");
     weapons_sprites = calloc(1, sizeof(sprite_pack_t));
     read_sprite_pack(weapons_sprites, "weapons");
+    font_sprites = calloc(1, sizeof(sprite_pack_t));
+    read_sprite_pack(font_sprites, "font_red");
 }
 
 void init_raycaster(const level_t * level) {

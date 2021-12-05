@@ -1,8 +1,7 @@
 #include "global.h"
 
 static level_t * level;
-static pixel_t * background;
-
+static unsigned int last_fps;
 static bool pause_btn_pressed = false;
 static bool paused = false;
 static bool action_btn_pressed = false;
@@ -139,7 +138,7 @@ static void update_observer_state() {
             paused = !paused;
             if (paused) {
                 scene_shading(color_black, 0.5);
-                window_update_pixels(fg_buffer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, UI_BORDER, UI_BORDER);
+                window_update_pixels(fg_buffer);
                 window_refresh();
                 set_cursor_visible(true);
             } else {
@@ -202,7 +201,7 @@ static void game_over_animation() {
     unsigned int duration = GAME_OVER_ANIMATION_SPEED;
 
     while (window_is_open()) {
-        if (duration-- > 0) {
+        if (duration-- == 0) {
             window_close();
             return;
         }
@@ -219,14 +218,53 @@ static void game_over_animation() {
         }
 
         window_center_mouse();
-        window_update_pixels(fg_buffer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, UI_BORDER, UI_BORDER);
+        window_update_pixels(fg_buffer);
         window_refresh();
     }
 }
 
-static void main_render_loop() {
-    window_update_pixels(background, WINDOW_TOTAL_WIDTH, WINDOW_TOTAL_HEIGHT, 0, 0);
+static void write_text_ui() {
+    char buffer[20];
 
+    // Top left corner: Score
+    screen_write("Score", UI_PADDING, UI_PADDING);
+    snprintf(buffer, 20, "%05u", level->score);
+    screen_write(buffer, UI_PADDING, UI_PADDING + font_sprites->sprite_size);
+
+    // Top right corner: FPS
+    snprintf(buffer, 20, "%u", last_fps);
+    screen_write(buffer, VIEWPORT_WIDTH - UI_PADDING - strlen(buffer) * font_sprites->sprite_size, UI_PADDING);
+
+    // Bottom left corner: Health and lives
+    snprintf(buffer, 20, "%3u%% ~ %u", level->life, 3);
+    screen_write(buffer, UI_PADDING, VIEWPORT_HEIGHT - UI_PADDING - font_sprites->sprite_size);
+
+    // Bottom right corner: Weapon and ammo
+    char * weapon_name;
+    switch (level->weapon) {
+        case 0:
+            weapon_name = "Knife";
+            break;
+        case 1:
+            weapon_name = "Pistol";
+            break;
+        case 2:
+            weapon_name = "SMG";
+            break;
+        default:
+            weapon_name = "Minigun";
+    }
+
+    if (level->weapon == 0) {
+        screen_write(weapon_name, VIEWPORT_WIDTH - UI_PADDING - strlen(weapon_name) * font_sprites->sprite_size, VIEWPORT_HEIGHT - UI_PADDING - font_sprites->sprite_size);
+    } else {
+        screen_write(weapon_name, VIEWPORT_WIDTH - UI_PADDING - strlen(weapon_name) * font_sprites->sprite_size, VIEWPORT_HEIGHT - UI_PADDING - 2 * font_sprites->sprite_size);
+        snprintf(buffer, 20, "%u / 99", level->ammo);
+        screen_write(buffer, VIEWPORT_WIDTH - UI_PADDING - strlen(buffer) * font_sprites->sprite_size, VIEWPORT_HEIGHT - UI_PADDING - font_sprites->sprite_size);
+    }
+}
+
+static void main_render_loop() {
     unsigned int frames_second = 1;
     long unsigned int last_ms = 0;
     struct timespec spec;
@@ -242,8 +280,7 @@ static void main_render_loop() {
             long unsigned int ms = spec.tv_nsec / 1000000;
 
             if (last_ms > ms) {
-                printf("FPS=%3u Life=%3u%% Ammo=%u Score=%u    \r", frames_second, level->life, level->ammo, level->score);
-                fflush(stdout);
+                last_fps = frames_second;
                 frames_second = 1;
             }
 
@@ -258,6 +295,7 @@ static void main_render_loop() {
             update_enemies_state(level);
 
             paint_scene(level);
+            write_text_ui();
 
             double flash_percentage;
             pixel_t flash_color;
@@ -321,36 +359,8 @@ static void main_render_loop() {
             }
 
             window_center_mouse();
-            window_update_pixels(fg_buffer, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, UI_BORDER, UI_BORDER);
+            window_update_pixels(fg_buffer);
             window_refresh();
-        }
-    }
-}
-
-static void paint_ui() {
-    if (background == NULL) {
-        background = calloc(WINDOW_TOTAL_WIDTH * WINDOW_TOTAL_HEIGHT, sizeof(pixel_t));
-
-        for (unsigned int y = 0; y < WINDOW_TOTAL_HEIGHT; ++y) {
-            for (unsigned int x = 0; x < WINDOW_TOTAL_WIDTH; ++x) {
-                background[x + y * WINDOW_TOTAL_WIDTH] = color_ui_bg;
-            }
-        }
-        for (unsigned int shade_size = 0; shade_size < 5; ++shade_size) {
-            // left and right sides
-            for (unsigned y = UI_BORDER - shade_size; y < UI_BORDER + VIEWPORT_HEIGHT + shade_size; ++y) {
-                unsigned int x = UI_BORDER - shade_size;
-                background[x + y * WINDOW_TOTAL_WIDTH] = color_ui_bg_dark;
-                x = WINDOW_TOTAL_WIDTH - x - 1;
-                background[x + y * WINDOW_TOTAL_WIDTH] = color_ui_bg_light;
-            }
-            // top and bottom sides
-            for (unsigned x = UI_BORDER - shade_size; x < UI_BORDER + VIEWPORT_WIDTH + shade_size; ++x) {
-                unsigned int y = UI_BORDER - shade_size;
-                background[x + y * WINDOW_TOTAL_WIDTH] = color_ui_bg_dark;
-                y = UI_BORDER + VIEWPORT_HEIGHT + shade_size - 1;
-                background[x + y * WINDOW_TOTAL_WIDTH] = color_ui_bg_light;
-            }
         }
     }
 }
@@ -360,7 +370,6 @@ static void open_level() {
 
     init_raycaster(level);
     init_game_buffers(level);
-    paint_ui();
     paint_scene(level);
 
     window_start();
@@ -475,11 +484,6 @@ static void unload_assets() {
         free(level->enemy);
         free(level);
         level = NULL;
-    }
-
-    if (background) {
-        free(background);
-        background = NULL;
     }
 
     clear_keys_pressed();
