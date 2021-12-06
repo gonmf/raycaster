@@ -1,16 +1,9 @@
-- during play, show level number on corner
+- quick screen-going-dark transition between menus and gameplay
 
 - finish game UI
-  - main menu
-  - load savegame (pick save slot)
   - options
     - screen size only for now
       - add background if screen size does not respect hardcoded ratio of 2:1
-  - quit
-  - while playing
-    - show paused message and P toggle to unpause
-    - ask to confirm quitting to main menu
-    - ask to save game between levels, and at will with F2 (pick save slot)
   - add credits somewhere
 
 - Add flag to skip straight to new game
@@ -22,7 +15,11 @@
 - More weapon and ammo pack types
    - On picking new and higher weapon, switch to it
 
-- Life packs
+- Limit ammo and health
+
+- When an object (ammo, health) has more than what is necessary to maximum, leave rest in place
+
+- health objects
 
 - Tweak enemy and movement speed, enemy hit power, accuracy, and other things by comparison to wolf3d (replicate E1M1): currently game is very hard
 

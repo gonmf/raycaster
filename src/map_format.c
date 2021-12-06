@@ -101,9 +101,9 @@ static void surround_w_safety_walls(level_t * level) {
     }
 }
 
-level_t * read_level_info(const char * filename) {
+level_t * read_level_info(unsigned int level_nr) {
     char * str_buf = calloc(MAX_FILE_NAME_SIZ, 1);
-    snprintf(str_buf, MAX_FILE_NAME_SIZ, "./levels/%s", filename);
+    snprintf(str_buf, MAX_FILE_NAME_SIZ, "./levels/%u.level", level_nr);
     char * buffer = calloc(MAX_FILE_SIZE, 1);
     file_read(buffer, MAX_FILE_SIZE, str_buf);
     free(str_buf);
@@ -423,8 +423,6 @@ level_t * read_level_info(const char * filename) {
     ret->map_revealed = calloc(ret->width * ret->height, 1);
     ret->door_open_texture = OPEN_DOOR_TEXTURE;
     ret->enemy = NULL;
-    ret->key_1 = false;
-    ret->key_2 = false;
     ret->objects_count = map_objects_count;
     ret->object = calloc(MAX(map_objects_count + enemy_count, 1), sizeof(object_t));
     ret->enemies_count = enemy_count;

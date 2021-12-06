@@ -30,7 +30,7 @@ static void parse_sprite_pack_metadata(
     snprintf(pack->name, 16, "%s", pack_name);
 
     char * str_buf = calloc(MAX_FILE_NAME_SIZ, 1);
-    snprintf(str_buf, MAX_FILE_NAME_SIZ, "./sprites/%s.txt", pack->name);
+    snprintf(str_buf, MAX_FILE_NAME_SIZ, "./sprites/%s.info", pack->name);
     char * file_buf = calloc(MAX_FILE_SIZE, 1);
     file_read(file_buf, MAX_FILE_SIZE, str_buf);
     free(str_buf);

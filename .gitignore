@@ -1,5 +1,6 @@
 raycaster
 sprites/dump/
+saves/*.save
 
 # Prerequisites
 *.d

@@ -55,27 +55,31 @@ typedef struct __level_ {
     pixel_t floor_color;
     unsigned int width;
     unsigned int height;
-    unsigned char life;
-    unsigned char lives;
+    unsigned char door_open_texture;
+
     double observer_x;
     double observer_y;
     double observer_angle;
     double observer_angle2;
-    unsigned int score;
     unsigned char * content_type;
     unsigned char * texture;
     unsigned char * special_effects;
     bool * map_revealed;
-    unsigned char door_open_texture;
     unsigned int objects_count;
     object_t * object;
     unsigned int enemies_count;
     enemy_t * enemy;
+
+    unsigned int score;
+    unsigned int level_start_score;
+    unsigned char life;
+    unsigned char lives;
     bool key_1;
     bool key_2;
     unsigned char weapon;
     unsigned char weapons_available;
     unsigned int ammo;
+    unsigned int level_nr;
 } level_t;
 
 typedef struct __sprite_pack_ {
@@ -197,6 +201,9 @@ typedef struct __sprite_pack_ {
 #define ENEMY_VIEWING_DISTANCE 10
 #define ENEMY_FIELD_OF_VIEW 70
 
+#define SAVE_FILES_COUNT 8
+#define SAVE_FILE_NAME_SIZ 30
+
 // raycaster.c
 extern sprite_pack_t * wall_textures;
 extern sprite_pack_t * objects_sprites;
@@ -211,6 +218,7 @@ extern pixel_t color_black;
 extern pixel_t color_red;
 extern pixel_t color_dark_red;
 extern pixel_t color_blue;
+extern pixel_t color_dark_blue;
 extern pixel_t color_cyan;
 extern pixel_t color_gold;
 extern pixel_t color_ui_bg;
@@ -221,7 +229,7 @@ extern pixel_t color_ui_bg_light;
 void read_sprite_pack(sprite_pack_t * pack, const char * pack_name);
 
 // map_format.c
-level_t * read_level_info(const char * filename);
+level_t * read_level_info(unsigned int level_nr);
 
 // utils.c
 bool random_one_in(unsigned int n);
@@ -273,6 +281,8 @@ void start_flash_effect(unsigned int duration, pixel_t * color);
 bool apply_special_effect(level_t * level, bool * exit_found);
 bool shooting_state(level_t * level, unsigned int * step, bool * trigger_shot);
 void shooting_start_action();
+void move_player(level_t * level, double x_change, double y_change);
+void init_animations();
 
 // ui.c
 void paint_map(const level_t * level);
@@ -292,6 +302,12 @@ void update_enemies_state(level_t * level);
 void init_game_buffers(const level_t * level);
 
 // font.c
+void screen_write_scaled(const char * str, unsigned int screen_x, unsigned int screen_y, unsigned int scale, double factor);
 void screen_write(const char * s, unsigned int x, unsigned int y);
+
+// save_state.c
+void save_game_state(unsigned char idx, const level_t * level);
+bool read_game_state_name(unsigned char idx, char * s);
+level_t * load_game_state(unsigned char idx);
 
 #endif

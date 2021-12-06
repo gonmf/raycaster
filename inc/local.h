@@ -6,4 +6,6 @@
 
 #define DUMP_SUB_SPRITES 0
 
+#define SHOW_FPS 1
+
 #endif

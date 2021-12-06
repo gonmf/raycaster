@@ -199,7 +199,7 @@ bool apply_special_effect(level_t * level, bool * exit_found) {
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
-                level->ammo += 8;
+                level->ammo = MIN(level->ammo + 8, 99);
                 return true;
             default:
                 error("Unknown special effect applicable to object");
@@ -240,4 +240,81 @@ void shooting_start_action() {
             shooting_ticks = SHOOTING_ANIMATION_SPEED;
         }
     }
+}
+
+static bool position_blocked(
+    const level_t * level,
+    unsigned int rounded_x, unsigned int rounded_y,
+    bool allow_enter_door, unsigned int door_x, unsigned int door_y
+) {
+    unsigned char content_type = level->content_type[rounded_x + rounded_y * level->width];
+    if (content_type == CONTENT_TYPE_WALL || content_type == CONTENT_TYPE_DOOR || (content_type == CONTENT_TYPE_DOOR_OPEN && !allow_enter_door && door_x == rounded_x && door_y == rounded_y)) {
+        return true;
+    }
+
+    for (unsigned int i = 0; i < level->objects_count; ++i) {
+        if (rounded_x == (unsigned int)(level->object[i].x + 0.5) && rounded_y == (unsigned int)(level->object[i].y + 0.5)) {
+            if (level->object[i].type == OBJECT_TYPE_BLOCKING) {
+                return true;
+            }
+        }
+    }
+
+    for (unsigned int i = 0; i < level->enemies_count; ++i) {
+        if (rounded_x == (unsigned int)(level->enemy[i].x + 0.5) && rounded_y == (unsigned int)(level->enemy[i].y + 0.5)) {
+            if (level->enemy[i].state != ENEMY_STATE_DEAD) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+static void move_player2(level_t * level, double x_change, double y_change) {
+    double new_x = level->observer_x + x_change;
+    double new_y = level->observer_y + y_change;
+    unsigned int rounded_x = (unsigned int)(new_x + 0.5);
+    unsigned int rounded_y = (unsigned int)(new_y + 0.5);
+    unsigned int door_x = 0;
+    unsigned int door_y = 0;
+    double percentage_open;
+    bool door_is_opening = opening_door_transition(&percentage_open, &door_x, &door_y);
+    bool allow_enter_door = !door_is_opening || (door_is_opening && percentage_open > 0.75);
+
+    rounded_x = (unsigned int)(new_x + 0.5 + 0.22);
+    if (position_blocked(level, rounded_x, rounded_y, allow_enter_door, door_x, door_y)) {
+        return;
+    }
+
+    rounded_x = (unsigned int)(new_x + 0.5 - 0.22);
+    if (position_blocked(level, rounded_x, rounded_y, allow_enter_door, door_x, door_y)) {
+        return;
+    }
+
+    rounded_x = (unsigned int)(new_x + 0.5);
+    rounded_y = (unsigned int)(new_y + 0.5 + 0.22);
+    if (position_blocked(level, rounded_x, rounded_y, allow_enter_door, door_x, door_y)) {
+        return;
+    }
+
+    rounded_y = (unsigned int)(new_y + 0.5 - 0.22);
+    if (position_blocked(level, rounded_x, rounded_y, allow_enter_door, door_x, door_y)) {
+        return;
+    }
+
+    level->observer_x = new_x;
+    level->observer_y = new_y;
+}
+
+void move_player(level_t * level, double x_change, double y_change) {
+    move_player2(level, x_change, 0.0);
+    move_player2(level, 0.0, y_change);
+}
+
+void init_animations() {
+    door_open_ticks = 0;
+    flash_effect_ticks = 0;
+    shooting_ticks = 0;
+    weapon_transition_ticks = 0;
 }

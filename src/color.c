@@ -6,6 +6,7 @@ pixel_t color_black;
 pixel_t color_red;
 pixel_t color_dark_red;
 pixel_t color_blue;
+pixel_t color_dark_blue;
 pixel_t color_cyan;
 pixel_t color_gold;
 pixel_t color_ui_bg;
@@ -45,6 +46,8 @@ void init_base_colors() {
     color_red.red = 255;
 
     color_dark_red.red = 139;
+
+    color_dark_blue.blue = 99;
 
     color_blue.blue = 255;
 

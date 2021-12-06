@@ -650,7 +650,7 @@ void init_raycaster(const level_t * level) {
         free(object_locations);
     }
 
-    enemy_angles = malloc(level->enemies_count);
+    enemy_angles = malloc(level->enemies_count * sizeof(char));
     // level->enemies_count * 2 because dead enemies create an object
     sorted_distances = malloc((level->objects_count + level->enemies_count * 2) * sizeof(obj_distance_t));
 
