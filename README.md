@@ -36,16 +36,15 @@ Key `E` | Open doors
 Key `M` | Toggle map
 
 ## Screenshots
-![1](https://user-images.githubusercontent.com/5512054/144130039-ef11e0ec-2871-4ec4-831c-2d3f1b0302c8.png)
-![2](https://user-images.githubusercontent.com/5512054/140586136-67068fab-ef16-4ff1-8235-09f4d0fd09c3.png)
-![3](https://user-images.githubusercontent.com/5512054/140626177-be5135c0-5685-4077-80f8-f749977e1e0e.png)
-![4](https://user-images.githubusercontent.com/5512054/140586137-22eeef83-7fc1-4252-9f69-2b135652b6fc.png)
+
+![1](https://user-images.githubusercontent.com/5512054/144922209-1f10fec7-5c40-43e1-9257-3516d15d79dc.png)
+![2](https://user-images.githubusercontent.com/5512054/144922204-76b1ffdd-c8c6-4a36-bdfc-62f928c40a46.png)
+![3](https://user-images.githubusercontent.com/5512054/144922206-9294f145-b9c2-4319-9892-5431221a9cdd.png)
+![4](https://user-images.githubusercontent.com/5512054/144922201-b5927183-fd1c-4989-93b1-b3779ee11a0c.png)
 
 Editor:
 
 ![editor](https://user-images.githubusercontent.com/5512054/140579835-f617973e-f796-4628-b049-6f834cf46e86.png)
-
-
 
 ---
 
