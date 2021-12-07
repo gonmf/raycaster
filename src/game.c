@@ -23,9 +23,7 @@ void switch_weapon(level_t * level, unsigned char new_weapon_nr) {
     }
 }
 
-void hit_enemy(level_t * level, unsigned int enemy_i, double distance) {
-    enemy_t * enemy = &level->enemy[enemy_i];
-
+void hit_enemy(level_t * level, enemy_t * enemy, double distance) {
     if (enemy->state == ENEMY_STATE_STILL || enemy->state == ENEMY_STATE_MOVING || enemy->state == ENEMY_STATE_ALERT) {
         enemy->state = ENEMY_STATE_SHOT;
         enemy->animation_step = ENEMY_SHOT_ANIMATION_SPEED;
@@ -33,6 +31,7 @@ void hit_enemy(level_t * level, unsigned int enemy_i, double distance) {
 
     if (enemy->state != ENEMY_STATE_DYING && enemy->state != ENEMY_STATE_DEAD) {
         unsigned char shot_power = MAX(MIN((unsigned int)(18 / distance) + 18, 50), 18);
+
         if (enemy->life > shot_power) {
             enemy->life -= shot_power;
             enemy->state = ENEMY_STATE_SHOT;
@@ -78,7 +77,13 @@ static void hit_player(level_t * level, enemy_t * enemy) {
         return;
     }
 
-    unsigned char shot_power = MAX(MIN((unsigned int)(18 / dist) + 18, 50), 18) / 2;
+    unsigned char shot_power = MAX(MIN((unsigned int)(18 / dist) + 18, 50), 18);
+    if (enemy->type == 2) {
+        shot_power /= 2;
+    } else {
+        shot_power /= 3;
+    }
+
     if (level->life > shot_power) {
         level->life -= shot_power;
         start_flash_effect(PLAYER_SHOT_FLASH_DURATION, &color_dark_red);
@@ -313,6 +318,8 @@ static bool has_line_of_fire(const level_t * level, const enemy_t * enemy, doubl
 }
 
 void update_enemies_state(level_t * level) {
+    unsigned int animation_step;
+
     for (unsigned int enemy_i = 0; enemy_i < level->enemies_count; ++enemy_i) {
         enemy_t * enemy = &level->enemy[enemy_i];
         double enemy_distance = distance(enemy->x, enemy->y, level->observer_x, level->observer_y);
@@ -328,7 +335,7 @@ void update_enemies_state(level_t * level) {
             enemy->y += enemy->moving_dir_y;
             if (enemy->animation_step == 0) {
                 if (in_shooting_distance(enemy_distance) && has_line_of_fire(level, enemy, enemy_distance)) {
-                    enemy->animation_step = ENEMY_SHOOTING_ANIMATION_SPEED;
+                    enemy->animation_step = enemy->type == 1 ? ENEMY_SHOOTING_MSG_ANIMATION_SPEED : ENEMY_SHOOTING_ANIMATION_SPEED;
                     enemy->state = ENEMY_STATE_SHOOTING;
                 } else {
                     enemy->state = ENEMY_STATE_ALERT;
@@ -340,7 +347,7 @@ void update_enemies_state(level_t * level) {
             decrement_animation_step(enemy);
             if (enemy->animation_step == 0) {
                 if (in_shooting_distance(enemy_distance) && has_line_of_fire(level, enemy, enemy_distance)) {
-                    enemy->animation_step = ENEMY_SHOOTING_ANIMATION_SPEED;
+                    enemy->animation_step = enemy->type == 1 ? ENEMY_SHOOTING_MSG_ANIMATION_SPEED : ENEMY_SHOOTING_ANIMATION_SPEED;
                     enemy->state = ENEMY_STATE_SHOOTING;
                 } else {
                     enemy->state = ENEMY_STATE_ALERT;
@@ -349,11 +356,12 @@ void update_enemies_state(level_t * level) {
             break;
         case ENEMY_STATE_SHOOTING:
             decrement_animation_step(enemy);
-            if (enemy->animation_step == (ENEMY_SHOOTING_ANIMATION_SPEED * ENEMY_SHOOTING_ACTIVATION_PART) / ENEMY_SHOOTING_ANIMATION_PARTS) {
+            animation_step = enemy->type == 1 ? ENEMY_SHOOTING_MSG_ANIMATION_SPEED : ENEMY_SHOOTING_ANIMATION_SPEED;
+            if (enemy->animation_step == (animation_step * ENEMY_SHOOTING_ACTIVATION_PART) / ENEMY_SHOOTING_ANIMATION_PARTS) {
                 hit_player(level, enemy);
             } else if (enemy->animation_step == 0) {
                 if (in_shooting_distance(enemy_distance) && has_line_of_fire(level, enemy, enemy_distance)) {
-                    enemy->animation_step = ENEMY_SHOOTING_ANIMATION_SPEED;
+                    enemy->animation_step = animation_step;
                     enemy->state = ENEMY_STATE_SHOOTING;
                 } else {
                     enemy->state = ENEMY_STATE_ALERT;
@@ -382,7 +390,7 @@ void update_enemies_state(level_t * level) {
         if (enemy->strategic_state == ENEMY_STRATEGIC_STATE_ENGAGED) {
             if (in_shooting_distance(enemy_distance) && has_line_of_fire(level, enemy, enemy_distance)) {
                 enemy->state = ENEMY_STATE_SHOOTING;
-                enemy->animation_step = ENEMY_SHOOTING_ANIMATION_SPEED;
+                enemy->animation_step = enemy->type == 1 ? ENEMY_SHOOTING_MSG_ANIMATION_SPEED : ENEMY_SHOOTING_ANIMATION_SPEED;
             } else {
                 enemy->strategic_state = ENEMY_STRATEGIC_STATE_ALERTED;
             }

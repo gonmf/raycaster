@@ -205,6 +205,7 @@ typedef struct __sprite_pack_ {
 #define ENEMY_DYING_ANIMATION_SPEED 48
 #define ENEMY_SHOOTING_ANIMATION_PARTS 2
 #define ENEMY_SHOOTING_ANIMATION_SPEED 70
+#define ENEMY_SHOOTING_MSG_ANIMATION_SPEED 40
 #define ENEMY_SHOOTING_ACTIVATION_PART 1
 #define ENEMY_MOVING_ANIMATION_PARTS 4
 #define ENEMY_MOVING_ANIMATION_SPEED 100
@@ -310,7 +311,7 @@ void init_base_colors();
 void make_weapon_available(level_t * level, unsigned char weapon_nr);
 void switch_weapon(level_t * level, unsigned char new_weapon_nr);
 void alert_enemies_in_proximity(const level_t * level, unsigned int distance);
-void hit_enemy(level_t * level, unsigned int enemy_i, double distance);
+void hit_enemy(level_t * level, enemy_t * enemy, double distance);
 void update_enemies_state(level_t * level);
 void init_game_buffers(const level_t * level);
 

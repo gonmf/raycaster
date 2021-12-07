@@ -403,7 +403,7 @@ static void fill_in_objects(level_t * level) {
     refresh_object_cache(level);
 
     unsigned int object = INT_MAX;
-    unsigned int enemy = INT_MAX;
+    unsigned int enemy_i = INT_MAX;
     unsigned int viewport_mid = horizon_offset(level);
     unsigned char enemy_type = 0;
     double block_x;
@@ -415,16 +415,16 @@ static void fill_in_objects(level_t * level) {
     for (unsigned int x = 0; x < VIEWPORT_WIDTH; ++x) {
         double x_angle = fit_angle(fish_eye_table[x] + level->observer_angle);
         object = INT_MAX;
-        enemy = INT_MAX;
+        enemy_i = INT_MAX;
 
         unsigned int min_step_count = 0;
         while(1) {
-            double distance = cast_simple_ray(level, x_angle, &block_x, &object, &enemy, &min_step_count);
+            double distance = cast_simple_ray(level, x_angle, &block_x, &object, &enemy_i, &min_step_count);
             if (distance <= 0.0) {
                 break;
             }
 
-            bool render_enemy = enemy != INT_MAX;
+            bool render_enemy = enemy_i != INT_MAX;
             distance *= cos((x_angle - level->observer_angle) / RADIAN_CONSTANT);
             distance = MAX(distance, 0.0);
 
@@ -435,24 +435,25 @@ static void fill_in_objects(level_t * level) {
             if (render_enemy) {
                 int angles_sum;
                 unsigned int animation_step;
+                enemy_t * enemy = &level->enemy[enemy_i];
 
-                switch (level->enemy[enemy].state) {
+                switch (enemy->state) {
                     case ENEMY_STATE_STILL:
-                        if (enemy_angles[enemy] == -1) {
-                            angles_sum = (unsigned int)(x_angle + level->enemy[enemy].angle + 180 + 23);
-                            enemy_angles[enemy] = (8 - (((unsigned int)angles_sum) / 45)) % 8;
+                        if (enemy_angles[enemy_i] == -1) {
+                            angles_sum = (unsigned int)(x_angle + enemy->angle + 180 + 23);
+                            enemy_angles[enemy_i] = (8 - (((unsigned int)angles_sum) / 45)) % 8;
                         }
 
-                        sprite_id = enemy_angles[enemy];
+                        sprite_id = enemy_angles[enemy_i];
                         break;
                     case ENEMY_STATE_MOVING:
-                        if (enemy_angles[enemy] == -1) {
-                            angles_sum = (unsigned int)(x_angle + level->enemy[enemy].angle + 180 + 23);
-                            enemy_angles[enemy] = (8 - (((unsigned int)angles_sum) / 45)) % 8;
+                        if (enemy_angles[enemy_i] == -1) {
+                            angles_sum = (unsigned int)(x_angle + enemy->angle + 180 + 23);
+                            enemy_angles[enemy_i] = (8 - (((unsigned int)angles_sum) / 45)) % 8;
                         }
 
-                        animation_step = ((ENEMY_MOVING_ANIMATION_SPEED - level->enemy[enemy].animation_step) * ENEMY_MOVING_ANIMATION_PARTS) / ENEMY_MOVING_ANIMATION_SPEED;
-                        sprite_id = enemy_angles[enemy] + animation_step * 8 + ENEMY_MOVING_TEXTURE;
+                        animation_step = ((ENEMY_MOVING_ANIMATION_SPEED - enemy->animation_step) * ENEMY_MOVING_ANIMATION_PARTS) / ENEMY_MOVING_ANIMATION_SPEED;
+                        sprite_id = enemy_angles[enemy_i] + animation_step * 8 + ENEMY_MOVING_TEXTURE;
                         break;
                     case ENEMY_STATE_SHOT:
                         sprite_id = ENEMY_SHOT_TEXTURE;
@@ -461,11 +462,15 @@ static void fill_in_objects(level_t * level) {
                         sprite_id = ENEMY_ALERT_TEXTURE;
                         break;
                     case ENEMY_STATE_SHOOTING:
-                        animation_step = ((ENEMY_SHOOTING_ANIMATION_SPEED - level->enemy[enemy].animation_step) * ENEMY_SHOOTING_ANIMATION_PARTS) / ENEMY_SHOOTING_ANIMATION_SPEED;
+                        if (enemy->type == 1) {
+                            animation_step = ((ENEMY_SHOOTING_MSG_ANIMATION_SPEED - enemy->animation_step) * ENEMY_SHOOTING_ANIMATION_PARTS) / ENEMY_SHOOTING_MSG_ANIMATION_SPEED;
+                        } else {
+                            animation_step = ((ENEMY_SHOOTING_ANIMATION_SPEED - enemy->animation_step) * ENEMY_SHOOTING_ANIMATION_PARTS) / ENEMY_SHOOTING_ANIMATION_SPEED;
+                        }
                         sprite_id = animation_step + ENEMY_SHOOTING_TEXTURE;
                         break;
                     case ENEMY_STATE_DYING:
-                        animation_step = ((ENEMY_DYING_ANIMATION_SPEED - level->enemy[enemy].animation_step) * ENEMY_DYING_ANIMATION_PARTS) / ENEMY_DYING_ANIMATION_SPEED;
+                        animation_step = ((ENEMY_DYING_ANIMATION_SPEED - enemy->animation_step) * ENEMY_DYING_ANIMATION_PARTS) / ENEMY_DYING_ANIMATION_SPEED;
                         sprite_id = animation_step + ENEMY_DYING_TEXTURE;
                         break;
                     default: // dead
@@ -473,10 +478,10 @@ static void fill_in_objects(level_t * level) {
                         break;
                 }
 
-                enemy_type = level->enemy[enemy].type;
+                enemy_type = enemy->type;
 
                 if (x == VIEWPORT_WIDTH / 2 && trigger_shot) {
-                    if (level->enemy[enemy].state != ENEMY_STATE_DYING && level->enemy[enemy].state != ENEMY_STATE_DEAD) {
+                    if (enemy->state != ENEMY_STATE_DYING && enemy->state != ENEMY_STATE_DEAD) {
                         if (level->weapon > 0 || distance < 1.2) { // not a knife or in close quarters
                             hit_enemy(level, enemy, distance);
                         }
