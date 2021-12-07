@@ -111,6 +111,11 @@ typedef struct __sprite_pack_ {
 #define SPECIAL_EFFECT_KEY_1 8
 #define SPECIAL_EFFECT_KEY_2 9
 #define SPECIAL_EFFECT_AMMO 10
+#define SPECIAL_EFFECT_MSG 11
+#define SPECIAL_EFFECT_MINIGUN 12
+#define SPECIAL_EFFECT_SMALL_HEALTH 13
+#define SPECIAL_EFFECT_MEDIUM_HEALTH 14
+#define SPECIAL_EFFECT_LARGE_HEALTH 15
 
 #define ENEMY_STATE_STILL 0
 #define ENEMY_STATE_MOVING 1
@@ -126,8 +131,8 @@ typedef struct __sprite_pack_ {
 
 #define WEAPON_SPRITE_MULTIPLIER 4
 
-#define MAX(X, Y) (X > Y ? X : Y)
-#define MIN(X, Y) (X < Y ? X : Y)
+#define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
+#define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
 
 #define RADIAN_CONSTANT 57.2957795131 // equals 180 / Pi
 
@@ -158,7 +163,12 @@ typedef struct __sprite_pack_ {
 #define TREASURE_2_TEXTURE (2 + 6 * 5)
 #define TREASURE_3_TEXTURE (3 + 6 * 5)
 #define TREASURE_4_TEXTURE (4 + 6 * 5)
+#define SMALL_HEALTH_BONUS_TEXTURE (0 + 5 * 5)
+#define MEDIUM_HEALTH_BONUS_TEXTURE (1 + 5 * 5)
+#define LARGE_HEALTH_BONUS_TEXTURE (2 + 5 * 5)
 #define SMALL_AMMO_TEXTURE (3 + 5 * 5)
+#define SMG_TEXTURE (4 + 5 * 5)
+#define MINIGUN_TEXTURE (0 + 6 * 5)
 
 #define ENEMY_SHOT_TEXTURE (7 + 5 * 8)
 #define ENEMY_ALERT_TEXTURE (0 + 6 * 8)
@@ -171,7 +181,8 @@ typedef struct __sprite_pack_ {
 #define WEAPON_SWITCH_SPEED 80
 #define TREASURE_PICKUP_FLASH_DURATION 8
 #define PLAYER_SHOT_FLASH_DURATION 8
-#define GAME_OVER_ANIMATION_SPEED 200
+#define GAME_OVER_ANIMATION_SPEED 180
+#define GAME_ENTER_EXIT_ANIMATION_SPEED 44
 #define ENEMY_ALERT_PROXIMITY 10
 
 // Voodoo:
@@ -203,6 +214,8 @@ typedef struct __sprite_pack_ {
 
 #define SAVE_FILES_COUNT 8
 #define SAVE_FILE_NAME_SIZ 30
+
+#define MAX_AMMO 99
 
 // raycaster.c
 extern sprite_pack_t * wall_textures;
@@ -261,7 +274,6 @@ void window_start();
 void window_close();
 bool window_is_open();
 void window_update_pixels(const pixel_t * pixels);
-void window_refresh();
 bool window_poll_event(sfEvent * event);
 
 // raycaster.c

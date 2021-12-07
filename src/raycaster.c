@@ -9,7 +9,7 @@ typedef struct  __obj_distance_ {
 
 sprite_pack_t * wall_textures;
 sprite_pack_t * objects_sprites;
-static sprite_pack_t * enemy_sprites[5];
+static sprite_pack_t * enemy_sprites[3];
 static sprite_pack_t * weapons_sprites;
 sprite_pack_t * font_sprites;
 
@@ -621,20 +621,22 @@ void paint_scene(level_t * level) {
 void load_textures() {
     wall_textures = calloc(1, sizeof(sprite_pack_t));
     read_sprite_pack(wall_textures, "walls");
+
     objects_sprites = calloc(1, sizeof(sprite_pack_t));
     read_sprite_pack(objects_sprites, "objects");
+
     enemy_sprites[0] = calloc(1, sizeof(sprite_pack_t));
-    read_sprite_pack(enemy_sprites[0], "soldier1");
+    read_sprite_pack(enemy_sprites[0], "soldier");
+
     enemy_sprites[1] = calloc(1, sizeof(sprite_pack_t));
-    read_sprite_pack(enemy_sprites[1], "soldier2");
-    // enemy_sprites[2] = calloc(1, sizeof(sprite_pack_t));
-    // read_sprite_pack(enemy_sprites[2], "soldier3");
-    // enemy_sprites[3] = calloc(1, sizeof(sprite_pack_t));
-    // read_sprite_pack(enemy_sprites[3], "soldier4");
-    // enemy_sprites[4] = calloc(1, sizeof(sprite_pack_t));
-    // read_sprite_pack(enemy_sprites[4], "soldier5");
+    read_sprite_pack(enemy_sprites[1], "msgunner");
+
+    enemy_sprites[2] = calloc(1, sizeof(sprite_pack_t));
+    read_sprite_pack(enemy_sprites[2], "officer");
+
     weapons_sprites = calloc(1, sizeof(sprite_pack_t));
     read_sprite_pack(weapons_sprites, "weapons");
+
     font_sprites = calloc(1, sizeof(sprite_pack_t));
     read_sprite_pack(font_sprites, "font_red");
 }

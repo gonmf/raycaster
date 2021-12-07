@@ -1,42 +1,28 @@
-- quick screen-going-dark transition between menus and gameplay
+- machine gun higher speed for player weapons
 
-- finish game UI
-  - options
-    - screen size only for now
-      - add background if screen size does not respect hardcoded ratio of 2:1
-  - add credits somewhere
+- machine gun higher speed for MSG gunner
 
-- Add flag to skip straight to new game
-
-- More enemy types
-  - Melee dogs
-  - SMG soldiers
-  - Officers
-- More weapon and ammo pack types
-   - On picking new and higher weapon, switch to it
-
-- Limit ammo and health
-
-- When an object (ammo, health) has more than what is necessary to maximum, leave rest in place
-
-- health objects
-
-- Tweak enemy and movement speed, enemy hit power, accuracy, and other things by comparison to wolf3d (replicate E1M1): currently game is very hard
-
-- Add more data to level pack(s): like text to be shown between missions and what background music should play
-  - Add transition effects
+- stronger officer soldier
 
 - Change map editor to be able to specify initial enemy and player angles
 
-- Music and sound effects
-
 - Design some better levels: replicate E1M1 for testing purposes
+
+- Tweak enemy and movement speed, enemy hit power, accuracy, and other things by comparison to wolf3d (replicate E1M1): currently game is very hard
+
+- Sound effects
+
+- Music
+
+- finish game UI
+  - options
+    - screen size - a few window sizes plus fullscreen
+      - add background if fullscreen size does not respect hardcoded ratio of 2:1
+
+- Add more data to level pack(s): like text to be shown between missions and what background music should play
+  - Add transition effects
 
 - Allow enemies to open doors
   - Noise crossing walls/doors to alert enemies on other side
 
 - Put soldiers on alert based on proximity to another alert soldier, or to another enemy shooting
-
-- Split game state from level struct
-
-- Rename level->observer something else

@@ -13,6 +13,7 @@ static bool key_down_pressed = false;
 static bool key_enter_pressed = false;
 static bool show_map = false;
 static char * save_games[SAVE_FILES_COUNT];
+static pixel_t backup_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
 
 static void update_observer_state() {
     bool keyW = key_is_pressed(sfKeyW);
@@ -112,8 +113,9 @@ static void update_observer_state() {
     }
 }
 
-static void game_over_animation(pixel_t color) {
-    unsigned int duration = GAME_OVER_ANIMATION_SPEED;
+static void start_color_to_screen_animation(pixel_t color, unsigned int duration) {
+    double initial_duration = (double)duration;
+    memcpy(backup_buffer, fg_buffer, VIEWPORT_WIDTH * VIEWPORT_HEIGHT * sizeof(pixel_t));
 
     while (true) {
         if (!window_is_open()) {
@@ -124,7 +126,8 @@ static void game_over_animation(pixel_t color) {
             return;
         }
 
-        double factor = ((GAME_OVER_ANIMATION_SPEED - duration) / 4.0) / GAME_OVER_ANIMATION_SPEED;
+        double factor = duration / initial_duration;
+        memcpy(fg_buffer, backup_buffer, VIEWPORT_WIDTH * VIEWPORT_HEIGHT * sizeof(pixel_t));
         scene_shading(color, factor);
 
         sfEvent event;
@@ -136,7 +139,35 @@ static void game_over_animation(pixel_t color) {
 
         window_center_mouse();
         window_update_pixels(fg_buffer);
-        window_refresh();
+    }
+}
+
+static void start_screen_to_color_animation(pixel_t color, unsigned int duration) {
+    double initial_duration = (double)duration;
+    memcpy(backup_buffer, fg_buffer, VIEWPORT_WIDTH * VIEWPORT_HEIGHT * sizeof(pixel_t));
+
+    while (true) {
+        if (!window_is_open()) {
+            exit(EXIT_SUCCESS);
+        }
+
+        if (duration-- == 0) {
+            return;
+        }
+
+        double factor = duration / initial_duration;
+        memcpy(fg_buffer, backup_buffer, VIEWPORT_WIDTH * VIEWPORT_HEIGHT * sizeof(pixel_t));
+        scene_shading(color, 1.0 - factor);
+
+        sfEvent event;
+        while (window_poll_event(&event)) {
+            if (event.type == sfEvtClosed) {
+                return;
+            }
+        }
+
+        window_center_mouse();
+        window_update_pixels(fg_buffer);
     }
 }
 
@@ -190,13 +221,18 @@ static void main_render_loop() {
     long unsigned int last_ms = 0;
     struct timespec spec;
 
+    if (window_is_open()) {
+        start_color_to_screen_animation(color_black, GAME_ENTER_EXIT_ANIMATION_SPEED);
+    }
+
     while (true) {
         if (!window_is_open()) {
             exit(EXIT_SUCCESS);
         }
 
+
         if (level->life == 0) {
-            game_over_animation(color_dark_red);
+            start_screen_to_color_animation(color_dark_red, GAME_OVER_ANIMATION_SPEED);
             return;
         }
 
@@ -229,6 +265,7 @@ static void main_render_loop() {
         apply_special_effect(level, &exit_found);
 
         if (exit_found) {
+            start_screen_to_color_animation(color_black, GAME_ENTER_EXIT_ANIMATION_SPEED);
             return;
         }
 
@@ -274,7 +311,6 @@ static void main_render_loop() {
 
         window_center_mouse();
         window_update_pixels(fg_buffer);
-        window_refresh();
     }
 }
 
@@ -384,6 +420,7 @@ static void start_new_game() {
     level->ammo = 10;
     level->level_nr = 0;
 
+    start_screen_to_color_animation(color_black, GAME_ENTER_EXIT_ANIMATION_SPEED);
     game_level_loop();
 }
 
@@ -393,6 +430,8 @@ static void continue_game(unsigned char slot_nr) {
     if (new_level) {
         unload_assets();
         level = new_level;
+
+        start_screen_to_color_animation(color_black, GAME_ENTER_EXIT_ANIMATION_SPEED);
         game_level_loop();
     }
 }
@@ -415,7 +454,6 @@ static void render_main_menu(unsigned int current_option, double shading_factor)
     screen_write_scaled("Quit", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Quit") / 2, VIEWPORT_HEIGHT / 2 - chr_siz * -2, scale, current_option == 3 ? shading_factor : 0.0);
 
     window_update_pixels(fg_buffer);
-    window_refresh();
 }
 
 static void render_pause_menu(unsigned int current_option, double shading_factor) {
@@ -439,7 +477,6 @@ static void render_pause_menu(unsigned int current_option, double shading_factor
     screen_write_scaled("Quit", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Quit") / 2, y_offset, scale, current_option == 2 ? shading_factor : 0.0);
 
     window_update_pixels(fg_buffer);
-    window_refresh();
 }
 
 static void render_load_save_menu(unsigned int current_option, double shading_factor, bool is_load) {
@@ -471,7 +508,6 @@ static void render_load_save_menu(unsigned int current_option, double shading_fa
     screen_write_scaled("Quit", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Quit") / 2, y_offset, scale, current_option == SAVE_FILES_COUNT ? shading_factor : 0.0);
 
     window_update_pixels(fg_buffer);
-    window_refresh();
 }
 
 static void reload_save_games() {

@@ -27,11 +27,14 @@ https://www.textures-resource.com/pc_computer/wolf3d/texture/1375/
 Objects, Author "Lotos"
 https://www.spriters-resource.com/pc_computer/wolfenstein3d/sheet/29106/
 
-Normal Soldier, Author "Lotos"
+Normal Enemy, Author "Lotos"
 https://www.spriters-resource.com/pc_computer/wolfenstein3d/sheet/27846/
 
-Machinegun Soldier, Author "Hades666"
+SMG Enemy, Author "Hades666"
 https://www.spriters-resource.com/pc_computer/wolfenstein3d/sheet/65590/
+
+Officer Enemy, Author "Ultimecia"
+https://www.spriters-resource.com/pc_computer/wolfenstein3d/sheet/27915/
 
 Weapons, Author "Lotos"
 https://www.spriters-resource.com/pc_computer/wolfenstein3d/sheet/27848/

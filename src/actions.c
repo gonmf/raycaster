@@ -183,6 +183,7 @@ bool apply_special_effect(level_t * level, bool * exit_found) {
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
                 level->score += 10;
                 return true;
+
             case SPECIAL_EFFECT_KEY_1:
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
@@ -195,11 +196,61 @@ bool apply_special_effect(level_t * level, bool * exit_found) {
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
                 level->key_2 = true;
                 return true;
+
+            case SPECIAL_EFFECT_SMALL_HEALTH:
+                if (level->life < 100) {
+                    level->objects_count--;
+                    level->object[obj_i] = level->object[level->objects_count];
+                    start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
+                    level->life = MIN(level->life + 4, 100);
+                    return true;
+                } else {
+                    return false;
+                }
+            case SPECIAL_EFFECT_MEDIUM_HEALTH:
+                if (level->life < 100) {
+                    level->objects_count--;
+                    level->object[obj_i] = level->object[level->objects_count];
+                    start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
+                    level->life = MIN(level->life + 10, 100);
+                    return true;
+                } else {
+                    return false;
+                }
+            case SPECIAL_EFFECT_LARGE_HEALTH:
+                if (level->life < 100) {
+                    level->objects_count--;
+                    level->object[obj_i] = level->object[level->objects_count];
+                    start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
+                    level->life = MIN(level->life + 30, 100);
+                    return true;
+                } else {
+                    return false;
+                }
+
             case SPECIAL_EFFECT_AMMO:
+                if (level->ammo < MAX_AMMO) {
+                    level->objects_count--;
+                    level->object[obj_i] = level->object[level->objects_count];
+                    start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
+                    level->ammo = MIN(level->ammo + 8, MAX_AMMO);
+                    return true;
+                } else {
+                    return false;
+                }
+            case SPECIAL_EFFECT_MSG:
                 level->objects_count--;
                 level->object[obj_i] = level->object[level->objects_count];
                 start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
-                level->ammo = MIN(level->ammo + 8, 99);
+                level->ammo = MIN(level->ammo + 8, MAX_AMMO);
+                make_weapon_available(level, 2);
+                return true;
+            case SPECIAL_EFFECT_MINIGUN:
+                level->objects_count--;
+                level->object[obj_i] = level->object[level->objects_count];
+                start_flash_effect(TREASURE_PICKUP_FLASH_DURATION, &color_white);
+                level->ammo = MIN(level->ammo + 8, MAX_AMMO);
+                make_weapon_available(level, 3);
                 return true;
             default:
                 error("Unknown special effect applicable to object");

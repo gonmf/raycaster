@@ -28,7 +28,7 @@ void window_start() {
     desired_video_mode.height = (unsigned int)(VIEWPORT_HEIGHT * WINDOW_UPSCALE);
     desired_video_mode.bitsPerPixel = 32;
 
-    window = sfRenderWindow_create(desired_video_mode, "Raycaster", sfClose, NULL);
+    window = sfRenderWindow_create(desired_video_mode, "Raycaster", sfResize, NULL);
     sfRenderWindow_setFramerateLimit(window, MAX_FPS);
 
     sfVector2i position;
@@ -67,9 +67,6 @@ bool window_is_open() {
 void window_update_pixels(const pixel_t * pixels) {
     sfTexture_updateFromPixels(texture, (sfUint8 *)pixels, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 0, 0);
     sfRenderWindow_drawSprite(window, sprite, &renderStates);
-}
-
-void window_refresh() {
     sfRenderWindow_display(window);
 }
 

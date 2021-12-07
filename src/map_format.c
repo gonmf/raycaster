@@ -309,6 +309,50 @@ level_t * read_level_info(unsigned int level_nr) {
                                 map_objects[map_objects_count].x = (double)i;
                                 map_objects[map_objects_count].y = (double)map_size_h;
                                 map_objects_count++;
+                            // Health bonuses
+                            } else if (d == 'q') {
+                                map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
+                                map_objects[map_objects_count].texture = SMALL_HEALTH_BONUS_TEXTURE;
+                                map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_SMALL_HEALTH;
+                                map_objects[map_objects_count].x = (double)i;
+                                map_objects[map_objects_count].y = (double)map_size_h;
+                                map_objects_count++;
+                            } else if (d == 'w') {
+                                map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
+                                map_objects[map_objects_count].texture = MEDIUM_HEALTH_BONUS_TEXTURE;
+                                map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_MEDIUM_HEALTH;
+                                map_objects[map_objects_count].x = (double)i;
+                                map_objects[map_objects_count].y = (double)map_size_h;
+                                map_objects_count++;
+                            } else if (d == 'r') {
+                                map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
+                                map_objects[map_objects_count].texture = LARGE_HEALTH_BONUS_TEXTURE;
+                                map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_LARGE_HEALTH;
+                                map_objects[map_objects_count].x = (double)i;
+                                map_objects[map_objects_count].y = (double)map_size_h;
+                                map_objects_count++;
+                            // Ammo and weapon upgrades
+                            } else if (d == 'b') {
+                                map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
+                                map_objects[map_objects_count].texture = SMALL_AMMO_TEXTURE;
+                                map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_AMMO;
+                                map_objects[map_objects_count].x = (double)i;
+                                map_objects[map_objects_count].y = (double)map_size_h;
+                                map_objects_count++;
+                            } else if (d == 'n') {
+                                map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
+                                map_objects[map_objects_count].texture = SMG_TEXTURE;
+                                map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_MSG;
+                                map_objects[map_objects_count].x = (double)i;
+                                map_objects[map_objects_count].y = (double)map_size_h;
+                                map_objects_count++;
+                            } else if (d == 'm') {
+                                map_objects[map_objects_count].type = OBJECT_TYPE_NON_BLOCK;
+                                map_objects[map_objects_count].texture = MINIGUN_TEXTURE;
+                                map_objects[map_objects_count].special_effect = SPECIAL_EFFECT_MINIGUN;
+                                map_objects[map_objects_count].x = (double)i;
+                                map_objects[map_objects_count].y = (double)map_size_h;
+                                map_objects_count++;
                             // Enemies
                             } else if (d == 'a' || d == 'z' || d == 'x' || d == 'c' || d == 'v') {
                                 switch (d) {
