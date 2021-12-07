@@ -274,9 +274,13 @@ static bool in_enemy_view(level_t * level, enemy_t * enemy) {
         angle -= 180.0;
     }
 
-    angle += enemy->angle;
+    angle = fit_angle(angle + enemy->angle);
 
-    return angle > 90.0 - (ENEMY_FIELD_OF_VIEW / 2.0) && angle < 90.0 + (ENEMY_FIELD_OF_VIEW / 2.0);
+    if (enemy->angle == 270.0) {
+        return angle > 270.0 - (ENEMY_FIELD_OF_VIEW / 2.0) && angle < 270.0 + (ENEMY_FIELD_OF_VIEW / 2.0);
+    } else {
+        return angle > 90.0 - (ENEMY_FIELD_OF_VIEW / 2.0) && angle < 90.0 + (ENEMY_FIELD_OF_VIEW / 2.0);
+    }
 }
 
 static bool in_shooting_distance(double distance) {
@@ -375,7 +379,7 @@ void update_enemies_state(level_t * level) {
             }
             break;
         default: // dead
-            break;
+            continue;
         }
 
         if (enemy->state != ENEMY_STATE_STILL && enemy->state != ENEMY_STATE_ALERT) {

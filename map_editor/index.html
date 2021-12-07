@@ -68,13 +68,9 @@
             <option value="8">Object Type 8</option>
             <option value="9">Object Type 9</option>
             <option value="0">Object Type 0</option>
-            <option value="a">Enemy 1</option>
-            <option value="z">Enemy 2</option>
-            <option value="x">Enemy 3</option>
-<!--
-            <option value="c">Enemy 4</option>
-            <option value="v">Enemy 5</option>
--->
+            <option value="a" rotations="acvP">Enemy 1</option>
+            <option value="v" rotations="zQRS">Enemy 2</option>
+            <option value="S" rotations="xTVX">Enemy 3</option>
             <option value="clear">Clear</option>
         </select>
 
@@ -82,6 +78,14 @@
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 
         <input type="button" value="Center canvas" id="centerMap2"></input>
+
+        <select id="enemyRotationSelect">
+            <option value="0" selected>0º</option>
+            <option value="1">90º</option>
+            <option value="2">180º</option>
+            <option value="3">270º</option>
+        </select>
+
         <input type="button" value="Reset colors" id="resetColors2"></input>
     </div>
 
@@ -145,8 +149,13 @@
                 ctx.fillRect(1, 1, 28 - 2, 28 - 2);
             } else {
                 var element = document.getElementById("objectTypeSelect");
+                var angle = parseInt(document.getElementById("enemyRotationSelect").selectedOptions[0].getAttribute("value"));
                 var option = element.selectedOptions[0];
                 var value = option.getAttribute("value");
+                var rots = option.getAttribute("rotations");
+                if (rots) {
+                    value = rots[angle];
+                }
                 if (value === "clear") {
                     previewCanvas2.style.opacity = 0;
                     return;
@@ -308,7 +317,12 @@
                 y = Math.round((evt.pageY - elemTop) / window.blockSize - 0.5);
 
             var option = document.getElementById("objectTypeSelect").selectedOptions[0];
+            var angle = parseInt(document.getElementById("enemyRotationSelect").selectedOptions[0].getAttribute("value"));
             var value = option.getAttribute("value");
+            var rots = option.getAttribute("rotations");
+            if (rots) {
+                value = rots[angle];
+            }
 
             if (x >= 0 && x < window.totalWidth && y >= 0 && y < window.totalHeight) {
                 if (value === "clear") {
@@ -470,7 +484,7 @@
                     continue;
                 } else if (c === ".") {
                     // do nothing
-                } else if (isWall(c) || (c >= "0" && c <= "9") || ["s", "e", "k", "l", "t", "y", "u", "i", "b", "n", "m", "q", "w", "r", "a", "z", "x", "c", "v"].includes(c)) {
+                } else if (isWall(c) || (c >= "0" && c <= "9") || ["s", "e", "k", "l", "t", "y", "u", "i", "b", "n", "m", "q", "w", "r", "a", "z", "x", "c", "v", "P", "Q", "R", "S", "T", "V", "X"].includes(c)) {
                     newContents[y][x] = c;
                 } else {
                     text.value = `Error: invalid character "${c}" (${x},${y})`;
@@ -532,6 +546,7 @@
 
         document.getElementById("wallTypeSelect").addEventListener("click", refreshPreview);
         document.getElementById("objectTypeSelect").addEventListener("click", refreshPreview);
+        document.getElementById("enemyRotationSelect").addEventListener("click", refreshPreview);
         document.getElementById("loadBtn").addEventListener("click", loadFromText);
         document.getElementById("zoomIn").addEventListener("click", zoomIn);
         document.getElementById("zoomOut").addEventListener("click", zoomOut);

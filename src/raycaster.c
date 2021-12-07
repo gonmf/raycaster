@@ -475,7 +475,6 @@ static void fill_in_objects(level_t * level) {
                         break;
                     default: // dead
                         sprite_id = ENEMY_DEAD_TEXTURE;
-                        break;
                 }
 
                 enemy_type = enemy->type;

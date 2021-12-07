@@ -553,7 +553,6 @@ static void render_menus_loop(unsigned int start_menu) {
                 break;
             case 4: // game paused - save menu
                 render_load_save_menu(current_option, shading_factor, false);
-                break;
         }
 
         if (key_is_pressed(sfKeyUp)) {
@@ -600,7 +599,6 @@ static void render_menus_loop(unsigned int start_menu) {
                         if (current_option < SAVE_FILES_COUNT) {
                             current_option += 1;
                         }
-                        break;
                 }
                 key_down_pressed = false;
             }
@@ -649,7 +647,6 @@ static void render_menus_loop(unsigned int start_menu) {
                             case 2:
                                 current_menu = 0;
                                 current_option = 0;
-                                break;
                         }
                         break;
                     case 4:
@@ -659,7 +656,6 @@ static void render_menus_loop(unsigned int start_menu) {
                         }
                         current_menu = 3;
                         current_option = 0;
-                        break;
                 }
             }
         }

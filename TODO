@@ -1,5 +1,3 @@
-- Change map editor to be able to specify initial enemy and player angles
-
 - Design some better levels: replicate E1M1 for testing purposes
 
 - Tweak enemy and movement speed, enemy hit power, accuracy, and other things by comparison to wolf3d (replicate E1M1): currently game is very hard

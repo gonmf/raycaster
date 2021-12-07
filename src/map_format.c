@@ -354,30 +354,68 @@ level_t * read_level_info(unsigned int level_nr) {
                                 map_objects[map_objects_count].y = (double)map_size_h;
                                 map_objects_count++;
                             // Enemies
-                            } else if (d == 'a' || d == 'z' || d == 'x' || d == 'c' || d == 'v') {
-                                switch (d) {
-                                    case 'a':
-                                        map_enemies[enemy_count].type = 0;
-                                        break;
-                                    case 'z':
-                                        map_enemies[enemy_count].type = 1;
-                                        break;
-                                    case 'x':
-                                        map_enemies[enemy_count].type = 2;
-                                        break;
-                                    case 'c':
-                                        map_enemies[enemy_count].type = 3;
-                                        break;
-                                    case 'v':
-                                        map_enemies[enemy_count].type = 4;
-                                        break;
-                                }
+                            } else if (d == 'a' || d == 'c' || d == 'v' || d == 'P') {
+                                map_enemies[enemy_count].type = 0;
                                 map_enemies[enemy_count].life = 100;
                                 map_enemies[enemy_count].x = (double)i;
                                 map_enemies[enemy_count].y = map_size_h;
                                 map_enemies[enemy_count].state = ENEMY_STATE_STILL;
                                 map_enemies[enemy_count].strategic_state = ENEMY_STRATEGIC_STATE_WAITING;
-                                map_enemies[enemy_count].animation_step = 0;
+                                switch (d) {
+                                    case 'a':
+                                        map_enemies[enemy_count].angle = 0;
+                                        break;
+                                    case 'c':
+                                        map_enemies[enemy_count].angle = 90;
+                                        break;
+                                    case 'v':
+                                        map_enemies[enemy_count].angle = 180;
+                                        break;
+                                    case 'P':
+                                        map_enemies[enemy_count].angle = 270;
+                                }
+                                enemy_count++;
+                            } else if (d == 'z' || d == 'Q' || d == 'R' || d == 'S') {
+                                map_enemies[enemy_count].type = 1;
+                                map_enemies[enemy_count].life = 100;
+                                map_enemies[enemy_count].x = (double)i;
+                                map_enemies[enemy_count].y = map_size_h;
+                                map_enemies[enemy_count].state = ENEMY_STATE_STILL;
+                                map_enemies[enemy_count].strategic_state = ENEMY_STRATEGIC_STATE_WAITING;
+                                switch (d) {
+                                    case 'z':
+                                        map_enemies[enemy_count].angle = 0;
+                                        break;
+                                    case 'Q':
+                                        map_enemies[enemy_count].angle = 90;
+                                        break;
+                                    case 'R':
+                                        map_enemies[enemy_count].angle = 180;
+                                        break;
+                                    case 'S':
+                                        map_enemies[enemy_count].angle = 270;
+                                }
+                                enemy_count++;
+                            } else if (d == 'x' || d == 'T' || d == 'V' || d == 'X') {
+                                map_enemies[enemy_count].type = 2;
+                                map_enemies[enemy_count].life = 100;
+                                map_enemies[enemy_count].x = (double)i;
+                                map_enemies[enemy_count].y = map_size_h;
+                                map_enemies[enemy_count].state = ENEMY_STATE_STILL;
+                                map_enemies[enemy_count].strategic_state = ENEMY_STRATEGIC_STATE_WAITING;
+                                switch (d) {
+                                    case 'x':
+                                        map_enemies[enemy_count].angle = 0;
+                                        break;
+                                    case 'T':
+                                        map_enemies[enemy_count].angle = 90;
+                                        break;
+                                    case 'V':
+                                        map_enemies[enemy_count].angle = 180;
+                                        break;
+                                    case 'X':
+                                        map_enemies[enemy_count].angle = 270;
+                                }
                                 enemy_count++;
                             // Furniture
                             } else if ((d - '0') >= 0 && (d - '0') < 10) {
