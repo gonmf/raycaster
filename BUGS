@@ -1,5 +1,3 @@
-In map, objects always appear even before being seen
-
 When enemies get two close by mistake they can overlap the player, leaving the player stuck
 
 When multiple objects are too close, they may obscure parts of each other in raytracing even though transparent

@@ -40,6 +40,7 @@ static void write_object(object_t * object) {
     write_char(object->type);
     write_char(object->texture);
     write_char(object->special_effect);
+    write_bool(object->revealed);
     write_double(object->x);
     write_double(object->y);
 }
@@ -123,6 +124,7 @@ static void read_object(object_t * object) {
     object->type = read_char();
     object->texture = read_char();
     object->special_effect = read_char();
+    object->revealed = read_bool();
     object->x = read_double();
     object->y = read_double();
 }

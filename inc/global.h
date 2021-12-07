@@ -46,6 +46,7 @@ typedef struct __attribute__((__packed__)) __object_ {
     unsigned char type;
     unsigned char texture;
     unsigned char special_effect;
+    bool revealed;
     double x;
     double y;
 } object_t;

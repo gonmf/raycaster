@@ -60,10 +60,12 @@ void paint_map(const level_t * level) {
         unsigned int x = (unsigned int)level->object[i].x;
         unsigned int y = level->height - ((unsigned int)level->object[i].y) - 1;
 
-        if (level->object[i].type == OBJECT_TYPE_BLOCKING) {
-            paint_map_part(color_gray, x, y, offset_x, offset_y, true);
-        } else {
-            paint_map_part(color_gold, x, y, offset_x, offset_y, true);
+        if (level->object[i].revealed) {
+            if (level->object[i].type == OBJECT_TYPE_BLOCKING) {
+                paint_map_part(color_gray, x, y, offset_x, offset_y, true);
+            } else {
+                paint_map_part(color_gold, x, y, offset_x, offset_y, true);
+            }
         }
     }
 }

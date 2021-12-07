@@ -490,6 +490,7 @@ static void fill_in_objects(level_t * level) {
                 }
             } else { // render object
                 sprite_id = level->object[object].texture;
+                level->object[object].revealed = true;
             }
 
             unsigned int end_y = (unsigned int)(block_size * VIEWPORT_HEIGHT / 2.0);
