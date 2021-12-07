@@ -22,6 +22,19 @@ void transition_step(level_t * level) {
     }
     if (shooting_ticks > 0) {
         shooting_ticks--;
+
+        if (level->weapon == 2) {
+            unsigned int part_ticks = SHOOTING_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
+            if (shooting_ticks == part_ticks + part_ticks / 2 && sfMouse_isButtonPressed(sfMouseLeft)) {
+                shooting_ticks += part_ticks * 2;
+            }
+        }
+        if (level->weapon == 3) {
+            unsigned int part_ticks = SHOOTING_MINIGUN_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
+            if (shooting_ticks == part_ticks && sfMouse_isButtonPressed(sfMouseLeft)) {
+                shooting_ticks += part_ticks * 2;
+            }
+        }
     }
     if (weapon_transition_ticks > 0) {
         weapon_transition_ticks--;
@@ -262,7 +275,12 @@ bool apply_special_effect(level_t * level, bool * exit_found) {
 
 bool shooting_state(level_t * level, unsigned int * step, bool * trigger_shot) {
     if (shooting_ticks) {
-        unsigned int animation_step_size = SHOOTING_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
+        unsigned int animation_step_size;
+        if (level->weapon == 3) {
+            animation_step_size = SHOOTING_MINIGUN_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
+        } else {
+            animation_step_size = SHOOTING_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
+        }
         if (shooting_ticks == animation_step_size * SHOOTING_ACTIVATION_PART) {
             if (level->ammo > 0 || level->weapon == 0) {
                 if (level->weapon > 0) {
@@ -282,13 +300,17 @@ bool shooting_state(level_t * level, unsigned int * step, bool * trigger_shot) {
     }
 }
 
-void shooting_start_action() {
+void shooting_start_action(const level_t * level) {
     if (shooting_ticks == 0) {
         double weapon_switch_percentage;
         bool weapon_switching = weapon_transition(&weapon_switch_percentage);
 
         if (!weapon_switching) {
-            shooting_ticks = SHOOTING_ANIMATION_SPEED;
+            if (level->weapon == 3) {
+                shooting_ticks = SHOOTING_MINIGUN_ANIMATION_SPEED;
+            } else {
+                shooting_ticks = SHOOTING_ANIMATION_SPEED;
+            }
         }
     }
 }

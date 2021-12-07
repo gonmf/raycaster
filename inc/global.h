@@ -197,6 +197,7 @@ typedef struct __sprite_pack_ {
 #define ROUGH_RAY_STEP_CONSTANT 0.05
 
 #define SHOOTING_ANIMATION_SPEED 50
+#define SHOOTING_MINIGUN_ANIMATION_SPEED 35
 #define SHOOTING_ANIMATION_PARTS 5
 #define SHOOTING_ACTIVATION_PART 3
 #define ENEMY_SHOT_ANIMATION_SPEED 25
@@ -292,7 +293,7 @@ bool short_flash_effect(double * percentage, pixel_t * color);
 void start_flash_effect(unsigned int duration, pixel_t * color);
 bool apply_special_effect(level_t * level, bool * exit_found);
 bool shooting_state(level_t * level, unsigned int * step, bool * trigger_shot);
-void shooting_start_action();
+void shooting_start_action(const level_t * level);
 void move_player(level_t * level, double x_change, double y_change);
 void init_animations();
 

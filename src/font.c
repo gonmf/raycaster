@@ -88,7 +88,6 @@ static void screen_write_char(const pixel_t * sprite, unsigned int screen_x, uns
     }
 }
 
-
 void screen_write_scaled(const char * str, unsigned int screen_x, unsigned int screen_y, unsigned int scale, double factor) {
     char c;
     unsigned int sprite_x = 0;

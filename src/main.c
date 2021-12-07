@@ -230,7 +230,6 @@ static void main_render_loop() {
             exit(EXIT_SUCCESS);
         }
 
-
         if (level->life == 0) {
             start_screen_to_color_animation(color_dark_red, GAME_OVER_ANIMATION_SPEED);
             return;
@@ -306,7 +305,7 @@ static void main_render_loop() {
         }
 
         if (sfMouse_isButtonPressed(sfMouseLeft)) {
-            shooting_start_action();
+            shooting_start_action(level);
         }
 
         window_center_mouse();

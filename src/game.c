@@ -6,9 +6,15 @@ static unsigned int player_dist_map_x;
 static unsigned int player_dist_map_y;
 
 void make_weapon_available(level_t * level, unsigned char weapon_nr) {
-    level->weapons_available |= 1 << weapon_nr;
+    if (level->weapons_available & (1 << weapon_nr)) {
+        return;
+    }
 
-    switch_weapon(level, weapon_nr);
+    level->weapons_available |= (1 << weapon_nr);
+
+    if (level->weapon != weapon_nr + 1) {
+        switch_weapon(level, weapon_nr);
+    }
 }
 
 void switch_weapon(level_t * level, unsigned char new_weapon_nr) {
@@ -41,7 +47,7 @@ void hit_enemy(level_t * level, unsigned int enemy_i, double distance) {
             enemy->animation_step = ENEMY_DYING_ANIMATION_SPEED;
 
             level->object[level->objects_count].type = OBJECT_TYPE_NON_BLOCK;
-            if (enemy->type == 2) {
+            if (enemy->type == 1) {
                 level->object[level->objects_count].texture = SMG_TEXTURE;
                 level->object[level->objects_count].special_effect = SPECIAL_EFFECT_MSG;
             } else {

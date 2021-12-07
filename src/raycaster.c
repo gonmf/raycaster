@@ -1,6 +1,5 @@
 #include "global.h"
 
-
 typedef struct  __obj_distance_ {
     bool is_object;
     unsigned int i;
@@ -583,8 +582,13 @@ static void fill_in_weapon(level_t * level) {
     bool weapon_switching = weapon_transition(&weapon_switch_percentage);
 
     if (shooting_state(level, &step, &trigger_shot)) {
-        unsigned int animation_step_size = SHOOTING_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
-        animation_step = (SHOOTING_ANIMATION_SPEED - step) / animation_step_size;
+        if (level->weapon == 3) {
+            unsigned int animation_step_size = SHOOTING_MINIGUN_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
+            animation_step = (SHOOTING_MINIGUN_ANIMATION_SPEED - step) / animation_step_size;
+        } else {
+            unsigned int animation_step_size = SHOOTING_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
+            animation_step = (SHOOTING_ANIMATION_SPEED - step) / animation_step_size;
+        }
     } else {
         trigger_shot = false;
         animation_step = 0;

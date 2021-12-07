@@ -16,7 +16,6 @@ color to be made transparent or ignored
 A level file must then specify what sprite packss to associate with what functions in the game, and
 they will be automatically loaded and unloaded.
 
-
 ### Credits
 
 Bellow is where the original files were downloaded from:
