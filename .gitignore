@@ -1,6 +1,7 @@
 raycaster
 sprites/dump/
 saves/*.save
+local.options
 
 # Prerequisites
 *.d

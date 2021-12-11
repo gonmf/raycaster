@@ -13,7 +13,8 @@ static bool key_down_pressed = false;
 static bool key_enter_pressed = false;
 static bool show_map = false;
 static char * save_games[SAVE_FILES_COUNT];
-static pixel_t backup_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
+static pixel_t * backup_buffer;
+static bool show_warning_changes_will_only_apply_after_restart = false;
 
 static void update_observer_state() {
     bool keyW = key_is_pressed(sfKeyW);
@@ -182,10 +183,12 @@ static void write_text_ui() {
     // Top right corner: Level number and FPS
     snprintf(buffer, 20, "L%u", level->level_nr + 1);
     screen_write(buffer, VIEWPORT_WIDTH - UI_PADDING - strlen(buffer) * font_sprites->sprite_size, UI_PADDING);
-#if SHOW_FPS
-    snprintf(buffer, 20, "%u", last_fps);
-    screen_write(buffer, VIEWPORT_WIDTH - UI_PADDING - strlen(buffer) * font_sprites->sprite_size, UI_PADDING + font_sprites->sprite_size);
-#endif
+
+    if (is_show_fps()) {
+        snprintf(buffer, 20, "%u", last_fps);
+        screen_write(buffer, VIEWPORT_WIDTH - UI_PADDING - strlen(buffer) * font_sprites->sprite_size, UI_PADDING + font_sprites->sprite_size);
+    }
+
     // Bottom left corner: Health and lives
     snprintf(buffer, 20, "%3u%% ~ %u", level->life, level->lives);
     screen_write(buffer, UI_PADDING, VIEWPORT_HEIGHT - UI_PADDING - font_sprites->sprite_size);
@@ -297,7 +300,7 @@ static void main_render_loop() {
                     level->observer_angle += angle_change;
                 }
 
-                if (move_y) {
+                if (move_y && is_look_up_down()) {
                     double angle_change = ((double)move_y) * VERTICAL_ROTATION_CONSTANT / VIEWPORT_HEIGHT;
                     level->observer_angle2 = MIN(MAX(level->observer_angle2 - angle_change, 1.0), 179.0);
                 }
@@ -399,6 +402,9 @@ static void game_level_loop() {
                 level->level_nr = level_nr;
             }
         } else {
+            if (level->level_nr == (unsigned int)(levels - 1)) {
+                break;
+            }
             advance_level();
         }
     }
@@ -444,13 +450,51 @@ static void render_main_menu(unsigned int current_option, double shading_factor)
 
     unsigned int scale = 8;
     unsigned int chr_siz = font_sprites->sprite_size * scale;
-    screen_write_scaled("RAYCASTER", VIEWPORT_WIDTH / 2 - chr_siz * strlen("RAYCASTER") / 2, VIEWPORT_HEIGHT / 2 - chr_siz * 2, scale, 0);
+    screen_write_scaled("RAYCASTER", VIEWPORT_WIDTH / 2 - chr_siz * strlen("RAYCASTER") / 2, VIEWPORT_HEIGHT / 2 - chr_siz * 2, scale, 0.0);
     scale = 4;
     chr_siz = font_sprites->sprite_size * scale;
-    screen_write_scaled("Load Game", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Load Game") / 2, VIEWPORT_HEIGHT / 2 - chr_siz * 1, scale, current_option == 0 ? shading_factor : 0.0);
-    screen_write_scaled("New Game", VIEWPORT_WIDTH / 2 - chr_siz * strlen("New Game") / 2, VIEWPORT_HEIGHT / 2 - chr_siz * 0, scale, current_option == 1 ? shading_factor : 0.0);
-    screen_write_scaled("Options", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Options") / 2, VIEWPORT_HEIGHT / 2 - chr_siz * -1, scale, current_option == 2 ? shading_factor : 0.0);
-    screen_write_scaled("Quit", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Quit") / 2, VIEWPORT_HEIGHT / 2 - chr_siz * -2, scale, current_option == 3 ? shading_factor : 0.0);
+    unsigned int y_offset = VIEWPORT_HEIGHT / 2 - chr_siz;
+    screen_write_scaled("Load Game", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Load Game") / 2, y_offset, scale, current_option == 0 ? shading_factor : 0.0);
+    y_offset += chr_siz + 8;
+    screen_write_scaled("New Game", VIEWPORT_WIDTH / 2 - chr_siz * strlen("New Game") / 2, y_offset, scale, current_option == 1 ? shading_factor : 0.0);
+    y_offset += chr_siz + 8;
+    screen_write_scaled("Options", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Options") / 2, y_offset, scale, current_option == 2 ? shading_factor : 0.0);
+    y_offset += chr_siz + 8;
+    screen_write_scaled("Quit", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Quit") / 2, y_offset, scale, current_option == 3 ? shading_factor : 0.0);
+
+    window_update_pixels(fg_buffer);
+}
+
+static void render_options_menu(unsigned int current_option, double shading_factor) {
+    for (unsigned int y = 0; y < VIEWPORT_HEIGHT; ++y) {
+        for (unsigned int x = 0; x < VIEWPORT_WIDTH; ++x) {
+            fg_buffer[x + y * VIEWPORT_WIDTH] = color_dark_blue;
+        }
+    }
+
+    unsigned int y_offset = VIEWPORT_HEIGHT / 5;
+    unsigned int scale = 4;
+    unsigned int chr_siz = font_sprites->sprite_size * scale;
+    screen_write_scaled("OPTIONS", VIEWPORT_WIDTH / 2 - chr_siz * strlen("OPTIONS") / 2, y_offset, scale, 0.0);
+    y_offset += chr_siz + chr_siz / 2;
+    scale = 3;
+    chr_siz = font_sprites->sprite_size * scale;
+    char * opt_str = is_fullscreen() ? "Display: fullscreen" : "Display: windowed";
+    screen_write_scaled(opt_str, VIEWPORT_WIDTH / 2 - chr_siz * strlen(opt_str) / 2, y_offset, scale, current_option == 0 ? shading_factor : 0.0);
+    y_offset += chr_siz + chr_siz / 2;
+    opt_str = is_look_up_down() ? "Look up/down: yes" : "Look up/down: no";
+    screen_write_scaled(opt_str, VIEWPORT_WIDTH / 2 - chr_siz * strlen(opt_str) / 2, y_offset, scale, current_option == 1 ? shading_factor : 0.0);
+    y_offset += chr_siz + chr_siz / 2;
+    opt_str = is_show_fps() ? "Display FPS: yes" : "Display FPS: no";
+    screen_write_scaled(opt_str, VIEWPORT_WIDTH / 2 - chr_siz * strlen(opt_str) / 2, y_offset, scale, current_option == 2 ? shading_factor : 0.0);
+    y_offset += chr_siz + chr_siz / 2;
+    screen_write_scaled("Back", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Back") / 2, y_offset, scale, current_option == 3 ? shading_factor : 0.0);
+
+    if (show_warning_changes_will_only_apply_after_restart) {
+        scale = 2;
+        chr_siz = font_sprites->sprite_size * scale;
+        screen_write_scaled("Option requires restarting the game", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Option requires restarting the game") / 2, VIEWPORT_HEIGHT - chr_siz - 8, scale, 0.0);
+    }
 
     window_update_pixels(fg_buffer);
 }
@@ -465,7 +509,7 @@ static void render_pause_menu(unsigned int current_option, double shading_factor
     unsigned int y_offset = VIEWPORT_HEIGHT / 4;
     unsigned int scale = 4;
     unsigned int chr_siz = font_sprites->sprite_size * scale;
-    screen_write_scaled("PAUSED", VIEWPORT_WIDTH / 2 - chr_siz * strlen("PAUSED") / 2, y_offset, scale, 0);
+    screen_write_scaled("PAUSED", VIEWPORT_WIDTH / 2 - chr_siz * strlen("PAUSED") / 2, y_offset, scale, 0.0);
     y_offset += chr_siz + chr_siz / 2;
     scale = 2;
     chr_siz = font_sprites->sprite_size * scale;
@@ -490,7 +534,7 @@ static void render_load_save_menu(unsigned int current_option, double shading_fa
     unsigned int y_offset = font_sprites->sprite_size;
     unsigned int scale = 4;
     unsigned int chr_siz = font_sprites->sprite_size * scale;
-    screen_write_scaled(is_load ? "LOAD GAME" : "SAVE GAME", VIEWPORT_WIDTH / 2 - chr_siz * strlen(is_load ? "LOAD GAME" : "SAVE GAME") / 2, y_offset, scale, 0);
+    screen_write_scaled(is_load ? "LOAD GAME" : "SAVE GAME", VIEWPORT_WIDTH / 2 - chr_siz * strlen(is_load ? "LOAD GAME" : "SAVE GAME") / 2, y_offset, scale, 0.0);
     y_offset += chr_siz + chr_siz / 2;
     scale = 2;
     chr_siz = font_sprites->sprite_size * scale;
@@ -546,7 +590,7 @@ static void render_menus_loop(unsigned int start_menu) {
                 render_load_save_menu(current_option, shading_factor, true);
                 break;
             case 2: // options
-                // TODO:
+                render_options_menu(current_option, shading_factor);
                 break;
             case 3: // game paused
                 render_pause_menu(current_option, shading_factor);
@@ -590,6 +634,11 @@ static void render_menus_loop(unsigned int start_menu) {
                             } while (current_option < SAVE_FILES_COUNT && !save_games[current_option]);
                         }
                         break;
+                    case 2:
+                        if (current_option < 3) {
+                            current_option += 1;
+                        }
+                        break;
                     case 3:
                         if (current_option < 2) {
                             current_option += 1;
@@ -621,9 +670,8 @@ static void render_menus_loop(unsigned int start_menu) {
                                 current_option = 0;
                                 break;
                             case 2:
-                                // TODO:
-                                // current_menu = 2;
-                                // current_option = 0;
+                                current_menu = 2;
+                                current_option = 0;
                                 break;
                             case 3:
                                 exit(EXIT_SUCCESS);
@@ -635,6 +683,24 @@ static void render_menus_loop(unsigned int start_menu) {
                         }
                         current_menu = 0;
                         current_option = 0;
+                        break;
+                    case 2:
+                        switch (current_option) {
+                            case 0:
+                                show_warning_changes_will_only_apply_after_restart = true;
+                                toggle_fullscreen();
+                                break;
+                            case 1:
+                                toggle_look_up_down();
+                                break;
+                            case 2:
+                                toggle_show_fps();
+                                break;
+                            case 3:
+                                show_warning_changes_will_only_apply_after_restart = false;
+                                current_menu = 0;
+                                current_option = 0;
+                        }
                         break;
                     case 3:
                         switch (current_option) {
@@ -681,9 +747,13 @@ int main() {
     init_base_colors();
     init_fish_eye_table();
     load_textures();
+    load_user_options();
     reload_save_games();
 
     window_start();
+    fg_buffer = malloc(window_width * window_height * sizeof(pixel_t));
+    backup_buffer = malloc(window_width * window_height * sizeof(pixel_t));
+
     render_menus_loop(0);
     window_close();
 

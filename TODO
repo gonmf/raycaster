@@ -6,11 +6,6 @@
 
 - Music
 
-- finish game UI
-  - options
-    - screen size - a few window sizes plus fullscreen
-      - add background if fullscreen size does not respect hardcoded ratio of 2:1
-
 - Add more data to level pack(s): like text to be shown between missions and what background music should play
   - Add transition effects
 

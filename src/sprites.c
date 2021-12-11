@@ -134,7 +134,7 @@ static void read_sprite_pack_pixels(
     free(file_buf);
 }
 
-#if DUMP_SUB_SPRITES
+#if 0
 static void dump_sprite(
     const pixel_t * image, const char * pack_name, unsigned int sprite_size, unsigned int x, unsigned int y
 ) {
@@ -162,7 +162,7 @@ static void dump_sprite(
 #endif
 
 void read_sprite_pack(sprite_pack_t * pack, const char * pack_name) {
-#if DUMP_SUB_SPRITES
+#if 0
     struct stat st;
     if (stat("sprites/dump", &st) == -1) {
         mkdir("sprites/dump", 0700);
@@ -187,7 +187,7 @@ void read_sprite_pack(sprite_pack_t * pack, const char * pack_name) {
 
             read_subsprite(dst, pixel_buf, pack, pack_x, pack_y);
 
-#if DUMP_SUB_SPRITES
+#if 0
             dump_sprite(dst, pack_name, pack->sprite_size, pack_x, pack_y);
 #endif
         }

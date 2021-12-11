@@ -5,6 +5,12 @@ static sfSprite * sprite;
 static sfTexture * texture;
 static sfRenderStates renderStates;
 
+unsigned int window_width;
+unsigned int window_height;
+unsigned int fullscreen_x_offset;
+unsigned int fullscreen_y_offset;
+double screen_ratio;
+
 void window_center_mouse() {
     sfVector2i position;
     position.x = VIEWPORT_WIDTH / 2;
@@ -16,16 +22,28 @@ void set_cursor_visible(bool visible) {
     sfRenderWindow_setMouseCursorVisible(window, visible);
 }
 
-void window_start() {
+static void window_start_windowed() {
+    window_width = VIEWPORT_WIDTH;
+    window_height = VIEWPORT_HEIGHT;
+    screen_ratio = 4.0;
+
     sfVideoMode screen_video_mode;
     screen_video_mode = sfVideoMode_getDesktopMode();
-    if (screen_video_mode.width < VIEWPORT_WIDTH || screen_video_mode.height < VIEWPORT_HEIGHT) {
-        error("Screen resolution too small for viewport");
+    while (true) {
+        if (screen_video_mode.width >= (unsigned int)round(VIEWPORT_WIDTH * screen_ratio) && screen_video_mode.height >= (unsigned int)round(VIEWPORT_HEIGHT * screen_ratio)) {
+            break;
+        }
+
+        screen_ratio -= 0.5;
+
+        if (screen_ratio < 1.2) {
+            error("Screen resolution too small for viewport");
+        }
     }
 
     sfVideoMode desired_video_mode;
-    desired_video_mode.width = (unsigned int)(VIEWPORT_WIDTH * WINDOW_UPSCALE);
-    desired_video_mode.height = (unsigned int)(VIEWPORT_HEIGHT * WINDOW_UPSCALE);
+    desired_video_mode.width = (unsigned int)(VIEWPORT_WIDTH * screen_ratio);
+    desired_video_mode.height = (unsigned int)(VIEWPORT_HEIGHT * screen_ratio);
     desired_video_mode.bitsPerPixel = 32;
 
     window = sfRenderWindow_create(desired_video_mode, "Raycaster", sfResize, NULL);
@@ -39,7 +57,47 @@ void window_start() {
     set_cursor_visible(false);
     window_center_mouse();
 
-    texture = sfTexture_create((unsigned int)(VIEWPORT_WIDTH * WINDOW_UPSCALE), (unsigned int)(VIEWPORT_HEIGHT * WINDOW_UPSCALE));
+    texture = sfTexture_create((unsigned int)(VIEWPORT_WIDTH * screen_ratio), (unsigned int)(VIEWPORT_HEIGHT * screen_ratio));
+    sprite = sfSprite_create();
+    sfSprite_setTexture(sprite, texture, sfFalse);
+
+    sfTransform transform = sfTransform_Identity;
+    sfTransform_scale(&transform, screen_ratio, screen_ratio);
+
+    renderStates.blendMode = sfBlendNone;
+    renderStates.transform = transform;
+    renderStates.texture = texture;
+    renderStates.shader = NULL;
+}
+
+static void window_start_fullscreen() {
+    sfVideoMode screen_video_mode;
+    screen_video_mode = sfVideoMode_getDesktopMode();
+    if (screen_video_mode.width < VIEWPORT_WIDTH || screen_video_mode.height < VIEWPORT_HEIGHT) {
+        error("Screen resolution too small for viewport");
+    }
+
+    double width_ratio = screen_video_mode.width / ((double)VIEWPORT_WIDTH);
+    double height_ratio = screen_video_mode.height / ((double)VIEWPORT_HEIGHT);
+    screen_ratio = MIN(width_ratio, height_ratio);
+
+    window_width = (unsigned int)round(screen_video_mode.width / screen_ratio);
+    window_height = (unsigned int)round(screen_video_mode.height / screen_ratio);
+    fullscreen_x_offset = (((unsigned int)window_width) - VIEWPORT_WIDTH) / 2;
+    fullscreen_y_offset = (((unsigned int)window_height) - VIEWPORT_HEIGHT) / 2;
+
+    sfVideoMode desired_video_mode;
+    desired_video_mode.width = screen_video_mode.width;
+    desired_video_mode.height = screen_video_mode.height;
+    desired_video_mode.bitsPerPixel = 32;
+
+    window = sfRenderWindow_create(desired_video_mode, "Raycaster", sfFullscreen, NULL);
+    sfRenderWindow_setFramerateLimit(window, MAX_FPS);
+
+    set_cursor_visible(false);
+    window_center_mouse();
+
+    texture = sfTexture_create(screen_video_mode.width, screen_video_mode.height);
     sprite = sfSprite_create();
     sfSprite_setTexture(sprite, texture, sfFalse);
 
@@ -47,12 +105,26 @@ void window_start() {
     memset(&bgColor, 0, sizeof(bgColor));
 
     sfTransform transform = sfTransform_Identity;
-    sfTransform_scale(&transform, WINDOW_UPSCALE, WINDOW_UPSCALE);
+    sfTransform_scale(&transform, screen_ratio, screen_ratio);
 
     renderStates.blendMode = sfBlendNone;
     renderStates.transform = transform;
     renderStates.texture = texture;
     renderStates.shader = NULL;
+
+    sfUint8 * tmp = calloc(window_width * window_height, sizeof(sfUint8));
+    sfTexture_updateFromPixels(texture, tmp, window_width, window_height, 0, 0);
+    sfRenderWindow_drawSprite(window, sprite, &renderStates);
+    sfRenderWindow_display(window);
+    free(tmp);
+}
+
+void window_start() {
+    if (is_fullscreen()) {
+        window_start_fullscreen();
+    } else {
+        window_start_windowed();
+    }
 }
 
 void window_close() {
@@ -65,7 +137,7 @@ bool window_is_open() {
 }
 
 void window_update_pixels(const pixel_t * pixels) {
-    sfTexture_updateFromPixels(texture, (sfUint8 *)pixels, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, 0, 0);
+    sfTexture_updateFromPixels(texture, (sfUint8 *)pixels, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, fullscreen_x_offset, fullscreen_y_offset);
     sfRenderWindow_drawSprite(window, sprite, &renderStates);
     sfRenderWindow_display(window);
 }

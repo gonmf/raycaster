@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <limits.h>
-#include "local.h"
 
 #define true 1
 #define false 0
@@ -139,8 +138,8 @@ typedef struct __sprite_pack_ {
 
 #define KEYS_PRESSED_BUFFER_SIZE 16
 
-#define VIEWPORT_WIDTH 600
-#define VIEWPORT_HEIGHT 300
+#define VIEWPORT_WIDTH 800
+#define VIEWPORT_HEIGHT 400
 #define UI_PADDING 10
 #define MAX_FPS 120
 #define FIELD_OF_VIEW 72 // degrees
@@ -224,7 +223,7 @@ typedef struct __sprite_pack_ {
 extern sprite_pack_t * wall_textures;
 extern sprite_pack_t * objects_sprites;
 extern sprite_pack_t * font_sprites;
-extern pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
+extern pixel_t * fg_buffer;
 void load_textures();
 
 // color.c
@@ -271,6 +270,8 @@ double distance(double a_x, double a_y, double b_x, double b_y);
 bool start_with(const char * s, const char * prefix);
 
 // window.c
+extern unsigned int window_width;
+extern unsigned int window_height;
 void window_center_mouse();
 void set_cursor_visible(bool visible);
 void window_start();
@@ -324,5 +325,14 @@ void screen_write(const char * s, unsigned int x, unsigned int y);
 void save_game_state(unsigned char idx, const level_t * level);
 bool read_game_state_name(unsigned char idx, char * s);
 level_t * load_game_state(unsigned char idx);
+
+// options.c
+void load_user_options();
+bool is_fullscreen();
+void toggle_fullscreen();
+bool is_look_up_down();
+void toggle_look_up_down();
+bool is_show_fps();
+void toggle_show_fps();
 
 #endif

@@ -12,7 +12,7 @@ static sprite_pack_t * enemy_sprites[3];
 static sprite_pack_t * weapons_sprites;
 sprite_pack_t * font_sprites;
 
-pixel_t fg_buffer[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
+pixel_t  * fg_buffer;
 
 static char * enemy_angles;
 static bool trigger_shot;
@@ -22,8 +22,12 @@ static bool * object_locations;
 static bool object_locations_refresh_required;
 
 static unsigned int horizon_offset(const level_t * level) {
-    double vertical_multiplier = level->observer_angle2 / 90.0;
-    return (unsigned int)((VIEWPORT_HEIGHT / 2) * vertical_multiplier);
+    if (is_look_up_down()) {
+        double vertical_multiplier = level->observer_angle2 / 90.0;
+        return (unsigned int)((VIEWPORT_HEIGHT / 2) * vertical_multiplier);
+    } else {
+        return VIEWPORT_HEIGHT / 2;
+    }
 }
 
 void init_fish_eye_table() {
