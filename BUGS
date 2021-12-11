@@ -1,7 +1,0 @@
-When enemies get two close by mistake they can overlap the player, leaving the player stuck
-
-When multiple objects are too close, they may obscure parts of each other in raytracing even though transparent
-    Only noticed for enemies on top of enemy corpses, with the corpse being clipped
-    Note enemies and corpses are blitted but still "enemies", not "objects"
-
-Ray tracing of dead enemies next to walls/doors may clip them
