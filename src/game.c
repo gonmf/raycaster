@@ -30,7 +30,7 @@ void hit_enemy(level_t * level, enemy_t * enemy, double distance) {
     }
 
     if (enemy->state != ENEMY_STATE_DYING && enemy->state != ENEMY_STATE_DEAD) {
-        unsigned char shot_power = MAX(MIN((unsigned int)(18 / distance) + 18, 50), 18);
+        unsigned char shot_power = MAX((unsigned int)(90 / distance) + 18, 12) + (rand() % 20);
 
         if (enemy->life > shot_power) {
             enemy->life -= shot_power;
@@ -332,6 +332,7 @@ void update_enemies_state(level_t * level) {
         case ENEMY_STATE_STILL:
             break;
         case ENEMY_STATE_ALERT:
+            decrement_animation_step(enemy);
             break;
         case ENEMY_STATE_MOVING:
             decrement_animation_step(enemy);
@@ -364,10 +365,11 @@ void update_enemies_state(level_t * level) {
             if (enemy->animation_step == (animation_step * ENEMY_SHOOTING_ACTIVATION_PART) / ENEMY_SHOOTING_ANIMATION_PARTS) {
                 hit_player(level, enemy);
             } else if (enemy->animation_step == 0) {
-                if (in_shooting_distance(enemy_distance) && has_line_of_fire(level, enemy, enemy_distance)) {
+                if (random_one_in(4) && in_shooting_distance(enemy_distance) && has_line_of_fire(level, enemy, enemy_distance)) {
                     enemy->animation_step = animation_step;
                     enemy->state = ENEMY_STATE_SHOOTING;
                 } else {
+                    enemy->animation_step = ENEMY_SHOOTING_ALERT_DELAY;
                     enemy->state = ENEMY_STATE_ALERT;
                 }
             }
@@ -382,7 +384,7 @@ void update_enemies_state(level_t * level) {
             continue;
         }
 
-        if (enemy->state != ENEMY_STATE_STILL && enemy->state != ENEMY_STATE_ALERT) {
+        if (enemy->state != ENEMY_STATE_STILL && (enemy->state != ENEMY_STATE_ALERT || enemy->animation_step > 0)) {
             continue;
         }
         if (enemy->strategic_state == ENEMY_STRATEGIC_STATE_WAITING) {

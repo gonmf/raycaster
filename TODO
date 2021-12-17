@@ -1,6 +1,10 @@
-- Design some better levels: replicate E1M1 for testing purposes
+- Ray tracing slow when very closed to downed enemy?
 
-- Tweak enemy and movement speed, enemy hit power, accuracy, and other things by comparison to wolf3d (replicate E1M1): currently game is very hard
+- Separate render rate from game state update rate
+
+------------
+
+- Design some better levels: replicate E1M1 for testing purposes
 
 - Add more data to level pack(s): like text to be shown between missions and what background music should play
   - Add transition effects
