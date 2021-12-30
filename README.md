@@ -20,6 +20,8 @@ Compile by running `make`.
 
 ### MacOS
 
+_Warning: currently on macOS the game is broken: fullscreen crashes and windowed mode has cursor movement issues; I hope to fix it soon_
+
 First install `homebrew`, and then package `csfml` and the C compiler of your choice.
 
 Compile by running `make`.
