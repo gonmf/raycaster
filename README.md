@@ -20,7 +20,7 @@ Compile by running `make`.
 
 ### macOS
 
-_Warning: currently on macOS the game is broken: camera control from cursor movement doesn't work; I hope to fix it soon_
+_Warning: if your cursor behaves erratically, you may need to [grant the app permissions](https://user-images.githubusercontent.com/5512054/147831850-8b8f304f-3615-473e-86c4-ed659e9a21a2.png)._
 
 First install `homebrew`, and then package `csfml` and the C compiler of your choice.
 

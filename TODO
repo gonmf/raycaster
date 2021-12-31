@@ -1,3 +1,7 @@
+- Make a quick window mouse control test to verify if all permissions were obtained on macOS
+
+------------
+
 - Ray tracing slow when very closed to downed enemy?
 
 - Separate render rate from game state update rate
