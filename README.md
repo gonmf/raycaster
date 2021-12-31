@@ -18,9 +18,9 @@ Install package `libcsfml-dev`.
 
 Compile by running `make`.
 
-### MacOS
+### macOS
 
-_Warning: currently on macOS the game is broken: fullscreen crashes and windowed mode has cursor movement issues; I hope to fix it soon_
+_Warning: currently on macOS the game is broken: camera control from cursor movement doesn't work; I hope to fix it soon_
 
 First install `homebrew`, and then package `csfml` and the C compiler of your choice.
 

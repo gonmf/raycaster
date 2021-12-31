@@ -29,6 +29,7 @@ static void window_start_windowed() {
 
     sfVideoMode screen_video_mode;
     screen_video_mode = sfVideoMode_getDesktopMode();
+
     while (true) {
         if (screen_video_mode.width >= (unsigned int)round(VIEWPORT_WIDTH * screen_ratio) && screen_video_mode.height >= (unsigned int)round(VIEWPORT_HEIGHT * screen_ratio)) {
             break;
@@ -97,7 +98,7 @@ static void window_start_fullscreen() {
     set_cursor_visible(false);
     window_center_mouse();
 
-    texture = sfTexture_create(screen_video_mode.width, screen_video_mode.height);
+    texture = sfTexture_create(window_width, window_height);
     sprite = sfSprite_create();
     sfSprite_setTexture(sprite, texture, sfFalse);
 
@@ -112,11 +113,11 @@ static void window_start_fullscreen() {
     renderStates.texture = texture;
     renderStates.shader = NULL;
 
-    sfUint8 * tmp = calloc(window_width * window_height, sizeof(sfUint8));
+    sfUint8 * tmp = calloc(window_width * window_height * (32 / 8), sizeof(sfUint8));
     sfTexture_updateFromPixels(texture, tmp, window_width, window_height, 0, 0);
+    free(tmp);
     sfRenderWindow_drawSprite(window, sprite, &renderStates);
     sfRenderWindow_display(window);
-    free(tmp);
 }
 
 void window_start() {
