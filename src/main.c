@@ -292,16 +292,19 @@ static void main_render_loop() {
 
                 remove_key_pressed(code);
             } else if (event.type == sfEvtMouseMoved) {
-                int move_x = ((sfMouseMoveEvent *)&event)->x - VIEWPORT_WIDTH / 2;
-                int move_y = ((sfMouseMoveEvent *)&event)->y - VIEWPORT_HEIGHT / 2;
+                int move_x = ((sfMouseMoveEvent *)&event)->x - mid_real_window_width;
+                int move_y = ((sfMouseMoveEvent *)&event)->y - mid_real_window_height;
 
                 if (move_x) {
-                    double angle_change = ((double)move_x) * HORIZONTAL_ROTATION_CONSTANT / VIEWPORT_WIDTH;
+                    double angle_change = ((double)move_x) * ROTATION_CONSTANT * get_mouse_sensibility() / VIEWPORT_WIDTH;
                     level->observer_angle += angle_change;
                 }
 
                 if (move_y && is_look_up_down()) {
-                    double angle_change = ((double)move_y) * VERTICAL_ROTATION_CONSTANT / VIEWPORT_HEIGHT;
+                    double angle_change = ((double)move_y) * ROTATION_CONSTANT * (get_mouse_sensibility() * 2) / VIEWPORT_HEIGHT;
+                    if (is_invert_mouse()) {
+                        angle_change = -angle_change;
+                    }
                     level->observer_angle2 = MIN(MAX(level->observer_angle2 - angle_change, 1.0), 179.0);
                 }
             }
@@ -472,6 +475,7 @@ static void render_options_menu(unsigned int current_option, double shading_fact
         }
     }
 
+    char buf[24];
     unsigned int y_offset = VIEWPORT_HEIGHT / 5;
     unsigned int scale = 4;
     unsigned int chr_siz = font_sprites->sprite_size * scale;
@@ -482,13 +486,19 @@ static void render_options_menu(unsigned int current_option, double shading_fact
     char * opt_str = is_fullscreen() ? "Display: fullscreen" : "Display: windowed";
     screen_write_scaled(opt_str, VIEWPORT_WIDTH / 2 - chr_siz * strlen(opt_str) / 2, y_offset, scale, current_option == 0 ? shading_factor : 0.0);
     y_offset += chr_siz + chr_siz / 2;
-    opt_str = is_look_up_down() ? "Look up/down: yes" : "Look up/down: no";
+    opt_str = is_show_fps() ? "Display FPS: yes" : "Display FPS: no";
     screen_write_scaled(opt_str, VIEWPORT_WIDTH / 2 - chr_siz * strlen(opt_str) / 2, y_offset, scale, current_option == 1 ? shading_factor : 0.0);
     y_offset += chr_siz + chr_siz / 2;
-    opt_str = is_show_fps() ? "Display FPS: yes" : "Display FPS: no";
+    opt_str = is_look_up_down() ? "Look up/down: yes" : "Look up/down: no";
     screen_write_scaled(opt_str, VIEWPORT_WIDTH / 2 - chr_siz * strlen(opt_str) / 2, y_offset, scale, current_option == 2 ? shading_factor : 0.0);
     y_offset += chr_siz + chr_siz / 2;
-    screen_write_scaled("Back", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Back") / 2, y_offset, scale, current_option == 3 ? shading_factor : 0.0);
+    opt_str = is_invert_mouse() ? "Invert mouse: yes" : "Invert mouse: no";
+    screen_write_scaled(opt_str, VIEWPORT_WIDTH / 2 - chr_siz * strlen(opt_str) / 2, y_offset, scale, current_option == 3 ? shading_factor : 0.0);
+    y_offset += chr_siz + chr_siz / 2;
+    snprintf(buf, 24, "Mouse sensibility: %u", get_mouse_sensibility());
+    screen_write_scaled(buf, VIEWPORT_WIDTH / 2 - chr_siz * strlen(buf) / 2, y_offset, scale, current_option == 4 ? shading_factor : 0.0);
+    y_offset += chr_siz + chr_siz / 2;
+    screen_write_scaled("Back", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Back") / 2, y_offset, scale, current_option == 5 ? shading_factor : 0.0);
 
     if (show_warning_changes_will_only_apply_after_restart) {
         scale = 2;
@@ -531,7 +541,7 @@ static void render_load_save_menu(unsigned int current_option, double shading_fa
         }
     }
 
-    unsigned int y_offset = font_sprites->sprite_size;
+    unsigned int y_offset = 64;
     unsigned int scale = 4;
     unsigned int chr_siz = font_sprites->sprite_size * scale;
     screen_write_scaled(is_load ? "LOAD GAME" : "SAVE GAME", VIEWPORT_WIDTH / 2 - chr_siz * strlen(is_load ? "LOAD GAME" : "SAVE GAME") / 2, y_offset, scale, 0.0);
@@ -635,7 +645,7 @@ static void render_menus_loop(unsigned int start_menu) {
                         }
                         break;
                     case 2:
-                        if (current_option < 3) {
+                        if (current_option < 5) {
                             current_option += 1;
                         }
                         break;
@@ -691,12 +701,18 @@ static void render_menus_loop(unsigned int start_menu) {
                                 toggle_fullscreen();
                                 break;
                             case 1:
-                                toggle_look_up_down();
-                                break;
-                            case 2:
                                 toggle_show_fps();
                                 break;
+                            case 2:
+                                toggle_look_up_down();
+                                break;
                             case 3:
+                                toggle_invert_mouse();
+                                break;
+                            case 4:
+                                increase_mouse_sensibility();
+                                break;
+                            case 5:
                                 show_warning_changes_will_only_apply_after_restart = false;
                                 current_menu = 0;
                                 current_option = 0;

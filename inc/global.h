@@ -187,8 +187,7 @@ typedef struct __sprite_pack_ {
 
 // Voodoo:
 #define MOVEMENT_CONSTANT 0.07
-#define HORIZONTAL_ROTATION_CONSTANT 16.0
-#define VERTICAL_ROTATION_CONSTANT 32.0
+#define ROTATION_CONSTANT 4.0
 
 // In rendering blocks we need very fine ray steps to catch the edges.
 // To render simple objects, usually even round and with transparent sides,
@@ -273,6 +272,9 @@ bool start_with(const char * s, const char * prefix);
 // window.c
 extern unsigned int window_width;
 extern unsigned int window_height;
+extern unsigned int mid_real_window_width;
+extern unsigned int mid_real_window_height;
+
 void window_center_mouse();
 void set_cursor_visible(bool visible);
 void window_start();
@@ -336,5 +338,9 @@ bool is_look_up_down();
 void toggle_look_up_down();
 bool is_show_fps();
 void toggle_show_fps();
+bool is_invert_mouse();
+void toggle_invert_mouse();
+unsigned char get_mouse_sensibility();
+void increase_mouse_sensibility();
 
 #endif

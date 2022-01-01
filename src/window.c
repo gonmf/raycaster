@@ -7,14 +7,16 @@ static sfRenderStates renderStates;
 
 unsigned int window_width;
 unsigned int window_height;
+unsigned int mid_real_window_width;
+unsigned int mid_real_window_height;
 unsigned int fullscreen_x_offset;
 unsigned int fullscreen_y_offset;
 double screen_ratio;
 
 void window_center_mouse() {
     sfVector2i position;
-    position.x = VIEWPORT_WIDTH / 2;
-    position.y = VIEWPORT_HEIGHT / 2;
+    position.x = (unsigned int)(window_width * screen_ratio / 2.0);
+    position.y = (unsigned int)(window_height * screen_ratio / 2.0);
     sfMouse_setPositionRenderWindow(position, window);
 }
 
@@ -126,6 +128,9 @@ void window_start() {
     } else {
         window_start_windowed();
     }
+
+    mid_real_window_width = (unsigned int)(window_width * screen_ratio / 2.0);
+    mid_real_window_height = (unsigned int)(window_height * screen_ratio / 2.0);
 }
 
 void window_close() {

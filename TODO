@@ -1,7 +1,4 @@
-- Add to options: mouse sensibility and invert mouse movement
-- Fix current state where mouse is centered according to base and not real resolution
 - Valgrind issue https://github.com/gonmf/raycaster/issues/6
-- Bad save/load game screen padding
 
 ------------
 

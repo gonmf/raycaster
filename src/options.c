@@ -1,8 +1,10 @@
 #include "global.h"
 
-static bool fullscreen;
-static bool look_up_down;
-static bool show_fps;
+static bool fullscreen = true;
+static bool look_up_down = true;
+static bool show_fps = false;
+static bool invert_mouse = false;
+static unsigned char mouse_sensibility = 4;
 
 static void save_user_options() {
     FILE * file = fopen("local.options", "w");
@@ -13,6 +15,8 @@ static void save_user_options() {
     fprintf(file, "fullscreen: %u\n", fullscreen ? 1 : 0);
     fprintf(file, "look_up_down: %u\n", look_up_down ? 1 : 0);
     fprintf(file, "show_fps: %u\n", show_fps ? 1 : 0);
+    fprintf(file, "invert_mouse: %u\n", invert_mouse ? 1 : 0);
+    fprintf(file, "mouse_sensibility: %u\n", mouse_sensibility);
 
     fclose(file);
 }
@@ -20,10 +24,6 @@ static void save_user_options() {
 void load_user_options() {
     FILE * file = fopen("local.options", "r");
     if (file == NULL) {
-        fullscreen = true;
-        look_up_down = true;
-        show_fps = false;
-
         save_user_options();
         return;
     }
@@ -39,6 +39,10 @@ void load_user_options() {
             look_up_down = val;
         } else if (start_with(buffer, "show_fps:")) {
             show_fps = val;
+        } else if (start_with(buffer, "invert_mouse:")) {
+            invert_mouse = val;
+        } else if (start_with(buffer, "mouse_sensibility:")) {
+            mouse_sensibility = MIN(MAX(atoi(buffer + strlen("mouse_sensibility: ")), 1), 8);
         } else {
             error("Unexpected local.options file format");
         }
@@ -74,6 +78,29 @@ bool is_show_fps() {
 
 void toggle_show_fps() {
     show_fps = !show_fps;
+
+    save_user_options();
+}
+
+bool is_invert_mouse() {
+    return invert_mouse;
+}
+
+void toggle_invert_mouse() {
+    invert_mouse = !invert_mouse;
+
+    save_user_options();
+}
+
+unsigned char get_mouse_sensibility() {
+    return mouse_sensibility;
+}
+
+void increase_mouse_sensibility() {
+    mouse_sensibility++;
+    if (mouse_sensibility > 8) {
+        mouse_sensibility = 1;
+    }
 
     save_user_options();
 }
