@@ -1,7 +1,3 @@
-- Valgrind issue https://github.com/gonmf/raycaster/issues/6
-
-------------
-
 - Ray tracing slow when very closed to downed enemy?
 
 - Separate render rate from game state update rate

@@ -83,7 +83,7 @@ static void parse_sprite_pack_metadata(
 
     free(file_buf);
 
-    pack->sprites = calloc(pack->sprite_size * pack->sprite_size, sizeof(pixel_t));
+    pack->sprites = calloc(pack->width * pack->height, sizeof(pixel_t *));
 }
 
 static void read_sprite_pack_pixels(
