@@ -219,9 +219,73 @@ static void write_text_ui() {
 }
 
 static void render_menus_loop(unsigned int start_menu);
+static bool game_logic_iteration(bool * trigger_shot, bool * center_mouse) {
+    if (level->life == 0) {
+        start_screen_to_color_animation(color_dark_red, GAME_OVER_ANIMATION_SPEED);
+        return true;
+    }
+
+    transition_step(level, trigger_shot);
+
+    update_observer_state();
+
+    update_enemies_state(level);
+
+    bool exit_found;
+    apply_special_effect(level, &exit_found);
+    if (exit_found) {
+        start_screen_to_color_animation(color_black, GAME_ENTER_EXIT_ANIMATION_SPEED);
+        return true;
+    }
+
+    sfEvent event;
+    while (window_poll_event(&event)) {
+        if (event.type == sfEvtClosed) {
+            return true;
+        } else if (event.type == sfEvtKeyPressed) {
+            sfKeyCode code = ((sfKeyEvent *)&event)->code;
+
+            if (code == sfKeyEscape) {
+                render_menus_loop(3);
+            } else {
+                add_key_pressed(code);
+            }
+        } else if (event.type == sfEvtKeyReleased) {
+            sfKeyCode code = ((sfKeyEvent *)&event)->code;
+
+            remove_key_pressed(code);
+        } else if (event.type == sfEvtMouseMoved) {
+            int move_x = ((sfMouseMoveEvent *)&event)->x - mid_real_window_width;
+            int move_y = ((sfMouseMoveEvent *)&event)->y - mid_real_window_height;
+
+            if (move_x) {
+                double angle_change = ((double)move_x) * ROTATION_CONSTANT * get_mouse_sensibility() / VIEWPORT_WIDTH;
+                level->observer_angle += angle_change;
+            }
+
+            if (move_y && is_look_up_down()) {
+                double angle_change = ((double)move_y) * ROTATION_CONSTANT * (get_mouse_sensibility() * 2) / VIEWPORT_HEIGHT;
+                if (is_invert_mouse()) {
+                    angle_change = -angle_change;
+                }
+                level->observer_angle2 = MIN(MAX(level->observer_angle2 - angle_change, 1.0), 179.0);
+            }
+
+            *center_mouse = true;
+        }
+    }
+
+    if (sfMouse_isButtonPressed(sfMouseLeft)) {
+        shooting_start_action(level);
+    }
+
+    return false;
+}
+
 static void main_render_loop() {
     unsigned int frames_second = 1;
     long unsigned int last_ms = 0;
+    long unsigned int last_ctime = 0;
     struct timespec spec;
 
     if (window_is_open()) {
@@ -231,11 +295,6 @@ static void main_render_loop() {
     while (true) {
         if (!window_is_open()) {
             exit(EXIT_SUCCESS);
-        }
-
-        if (level->life == 0) {
-            start_screen_to_color_animation(color_dark_red, GAME_OVER_ANIMATION_SPEED);
-            return;
         }
 
         clock_gettime(CLOCK_REALTIME, &spec);
@@ -248,13 +307,27 @@ static void main_render_loop() {
 
         frames_second += 1;
         last_ms = ms;
-        transition_step(level);
 
-        update_observer_state();
+        long unsigned int ctime = spec.tv_sec * 1000 + ms;
+        if (last_ctime == 0) {
+            last_ctime = ctime;
+        }
 
-        update_enemies_state(level);
+        long unsigned int elapsed = ctime - last_ctime;
+        long unsigned int logic_cycles = elapsed / GAME_LOGIC_CYCLE_STEP;
+        last_ctime += logic_cycles * GAME_LOGIC_CYCLE_STEP;
 
-        paint_scene(level);
+        // Advance game state one or more steps
+        bool trigger_shot = false;
+        bool center_mouse = false;
+        for (long unsigned int cy = 0; cy < logic_cycles; ++cy) {
+            if (game_logic_iteration(&trigger_shot, &center_mouse)) {
+                return;
+            }
+        }
+
+        // Paint graphics and UI elements
+        paint_scene(level, trigger_shot);
         write_text_ui();
 
         double flash_percentage;
@@ -263,58 +336,13 @@ static void main_render_loop() {
             scene_shading(flash_color, flash_percentage);
         }
 
-        bool exit_found;
-        apply_special_effect(level, &exit_found);
-
-        if (exit_found) {
-            start_screen_to_color_animation(color_black, GAME_ENTER_EXIT_ANIMATION_SPEED);
-            return;
-        }
-
         if (show_map) {
             paint_map(level);
         }
 
-        sfEvent event;
-        while (window_poll_event(&event)) {
-            if (event.type == sfEvtClosed) {
-                return;
-            } else if (event.type == sfEvtKeyPressed) {
-                sfKeyCode code = ((sfKeyEvent *)&event)->code;
-
-                if (code == sfKeyEscape) {
-                    render_menus_loop(3);
-                } else {
-                    add_key_pressed(code);
-                }
-            } else if (event.type == sfEvtKeyReleased) {
-                sfKeyCode code = ((sfKeyEvent *)&event)->code;
-
-                remove_key_pressed(code);
-            } else if (event.type == sfEvtMouseMoved) {
-                int move_x = ((sfMouseMoveEvent *)&event)->x - mid_real_window_width;
-                int move_y = ((sfMouseMoveEvent *)&event)->y - mid_real_window_height;
-
-                if (move_x) {
-                    double angle_change = ((double)move_x) * ROTATION_CONSTANT * get_mouse_sensibility() / VIEWPORT_WIDTH;
-                    level->observer_angle += angle_change;
-                }
-
-                if (move_y && is_look_up_down()) {
-                    double angle_change = ((double)move_y) * ROTATION_CONSTANT * (get_mouse_sensibility() * 2) / VIEWPORT_HEIGHT;
-                    if (is_invert_mouse()) {
-                        angle_change = -angle_change;
-                    }
-                    level->observer_angle2 = MIN(MAX(level->observer_angle2 - angle_change, 1.0), 179.0);
-                }
-            }
+        if (center_mouse) {
+            window_center_mouse();
         }
-
-        if (sfMouse_isButtonPressed(sfMouseLeft)) {
-            shooting_start_action(level);
-        }
-
-        window_center_mouse();
         window_update_pixels(fg_buffer);
     }
 }
@@ -323,7 +351,7 @@ static void open_level() {
     init_animations();
     init_raycaster(level);
     init_game_buffers(level);
-    paint_scene(level);
+    paint_scene(level, false);
 
     main_render_loop();
 }

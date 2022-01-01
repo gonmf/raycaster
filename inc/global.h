@@ -142,6 +142,7 @@ typedef struct __sprite_pack_ {
 #define VIEWPORT_HEIGHT 400
 #define UI_PADDING 10
 #define MAX_FPS 120
+#define GAME_LOGIC_CYCLE_STEP 8 // ms, 8ms = 125 updates / sec
 #define FIELD_OF_VIEW 72 // degrees
 #define MAP_BLOCK_SIZE 8
 
@@ -286,20 +287,20 @@ bool test_mouse_control();
 
 // raycaster.c
 void init_fish_eye_table();
-void paint_scene(level_t * level);
+void paint_scene(level_t * level, bool trigger_shot);
 void init_raycaster(const level_t * level);
 void invalidate_objects_cache();
 
 // actions.c
-void transition_step(level_t * level);
+void transition_step(level_t * level, bool * trigger_shot);
 void start_weapon_transition(unsigned char weapon_nr);
 bool weapon_transition(double * percentage);
 bool opening_door_transition(double * percentage_open, unsigned int * door_x, unsigned int * door_y);
 void open_door_in_front(level_t * level);
 bool short_flash_effect(double * percentage, pixel_t * color);
 void start_flash_effect(unsigned int duration, pixel_t * color);
-bool apply_special_effect(level_t * level, bool * exit_found);
-bool shooting_state(level_t * level, unsigned int * step, bool * trigger_shot);
+void apply_special_effect(level_t * level, bool * exit_found);
+bool shooting_state(unsigned int * step);
 void shooting_start_action(const level_t * level);
 void move_player(level_t * level, double x_change, double y_change);
 void init_animations();

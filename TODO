@@ -1,6 +1,5 @@
 - Ray tracing slow when very closed to downed enemy?
-
-- Separate render rate from game state update rate
+  - Doesn't matter as much now with separate graphics and logic update cycles
 
 ------------
 

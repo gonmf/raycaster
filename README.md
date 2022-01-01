@@ -5,6 +5,9 @@ Some notable omissions for now are floor/ceiling texture mapping and altitude.
 
 As a demo I've rendered something akin to the first Wolfenstein game.
 
+By default the game runs with graphics capped at 120FPS, game logic at 125 updates/sec.
+The game is rendered at 800:400 upscaled, with sprites 8x8 to 64x64 pixels in size.
+
 Since direct frame buffer access is not possible anymore, I've used CSFML.
 
 CSFML (the C binding of SFML) is not well documented, so reading the source

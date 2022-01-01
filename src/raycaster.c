@@ -15,7 +15,6 @@ sprite_pack_t * font_sprites;
 pixel_t  * fg_buffer;
 
 static char * enemy_angles;
-static bool trigger_shot;
 static obj_distance_t * sorted_distances;
 static double fish_eye_table[VIEWPORT_WIDTH];
 static bool * object_locations;
@@ -403,7 +402,7 @@ static void refresh_object_cache(const level_t * level) {
     }
 }
 
-static void fill_in_objects(level_t * level) {
+static void fill_in_objects(level_t * level, bool trigger_shot) {
     refresh_object_cache(level);
 
     unsigned int object = INT_MAX;
@@ -590,7 +589,7 @@ static void fill_in_weapon(level_t * level) {
     double weapon_switch_percentage;
     bool weapon_switching = weapon_transition(&weapon_switch_percentage);
 
-    if (shooting_state(level, &step, &trigger_shot)) {
+    if (shooting_state(&step)) {
         if (level->weapon == 3) {
             unsigned int animation_step_size = SHOOTING_MINIGUN_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
             animation_step = (SHOOTING_MINIGUN_ANIMATION_SPEED - step) / animation_step_size;
@@ -599,7 +598,6 @@ static void fill_in_weapon(level_t * level) {
             animation_step = (SHOOTING_ANIMATION_SPEED - step) / animation_step_size;
         }
     } else {
-        trigger_shot = false;
         animation_step = 0;
     }
 
@@ -621,12 +619,12 @@ static void fill_in_weapon(level_t * level) {
     }
 }
 
-void paint_scene(level_t * level) {
+void paint_scene(level_t * level, bool trigger_shot) {
     fill_in_background(level);
 
     fill_in_walls(level);
 
-    fill_in_objects(level);
+    fill_in_objects(level, trigger_shot);
 
     fill_in_weapon(level);
 }
