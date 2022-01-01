@@ -146,3 +146,16 @@ void window_update_pixels(const pixel_t * pixels) {
 bool window_poll_event(sfEvent * event) {
     return sfRenderWindow_pollEvent(window, event);
 }
+
+bool test_mouse_control() {
+    sfVector2i obtained = sfMouse_getPositionRenderWindow(window);
+
+    sfVector2i position;
+    position.x = obtained.x + 1;
+    position.y = obtained.y + 1;
+    sfMouse_setPositionRenderWindow(position, window);
+
+    obtained = sfMouse_getPositionRenderWindow(window);
+
+    return obtained.x == position.x && obtained.y == position.y;
+}

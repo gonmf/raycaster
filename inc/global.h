@@ -280,6 +280,7 @@ void window_close();
 bool window_is_open();
 void window_update_pixels(const pixel_t * pixels);
 bool window_poll_event(sfEvent * event);
+bool test_mouse_control();
 
 // raycaster.c
 void init_fish_eye_table();
