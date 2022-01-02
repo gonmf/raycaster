@@ -138,8 +138,3 @@ void window_update_pixels(const pixel_t * pixels) {
 
     SDL_RenderPresent(renderer);
 }
-
-bool test_mouse_control() {
-    // TODO: remove method
-    return true;
-}

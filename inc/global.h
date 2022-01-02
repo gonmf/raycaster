@@ -278,7 +278,6 @@ void set_cursor_visible(bool visible);
 void window_start();
 void window_close();
 void window_update_pixels(const pixel_t * pixels);
-bool test_mouse_control();
 
 // raycaster.c
 void init_fish_eye_table();

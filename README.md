@@ -9,13 +9,19 @@ Since direct frame buffer access is not possible anymore, it uses SDL for pixel 
 
 ## Installation
 
-This game uses SDL 2.0 for the graphics.
+This game uses SDL 2.0 for the graphics. You can find the installation instructions [here](http://wiki.libsdl.org/Installation).
 
-First install the development package for your platform: http://wiki.libsdl.org/Installation
+Remember to install SDL version 2.0, that is Debian package `libsdl2-dev` or brew formula `sdl2` for instance.
 
 Then compile by running `make` at the root directory. To play execute `./raycaster`.
 
 The game settings are saved in file `local.options`.
+
+### Caveats
+
+On macOS, your cursor may behave erratically, or appear on screen (it should be hidden).
+
+If that's case, try granting the program [accessibility permissions](https://user-images.githubusercontent.com/5512054/147831850-8b8f304f-3615-473e-86c4-ed659e9a21a2.png).
 
 ## Controls
 

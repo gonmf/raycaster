@@ -771,11 +771,6 @@ static void render_menus_loop(unsigned int start_menu) {
     }
 }
 
-static void mouse_unavailable_warning() {
-    fprintf(stderr, "Warning: unable to test mouse position control\n");
-    fprintf(stderr, "On some operating systems, like macOS, you may need to grant this program the permission to control the mouse position.\n");
-}
-
 int main() {
     init_base_colors();
     init_fish_eye_table();
@@ -787,10 +782,6 @@ int main() {
 
     fg_buffer = calloc(VIEWPORT_WIDTH * VIEWPORT_HEIGHT, sizeof(pixel_t));
     backup_buffer = malloc(VIEWPORT_WIDTH * VIEWPORT_HEIGHT * sizeof(pixel_t));
-
-    if (!test_mouse_control()) {
-        mouse_unavailable_warning();
-    }
 
     render_menus_loop(0);
     window_close();
