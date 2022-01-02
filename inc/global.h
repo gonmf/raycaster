@@ -3,7 +3,8 @@
 
 #define _POSIX_C_SOURCE 200809L
 
-#include <SFML/Graphics.h>
+#include <SDL2/SDL.h>
+
 #include <inttypes.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -182,8 +183,8 @@ typedef struct __sprite_pack_ {
 #define WEAPON_SWITCH_SPEED 80
 #define TREASURE_PICKUP_FLASH_DURATION 8
 #define PLAYER_SHOT_FLASH_DURATION 8
-#define GAME_OVER_ANIMATION_SPEED 180
-#define GAME_ENTER_EXIT_ANIMATION_SPEED 120
+#define GAME_OVER_ANIMATION_SPEED 1.5
+#define GAME_ENTER_EXIT_ANIMATION_SPEED 1.0
 #define ENEMY_ALERT_PROXIMITY 10
 
 // Voodoo:
@@ -253,11 +254,13 @@ void error(const char * s);
 void error_w_line(const char * s, unsigned int line);
 
 // keyboard.c
-void add_key_pressed(sfKeyCode code);
-void remove_key_pressed(sfKeyCode code);
-bool key_is_pressed(sfKeyCode code);
+void add_key_pressed(SDL_Keycode code);
+void remove_key_pressed(SDL_Keycode code);
+bool key_is_pressed(SDL_Keycode code);
 bool player_moving();
 void clear_keys_pressed();
+bool is_mouse_left_key_pressed();
+void set_mouse_left_key_pressed(bool value);
 
 // file_io.c
 unsigned int file_read(char * dst, unsigned int max_size, const char * filename);
@@ -271,19 +274,10 @@ double distance(double a_x, double a_y, double b_x, double b_y);
 bool start_with(const char * s, const char * prefix);
 
 // window.c
-extern unsigned int window_width;
-extern unsigned int window_height;
-extern unsigned int mid_real_window_width;
-extern unsigned int mid_real_window_height;
-
-void window_center_mouse();
 void set_cursor_visible(bool visible);
 void window_start();
 void window_close();
-bool window_is_open();
 void window_update_pixels(const pixel_t * pixels);
-bool window_poll_event(sfEvent * event);
-bool test_mouse_control();
 
 // raycaster.c
 void init_fish_eye_table();
@@ -343,5 +337,9 @@ bool is_invert_mouse();
 void toggle_invert_mouse();
 unsigned char get_mouse_sensibility();
 void increase_mouse_sensibility();
+
+// timing.c
+bool limit_fps(long unsigned int us_time);
+unsigned int game_logic_cycles(long unsigned int ms_time);
 
 #endif

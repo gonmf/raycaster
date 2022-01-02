@@ -60,6 +60,9 @@ void toggle_fullscreen() {
     fullscreen = !fullscreen;
 
     save_user_options();
+
+    window_close();
+    window_start();
 }
 
 bool is_look_up_down() {

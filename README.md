@@ -5,30 +5,23 @@ Some notable omissions for now are floor/ceiling texture mapping and altitude.
 
 As a demo I've rendered something akin to the first Wolfenstein game.
 
-By default the game runs with graphics capped at 120FPS, game logic at 125 updates/sec.
-
-The game resolution is locked at 2:1, by default 800x400 upscaled, with sprites 8x8 to 64x64 pixels in size.
-
-Since direct frame buffer access is not possible anymore, I've used CSFML.
-
-CSFML (the C binding of SFML) is not well documented, so reading the source
-code is the best alternative: https://26.customprotocol.com/csfml/files.htm
+Since direct frame buffer access is not possible anymore, it uses SDL for pixel writing, which also makes it effortlessly cross-platform. See branch `sfml` for the original implementation of the game that used CSFML (the C-binding of SFML).
 
 ## Installation
 
-### Linux
+This game uses SDL 2.0 for the graphics. You can find the installation instructions [here](http://wiki.libsdl.org/Installation).
 
-Install package `libcsfml-dev`.
+Remember to install SDL version 2.0, that is Debian package `libsdl2-dev` or brew formula `sdl2` for instance.
 
-Compile by running `make`.
+Then compile by running `make` at the root directory. To play execute `./raycaster`.
 
-### macOS
+The game settings are saved in file `local.options`.
 
-_Warning: if your cursor behaves erratically, you may need to [grant the app permissions](https://user-images.githubusercontent.com/5512054/147831850-8b8f304f-3615-473e-86c4-ed659e9a21a2.png)._
+### Caveats
 
-First install `homebrew`, and then package `csfml` and the C compiler of your choice.
+On macOS, your cursor may behave erratically, or appear on screen (it should be hidden).
 
-Compile by running `make`.
+If that's case, try granting the program [accessibility permissions](https://user-images.githubusercontent.com/5512054/147831850-8b8f304f-3615-473e-86c4-ed659e9a21a2.png).
 
 ## Controls
 
@@ -54,7 +47,7 @@ Editor:
 
 ---
 
-Copyright (c) 2021 Gonçalo Mendes Ferreira
+Copyright (c) 2021, 2022 Gonçalo Mendes Ferreira
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice
