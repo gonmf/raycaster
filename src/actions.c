@@ -25,13 +25,13 @@ void transition_step(level_t * level, bool * trigger_shot) {
 
         if (level->weapon == 2) {
             unsigned int part_ticks = SHOOTING_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
-            if (shooting_ticks == part_ticks + part_ticks / 2 && sfMouse_isButtonPressed(sfMouseLeft)) {
+            if (shooting_ticks == part_ticks + part_ticks / 2 && is_mouse_left_key_pressed()) {
                 shooting_ticks += part_ticks * 2;
             }
         }
         if (level->weapon == 3) {
             unsigned int part_ticks = SHOOTING_MINIGUN_ANIMATION_SPEED / SHOOTING_ANIMATION_PARTS;
-            if (shooting_ticks == part_ticks && sfMouse_isButtonPressed(sfMouseLeft)) {
+            if (shooting_ticks == part_ticks && is_mouse_left_key_pressed()) {
                 shooting_ticks += part_ticks * 2;
             }
         }

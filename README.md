@@ -9,26 +9,17 @@ By default the game runs with graphics capped at 120FPS, game logic at 125 updat
 
 The game resolution is locked at 2:1, by default 800x400 upscaled, with sprites 8x8 to 64x64 pixels in size.
 
-Since direct frame buffer access is not possible anymore, I've used CSFML.
-
-CSFML (the C binding of SFML) is not well documented, so reading the source
-code is the best alternative: https://26.customprotocol.com/csfml/files.htm
+Since direct frame buffer access is not possible anymore, it uses SDL for pixel writing.
 
 ## Installation
 
-### Linux
+This game uses SDL 2.0 for graphics and sound. First install the development package for your platform.
 
-Install package `libcsfml-dev`.
+See how in http://wiki.libsdl.org/Installation
 
-Compile by running `make`.
+Then compile by running `make` at the root directory. To play execute `./raycaster`.
 
-### macOS
-
-_Warning: if your cursor behaves erratically, you may need to [grant the app permissions](https://user-images.githubusercontent.com/5512054/147831850-8b8f304f-3615-473e-86c4-ed659e9a21a2.png)._
-
-First install `homebrew`, and then package `csfml` and the C compiler of your choice.
-
-Compile by running `make`.
+The game settings are saved in file `local.options`.
 
 ## Controls
 
@@ -54,7 +45,7 @@ Editor:
 
 ---
 
-Copyright (c) 2021 Gonçalo Mendes Ferreira
+Copyright (c) 2021, 2022 Gonçalo Mendes Ferreira
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice

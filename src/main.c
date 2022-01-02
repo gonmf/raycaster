@@ -17,10 +17,10 @@ static pixel_t * backup_buffer;
 static bool show_warning_changes_will_only_apply_after_restart = false;
 
 static void update_observer_state() {
-    bool keyW = key_is_pressed(sfKeyW);
-    bool keyS = key_is_pressed(sfKeyS);
-    bool keyA = key_is_pressed(sfKeyA);
-    bool keyD = key_is_pressed(sfKeyD);
+    bool keyW = key_is_pressed(SDLK_w);
+    bool keyS = key_is_pressed(SDLK_s);
+    bool keyA = key_is_pressed(SDLK_a);
+    bool keyD = key_is_pressed(SDLK_d);
 
     if (keyW && keyS) {
         keyW = keyS = false;
@@ -64,7 +64,7 @@ static void update_observer_state() {
         move_player(level, x_change, y_change);
     }
 
-    if (key_is_pressed(sfKeyE)) {
+    if (key_is_pressed(SDLK_e)) {
         action_btn_pressed = true;
     } else {
         if (action_btn_pressed) {
@@ -72,7 +72,7 @@ static void update_observer_state() {
             action_btn_pressed = false;
         }
     }
-    if (key_is_pressed(sfKeyM)) {
+    if (key_is_pressed(SDLK_m)) {
         map_btn_pressed = true;
     } else {
         if (map_btn_pressed) {
@@ -80,7 +80,7 @@ static void update_observer_state() {
             map_btn_pressed = false;
         }
     }
-    if (key_is_pressed(sfKeyNum1)) {
+    if (key_is_pressed(SDLK_1)) {
         key_1_pressed = true;
     } else {
         if (key_1_pressed) {
@@ -88,7 +88,7 @@ static void update_observer_state() {
             key_1_pressed = false;
         }
     }
-    if (key_is_pressed(sfKeyNum2)) {
+    if (key_is_pressed(SDLK_2)) {
         key_2_pressed = true;
     } else {
         if (key_2_pressed) {
@@ -96,7 +96,7 @@ static void update_observer_state() {
             key_2_pressed = false;
         }
     }
-    if (key_is_pressed(sfKeyNum3)) {
+    if (key_is_pressed(SDLK_3)) {
         key_3_pressed = true;
     } else {
         if (key_3_pressed) {
@@ -104,7 +104,7 @@ static void update_observer_state() {
             key_3_pressed = false;
         }
     }
-    if (key_is_pressed(sfKeyNum4)) {
+    if (key_is_pressed(SDLK_4)) {
         key_4_pressed = true;
     } else {
         if (key_4_pressed) {
@@ -131,14 +131,13 @@ static void start_color_to_screen_animation(pixel_t color, unsigned int duration
         memcpy(fg_buffer, backup_buffer, VIEWPORT_WIDTH * VIEWPORT_HEIGHT * sizeof(pixel_t));
         scene_shading(color, factor);
 
-        sfEvent event;
-        while (window_poll_event(&event)) {
-            if (event.type == sfEvtClosed) {
-                return;
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                exit(EXIT_SUCCESS);
             }
         }
 
-        window_center_mouse();
         window_update_pixels(fg_buffer);
     }
 }
@@ -160,14 +159,13 @@ static void start_screen_to_color_animation(pixel_t color, unsigned int duration
         memcpy(fg_buffer, backup_buffer, VIEWPORT_WIDTH * VIEWPORT_HEIGHT * sizeof(pixel_t));
         scene_shading(color, 1.0 - factor);
 
-        sfEvent event;
-        while (window_poll_event(&event)) {
-            if (event.type == sfEvtClosed) {
-                return;
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                exit(EXIT_SUCCESS);
             }
         }
 
-        window_center_mouse();
         window_update_pixels(fg_buffer);
     }
 }
@@ -219,7 +217,7 @@ static void write_text_ui() {
 }
 
 static void render_menus_loop(unsigned int start_menu);
-static bool game_logic_iteration(bool * trigger_shot, bool * center_mouse) {
+static bool game_logic_iteration(bool * trigger_shot) {
     if (level->life == 0) {
         start_screen_to_color_animation(color_dark_red, GAME_OVER_ANIMATION_SPEED);
         return true;
@@ -238,25 +236,25 @@ static bool game_logic_iteration(bool * trigger_shot, bool * center_mouse) {
         return true;
     }
 
-    sfEvent event;
-    while (window_poll_event(&event)) {
-        if (event.type == sfEvtClosed) {
-            return true;
-        } else if (event.type == sfEvtKeyPressed) {
-            sfKeyCode code = ((sfKeyEvent *)&event)->code;
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT) {
+            exit(EXIT_SUCCESS);
+        } else if (event.type == SDL_KEYDOWN) {
+            SDL_Keycode code = ((SDL_KeyboardEvent *)&event)->keysym.sym;
 
-            if (code == sfKeyEscape) {
+            if (code == SDLK_ESCAPE) {
                 render_menus_loop(3);
             } else {
                 add_key_pressed(code);
             }
-        } else if (event.type == sfEvtKeyReleased) {
-            sfKeyCode code = ((sfKeyEvent *)&event)->code;
+        } else if (event.type == SDL_KEYUP) {
+            SDL_Keycode code = ((SDL_KeyboardEvent *)&event)->keysym.sym;
 
             remove_key_pressed(code);
-        } else if (event.type == sfEvtMouseMoved) {
-            int move_x = ((sfMouseMoveEvent *)&event)->x - mid_real_window_width;
-            int move_y = ((sfMouseMoveEvent *)&event)->y - mid_real_window_height;
+        } else if (event.type == SDL_MOUSEMOTION) {
+            int move_x = ((SDL_MouseMotionEvent *)&event)->xrel;
+            int move_y = ((SDL_MouseMotionEvent *)&event)->yrel;
 
             if (move_x) {
                 double angle_change = ((double)move_x) * ROTATION_CONSTANT * get_mouse_sensibility() / VIEWPORT_WIDTH;
@@ -270,12 +268,14 @@ static bool game_logic_iteration(bool * trigger_shot, bool * center_mouse) {
                 }
                 level->observer_angle2 = MIN(MAX(level->observer_angle2 - angle_change, 1.0), 179.0);
             }
-
-            *center_mouse = true;
+        } else if (event.type == SDL_MOUSEBUTTONUP) {
+            set_mouse_left_key_pressed(false);
+        } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+            set_mouse_left_key_pressed(true);
         }
     }
 
-    if (sfMouse_isButtonPressed(sfMouseLeft)) {
+    if (is_mouse_left_key_pressed()) {
         shooting_start_action(level);
     }
 
@@ -319,9 +319,8 @@ static void main_render_loop() {
 
         // Advance game state one or more steps
         bool trigger_shot = false;
-        bool center_mouse = false;
         for (long unsigned int cy = 0; cy < logic_cycles; ++cy) {
-            if (game_logic_iteration(&trigger_shot, &center_mouse)) {
+            if (game_logic_iteration(&trigger_shot)) {
                 return;
             }
         }
@@ -340,9 +339,6 @@ static void main_render_loop() {
             paint_map(level);
         }
 
-        if (center_mouse) {
-            window_center_mouse();
-        }
         window_update_pixels(fg_buffer);
     }
 }
@@ -608,15 +604,12 @@ static void reload_save_games() {
 }
 
 static void render_menus_loop(unsigned int start_menu) {
+    clear_keys_pressed();
     unsigned int animation_step = 0;
     unsigned int current_option = 0;
     unsigned int current_menu = start_menu;
 
     while (true) {
-        if (!window_is_open()) {
-            exit(EXIT_SUCCESS);
-        }
-
         animation_step = (animation_step + 1) % 100;
         double shading_factor = (animation_step < 50 ? animation_step : 100 - animation_step) / 80.0;
 
@@ -637,10 +630,11 @@ static void render_menus_loop(unsigned int start_menu) {
                 render_load_save_menu(current_option, shading_factor, false);
         }
 
-        if (key_is_pressed(sfKeyUp)) {
+        if (key_is_pressed(SDLK_UP)) {
             key_up_pressed = true;
         } else {
             if (key_up_pressed) {
+                animation_step = 35;
                 if (current_menu == 1) {
                     if (current_option > 0) {
                         do {
@@ -655,10 +649,11 @@ static void render_menus_loop(unsigned int start_menu) {
                 key_up_pressed = false;
             }
         }
-        if (key_is_pressed(sfKeyDown)) {
+        if (key_is_pressed(SDLK_DOWN)) {
             key_down_pressed = true;
         } else {
             if (key_down_pressed) {
+                animation_step = 35;
                 switch (current_menu) {
                     case 0:
                         if (current_option < 3) {
@@ -690,7 +685,7 @@ static void render_menus_loop(unsigned int start_menu) {
                 key_down_pressed = false;
             }
         }
-        if (key_is_pressed(sfKeyEnter)) {
+        if (key_is_pressed(SDLK_RETURN)) {
             key_enter_pressed = true;
         } else {
             if (key_enter_pressed) {
@@ -770,16 +765,16 @@ static void render_menus_loop(unsigned int start_menu) {
             }
         }
 
-        sfEvent event;
-        while (window_poll_event(&event)) {
-            if (event.type == sfEvtClosed) {
-                return;
-            } else if (event.type == sfEvtKeyPressed) {
-                sfKeyCode code = ((sfKeyEvent *)&event)->code;
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                exit(EXIT_SUCCESS);
+            } else if (event.type == SDL_KEYDOWN) {
+                SDL_Keycode code = ((SDL_KeyboardEvent *)&event)->keysym.sym;
 
                 add_key_pressed(code);
-            } else if (event.type == sfEvtKeyReleased) {
-                sfKeyCode code = ((sfKeyEvent *)&event)->code;
+            } else if (event.type == SDL_KEYUP) {
+                SDL_Keycode code = ((SDL_KeyboardEvent *)&event)->keysym.sym;
 
                 remove_key_pressed(code);
             }

@@ -1,125 +1,43 @@
 #include "global.h"
 
-static sfRenderWindow * window;
-static sfSprite * sprite;
-static sfTexture * texture;
-static sfRenderStates renderStates;
+static SDL_Renderer * renderer;
+static SDL_Window * window;
 
 unsigned int window_width;
 unsigned int window_height;
-unsigned int mid_real_window_width;
-unsigned int mid_real_window_height;
 unsigned int fullscreen_x_offset;
 unsigned int fullscreen_y_offset;
 double screen_ratio;
 
-void window_center_mouse() {
-    sfVector2i position;
-    position.x = (unsigned int)(window_width * screen_ratio / 2.0);
-    position.y = (unsigned int)(window_height * screen_ratio / 2.0);
-    sfMouse_setPositionRenderWindow(position, window);
-}
-
 void set_cursor_visible(bool visible) {
-    sfRenderWindow_setMouseCursorVisible(window, visible);
+    SDL_ShowCursor(visible ? SDL_ENABLE : SDL_DISABLE);
 }
 
 static void window_start_windowed() {
     window_width = VIEWPORT_WIDTH;
     window_height = VIEWPORT_HEIGHT;
-    screen_ratio = 4.0;
+    screen_ratio = 1.0;
 
-    sfVideoMode screen_video_mode;
-    screen_video_mode = sfVideoMode_getDesktopMode();
-
-    while (true) {
-        if (screen_video_mode.width >= (unsigned int)round(VIEWPORT_WIDTH * screen_ratio) && screen_video_mode.height >= (unsigned int)round(VIEWPORT_HEIGHT * screen_ratio)) {
-            break;
-        }
-
-        screen_ratio -= 0.5;
-
-        if (screen_ratio < 1.2) {
-            error("Screen resolution too small for viewport");
-        }
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        error("Could not initialize SDL");
     }
 
-    sfVideoMode desired_video_mode;
-    desired_video_mode.width = (unsigned int)(VIEWPORT_WIDTH * screen_ratio);
-    desired_video_mode.height = (unsigned int)(VIEWPORT_HEIGHT * screen_ratio);
-    desired_video_mode.bitsPerPixel = 32;
+    unsigned int desired_witdh = (unsigned int)(VIEWPORT_WIDTH * screen_ratio);
+    unsigned desired_height = (unsigned int)(VIEWPORT_HEIGHT * screen_ratio);
 
-    window = sfRenderWindow_create(desired_video_mode, "Raycaster", sfResize, NULL);
-    sfRenderWindow_setFramerateLimit(window, MAX_FPS);
+    window = SDL_CreateWindow("Raycaster", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, desired_witdh, desired_height, 0);
+    renderer = SDL_CreateRenderer(window, -1, 0);
 
-    sfVector2i position;
-    position.x = screen_video_mode.width / 2 - desired_video_mode.width / 2;
-    position.y = screen_video_mode.height / 2 - desired_video_mode.height / 2;
-    sfRenderWindow_setPosition(window, position);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+    SDL_RenderClear(renderer);
 
-    set_cursor_visible(false);
-    window_center_mouse();
+    SDL_ShowCursor(SDL_DISABLE);
 
-    texture = sfTexture_create((unsigned int)(VIEWPORT_WIDTH * screen_ratio), (unsigned int)(VIEWPORT_HEIGHT * screen_ratio));
-    sprite = sfSprite_create();
-    sfSprite_setTexture(sprite, texture, sfFalse);
-
-    sfTransform transform = sfTransform_Identity;
-    sfTransform_scale(&transform, screen_ratio, screen_ratio);
-
-    renderStates.blendMode = sfBlendNone;
-    renderStates.transform = transform;
-    renderStates.texture = texture;
-    renderStates.shader = NULL;
+    SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 
 static void window_start_fullscreen() {
-    sfVideoMode screen_video_mode;
-    screen_video_mode = sfVideoMode_getDesktopMode();
-    if (screen_video_mode.width < VIEWPORT_WIDTH || screen_video_mode.height < VIEWPORT_HEIGHT) {
-        error("Screen resolution too small for viewport");
-    }
-
-    double width_ratio = screen_video_mode.width / ((double)VIEWPORT_WIDTH);
-    double height_ratio = screen_video_mode.height / ((double)VIEWPORT_HEIGHT);
-    screen_ratio = MIN(width_ratio, height_ratio);
-
-    window_width = (unsigned int)round(screen_video_mode.width / screen_ratio);
-    window_height = (unsigned int)round(screen_video_mode.height / screen_ratio);
-    fullscreen_x_offset = (((unsigned int)window_width) - VIEWPORT_WIDTH) / 2;
-    fullscreen_y_offset = (((unsigned int)window_height) - VIEWPORT_HEIGHT) / 2;
-
-    sfVideoMode desired_video_mode;
-    desired_video_mode.width = screen_video_mode.width;
-    desired_video_mode.height = screen_video_mode.height;
-    desired_video_mode.bitsPerPixel = 32;
-
-    window = sfRenderWindow_create(desired_video_mode, "Raycaster", sfFullscreen, NULL);
-    sfRenderWindow_setFramerateLimit(window, MAX_FPS);
-
-    set_cursor_visible(false);
-    window_center_mouse();
-
-    texture = sfTexture_create(window_width, window_height);
-    sprite = sfSprite_create();
-    sfSprite_setTexture(sprite, texture, sfFalse);
-
-    sfColor bgColor;
-    memset(&bgColor, 0, sizeof(bgColor));
-
-    sfTransform transform = sfTransform_Identity;
-    sfTransform_scale(&transform, screen_ratio, screen_ratio);
-
-    renderStates.blendMode = sfBlendNone;
-    renderStates.transform = transform;
-    renderStates.texture = texture;
-    renderStates.shader = NULL;
-
-    sfUint8 * tmp = calloc(window_width * window_height * (32 / 8), sizeof(sfUint8));
-    sfTexture_updateFromPixels(texture, tmp, window_width, window_height, 0, 0);
-    free(tmp);
-    sfRenderWindow_drawSprite(window, sprite, &renderStates);
-    sfRenderWindow_display(window);
+    error("Unsupported");
 }
 
 void window_start() {
@@ -128,39 +46,38 @@ void window_start() {
     } else {
         window_start_windowed();
     }
-
-    mid_real_window_width = (unsigned int)(window_width * screen_ratio / 2.0);
-    mid_real_window_height = (unsigned int)(window_height * screen_ratio / 2.0);
 }
 
 void window_close() {
-    sfRenderWindow_close(window);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
     window = NULL;
+    renderer = NULL;
 }
 
 bool window_is_open() {
-    return window && sfRenderWindow_isOpen(window);
+    // TODO: remove method
+    return true;
 }
 
 void window_update_pixels(const pixel_t * pixels) {
-    sfTexture_updateFromPixels(texture, (sfUint8 *)pixels, VIEWPORT_WIDTH, VIEWPORT_HEIGHT, fullscreen_x_offset, fullscreen_y_offset);
-    sfRenderWindow_drawSprite(window, sprite, &renderStates);
-    sfRenderWindow_display(window);
-}
+    // TODO: take into consideration padding in fullscreen
 
-bool window_poll_event(sfEvent * event) {
-    return sfRenderWindow_pollEvent(window, event);
+    unsigned int i = 0;
+    for (unsigned int y = 0; y < VIEWPORT_HEIGHT; ++y) {
+        for (unsigned int x = 0; x < VIEWPORT_WIDTH; ++x) {
+            pixel_t pixel = pixels[i++];
+
+            SDL_SetRenderDrawColor(renderer, pixel.red, pixel.green, pixel.blue, SDL_ALPHA_OPAQUE);
+            SDL_RenderDrawPoint(renderer, x, y);
+        }
+    }
+
+    SDL_RenderPresent(renderer);
 }
 
 bool test_mouse_control() {
-    sfVector2i obtained = sfMouse_getPositionRenderWindow(window);
-
-    sfVector2i position;
-    position.x = obtained.x + 1;
-    position.y = obtained.y + 1;
-    sfMouse_setPositionRenderWindow(position, window);
-
-    obtained = sfMouse_getPositionRenderWindow(window);
-
-    return obtained.x == position.x && obtained.y == position.y;
+    // TODO: remove method
+    return true;
 }

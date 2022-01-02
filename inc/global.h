@@ -3,7 +3,8 @@
 
 #define _POSIX_C_SOURCE 200809L
 
-#include <SFML/Graphics.h>
+#include <SDL2/SDL.h>
+
 #include <inttypes.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -253,11 +254,13 @@ void error(const char * s);
 void error_w_line(const char * s, unsigned int line);
 
 // keyboard.c
-void add_key_pressed(sfKeyCode code);
-void remove_key_pressed(sfKeyCode code);
-bool key_is_pressed(sfKeyCode code);
+void add_key_pressed(SDL_Keycode code);
+void remove_key_pressed(SDL_Keycode code);
+bool key_is_pressed(SDL_Keycode code);
 bool player_moving();
 void clear_keys_pressed();
+bool is_mouse_left_key_pressed();
+void set_mouse_left_key_pressed(bool value);
 
 // file_io.c
 unsigned int file_read(char * dst, unsigned int max_size, const char * filename);
@@ -273,16 +276,12 @@ bool start_with(const char * s, const char * prefix);
 // window.c
 extern unsigned int window_width;
 extern unsigned int window_height;
-extern unsigned int mid_real_window_width;
-extern unsigned int mid_real_window_height;
 
-void window_center_mouse();
 void set_cursor_visible(bool visible);
 void window_start();
 void window_close();
 bool window_is_open();
 void window_update_pixels(const pixel_t * pixels);
-bool window_poll_event(sfEvent * event);
 bool test_mouse_control();
 
 // raycaster.c
