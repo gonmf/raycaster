@@ -183,8 +183,8 @@ typedef struct __sprite_pack_ {
 #define WEAPON_SWITCH_SPEED 80
 #define TREASURE_PICKUP_FLASH_DURATION 8
 #define PLAYER_SHOT_FLASH_DURATION 8
-#define GAME_OVER_ANIMATION_SPEED 180
-#define GAME_ENTER_EXIT_ANIMATION_SPEED 120
+#define GAME_OVER_ANIMATION_SPEED 1.5
+#define GAME_ENTER_EXIT_ANIMATION_SPEED 1.0
 #define ENEMY_ALERT_PROXIMITY 10
 
 // Voodoo:
@@ -274,13 +274,9 @@ double distance(double a_x, double a_y, double b_x, double b_y);
 bool start_with(const char * s, const char * prefix);
 
 // window.c
-extern unsigned int window_width;
-extern unsigned int window_height;
-
 void set_cursor_visible(bool visible);
 void window_start();
 void window_close();
-bool window_is_open();
 void window_update_pixels(const pixel_t * pixels);
 bool test_mouse_control();
 
@@ -342,5 +338,9 @@ bool is_invert_mouse();
 void toggle_invert_mouse();
 unsigned char get_mouse_sensibility();
 void increase_mouse_sensibility();
+
+// timing.c
+bool limit_fps(long unsigned int us_time);
+unsigned int game_logic_cycles(long unsigned int ms_time);
 
 #endif

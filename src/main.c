@@ -14,7 +14,7 @@ static bool key_enter_pressed = false;
 static bool show_map = false;
 static char * save_games[SAVE_FILES_COUNT];
 static pixel_t * backup_buffer;
-static bool show_warning_changes_will_only_apply_after_restart = false;
+static struct timespec spec;
 
 static void update_observer_state() {
     bool keyW = key_is_pressed(SDLK_w);
@@ -119,9 +119,9 @@ static void start_color_to_screen_animation(pixel_t color, unsigned int duration
     memcpy(backup_buffer, fg_buffer, VIEWPORT_WIDTH * VIEWPORT_HEIGHT * sizeof(pixel_t));
 
     while (true) {
-        if (!window_is_open()) {
-            exit(EXIT_SUCCESS);
-        }
+        clock_gettime(CLOCK_REALTIME, &spec);
+        long unsigned int us_time = spec.tv_sec * 1000000 + spec.tv_nsec / 1000;
+        if (limit_fps(us_time)) { continue; } // rate limit
 
         if (duration-- == 0) {
             return;
@@ -134,6 +134,7 @@ static void start_color_to_screen_animation(pixel_t color, unsigned int duration
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
+                window_close();
                 exit(EXIT_SUCCESS);
             }
         }
@@ -147,9 +148,9 @@ static void start_screen_to_color_animation(pixel_t color, unsigned int duration
     memcpy(backup_buffer, fg_buffer, VIEWPORT_WIDTH * VIEWPORT_HEIGHT * sizeof(pixel_t));
 
     while (true) {
-        if (!window_is_open()) {
-            exit(EXIT_SUCCESS);
-        }
+        clock_gettime(CLOCK_REALTIME, &spec);
+        long unsigned int us_time = spec.tv_sec * 1000000 + spec.tv_nsec / 1000;
+        if (limit_fps(us_time)) { continue; } // rate limit
 
         if (duration-- == 0) {
             return;
@@ -162,6 +163,7 @@ static void start_screen_to_color_animation(pixel_t color, unsigned int duration
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
+                window_close();
                 exit(EXIT_SUCCESS);
             }
         }
@@ -219,7 +221,7 @@ static void write_text_ui() {
 static void render_menus_loop(unsigned int start_menu);
 static bool game_logic_iteration(bool * trigger_shot) {
     if (level->life == 0) {
-        start_screen_to_color_animation(color_dark_red, GAME_OVER_ANIMATION_SPEED);
+        start_screen_to_color_animation(color_dark_red, (unsigned int)(GAME_OVER_ANIMATION_SPEED * MAX_FPS));
         return true;
     }
 
@@ -232,13 +234,14 @@ static bool game_logic_iteration(bool * trigger_shot) {
     bool exit_found;
     apply_special_effect(level, &exit_found);
     if (exit_found) {
-        start_screen_to_color_animation(color_black, GAME_ENTER_EXIT_ANIMATION_SPEED);
+        start_screen_to_color_animation(color_black, (unsigned int)(GAME_ENTER_EXIT_ANIMATION_SPEED * MAX_FPS));
         return true;
     }
 
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
+            window_close();
             exit(EXIT_SUCCESS);
         } else if (event.type == SDL_KEYDOWN) {
             SDL_Keycode code = ((SDL_KeyboardEvent *)&event)->keysym.sym;
@@ -257,12 +260,12 @@ static bool game_logic_iteration(bool * trigger_shot) {
             int move_y = ((SDL_MouseMotionEvent *)&event)->yrel;
 
             if (move_x) {
-                double angle_change = ((double)move_x) * ROTATION_CONSTANT * get_mouse_sensibility() / VIEWPORT_WIDTH;
+                double angle_change = ((double)move_x) * ROTATION_CONSTANT * get_mouse_sensibility() * 2 / VIEWPORT_WIDTH;
                 level->observer_angle += angle_change;
             }
 
             if (move_y && is_look_up_down()) {
-                double angle_change = ((double)move_y) * ROTATION_CONSTANT * (get_mouse_sensibility() * 2) / VIEWPORT_HEIGHT;
+                double angle_change = ((double)move_y) * ROTATION_CONSTANT * (get_mouse_sensibility() * 4) / VIEWPORT_HEIGHT;
                 if (is_invert_mouse()) {
                     angle_change = -angle_change;
                 }
@@ -285,37 +288,25 @@ static bool game_logic_iteration(bool * trigger_shot) {
 static void main_render_loop() {
     unsigned int frames_second = 1;
     long unsigned int last_ms = 0;
-    long unsigned int last_ctime = 0;
-    struct timespec spec;
 
-    if (window_is_open()) {
-        start_color_to_screen_animation(color_black, GAME_ENTER_EXIT_ANIMATION_SPEED);
-    }
+    start_color_to_screen_animation(color_black, (unsigned int)(GAME_ENTER_EXIT_ANIMATION_SPEED * MAX_FPS));
 
     while (true) {
-        if (!window_is_open()) {
-            exit(EXIT_SUCCESS);
-        }
-
         clock_gettime(CLOCK_REALTIME, &spec);
+        long unsigned int us_time = spec.tv_sec * 1000000 + spec.tv_nsec / 1000;
+        if (limit_fps(us_time)) { continue; } // rate limit
+
         long unsigned int ms = spec.tv_nsec / 1000000;
 
         if (last_ms > ms) {
             last_fps = frames_second;
-            frames_second = 1;
+            frames_second = 0;
         }
 
         frames_second += 1;
         last_ms = ms;
 
-        long unsigned int ctime = spec.tv_sec * 1000 + ms;
-        if (last_ctime == 0) {
-            last_ctime = ctime;
-        }
-
-        long unsigned int elapsed = ctime - last_ctime;
-        long unsigned int logic_cycles = elapsed / GAME_LOGIC_CYCLE_STEP;
-        last_ctime += logic_cycles * GAME_LOGIC_CYCLE_STEP;
+        long unsigned int logic_cycles = game_logic_cycles(us_time / 1000);
 
         // Advance game state one or more steps
         bool trigger_shot = false;
@@ -452,7 +443,7 @@ static void start_new_game() {
     level->ammo = 10;
     level->level_nr = 0;
 
-    start_screen_to_color_animation(color_black, GAME_ENTER_EXIT_ANIMATION_SPEED);
+    start_screen_to_color_animation(color_black, (unsigned int)(GAME_ENTER_EXIT_ANIMATION_SPEED * MAX_FPS));
     game_level_loop();
 }
 
@@ -463,7 +454,7 @@ static void continue_game(unsigned char slot_nr) {
         unload_assets();
         level = new_level;
 
-        start_screen_to_color_animation(color_black, GAME_ENTER_EXIT_ANIMATION_SPEED);
+        start_screen_to_color_animation(color_black, (unsigned int)(GAME_ENTER_EXIT_ANIMATION_SPEED * MAX_FPS));
         game_level_loop();
     }
 }
@@ -523,12 +514,6 @@ static void render_options_menu(unsigned int current_option, double shading_fact
     screen_write_scaled(buf, VIEWPORT_WIDTH / 2 - chr_siz * strlen(buf) / 2, y_offset, scale, current_option == 4 ? shading_factor : 0.0);
     y_offset += chr_siz + chr_siz / 2;
     screen_write_scaled("Back", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Back") / 2, y_offset, scale, current_option == 5 ? shading_factor : 0.0);
-
-    if (show_warning_changes_will_only_apply_after_restart) {
-        scale = 2;
-        chr_siz = font_sprites->sprite_size * scale;
-        screen_write_scaled("Option requires restarting the game", VIEWPORT_WIDTH / 2 - chr_siz * strlen("Option requires restarting the game") / 2, VIEWPORT_HEIGHT - chr_siz - 8, scale, 0.0);
-    }
 
     window_update_pixels(fg_buffer);
 }
@@ -610,6 +595,10 @@ static void render_menus_loop(unsigned int start_menu) {
     unsigned int current_menu = start_menu;
 
     while (true) {
+        clock_gettime(CLOCK_REALTIME, &spec);
+        long unsigned int us_time = spec.tv_sec * 1000000 + spec.tv_nsec / 1000;
+        if (limit_fps(us_time)) { continue; } // rate limit
+
         animation_step = (animation_step + 1) % 100;
         double shading_factor = (animation_step < 50 ? animation_step : 100 - animation_step) / 80.0;
 
@@ -707,6 +696,7 @@ static void render_menus_loop(unsigned int start_menu) {
                                 current_option = 0;
                                 break;
                             case 3:
+                                window_close();
                                 exit(EXIT_SUCCESS);
                         }
                         break;
@@ -720,7 +710,6 @@ static void render_menus_loop(unsigned int start_menu) {
                     case 2:
                         switch (current_option) {
                             case 0:
-                                show_warning_changes_will_only_apply_after_restart = true;
                                 toggle_fullscreen();
                                 break;
                             case 1:
@@ -736,7 +725,6 @@ static void render_menus_loop(unsigned int start_menu) {
                                 increase_mouse_sensibility();
                                 break;
                             case 5:
-                                show_warning_changes_will_only_apply_after_restart = false;
                                 current_menu = 0;
                                 current_option = 0;
                         }
@@ -768,6 +756,7 @@ static void render_menus_loop(unsigned int start_menu) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
+                window_close();
                 exit(EXIT_SUCCESS);
             } else if (event.type == SDL_KEYDOWN) {
                 SDL_Keycode code = ((SDL_KeyboardEvent *)&event)->keysym.sym;
@@ -796,8 +785,8 @@ int main() {
 
     window_start();
 
-    fg_buffer = calloc(window_width * window_height, sizeof(pixel_t));
-    backup_buffer = malloc(window_width * window_height * sizeof(pixel_t));
+    fg_buffer = calloc(VIEWPORT_WIDTH * VIEWPORT_HEIGHT, sizeof(pixel_t));
+    backup_buffer = malloc(VIEWPORT_WIDTH * VIEWPORT_HEIGHT * sizeof(pixel_t));
 
     if (!test_mouse_control()) {
         mouse_unavailable_warning();

@@ -5,17 +5,13 @@ Some notable omissions for now are floor/ceiling texture mapping and altitude.
 
 As a demo I've rendered something akin to the first Wolfenstein game.
 
-By default the game runs with graphics capped at 120FPS, game logic at 125 updates/sec.
-
-The game resolution is locked at 2:1, by default 800x400 upscaled, with sprites 8x8 to 64x64 pixels in size.
-
-Since direct frame buffer access is not possible anymore, it uses SDL for pixel writing.
+Since direct frame buffer access is not possible anymore, it uses SDL for pixel writing, which also makes it effortlessly cross-platform. See branch `sfml` for the original implementation of the game that used CSFML (the C-binding of SFML).
 
 ## Installation
 
-This game uses SDL 2.0 for graphics and sound. First install the development package for your platform.
+This game uses SDL 2.0 for the graphics.
 
-See how in http://wiki.libsdl.org/Installation
+First install the development package for your platform: http://wiki.libsdl.org/Installation
 
 Then compile by running `make` at the root directory. To play execute `./raycaster`.
 
