@@ -641,6 +641,7 @@ static void render_menus_loop(unsigned int start_menu) {
             key_up_pressed = true;
         } else {
             if (key_up_pressed) {
+                animation_step = 35;
                 if (current_menu == 1) {
                     if (current_option > 0) {
                         do {
@@ -659,6 +660,7 @@ static void render_menus_loop(unsigned int start_menu) {
             key_down_pressed = true;
         } else {
             if (key_down_pressed) {
+                animation_step = 35;
                 switch (current_menu) {
                     case 0:
                         if (current_option < 3) {
