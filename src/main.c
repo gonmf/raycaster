@@ -80,7 +80,7 @@ static void update_observer_state() {
             map_btn_pressed = false;
         }
     }
-    if (key_is_pressed(SDLK_1)) {
+    if (key_is_pressed(SDLK_1) || key_is_pressed(SDLK_KP_1)) {
         key_1_pressed = true;
     } else {
         if (key_1_pressed) {
@@ -88,7 +88,7 @@ static void update_observer_state() {
             key_1_pressed = false;
         }
     }
-    if (key_is_pressed(SDLK_2)) {
+    if (key_is_pressed(SDLK_2) || key_is_pressed(SDLK_KP_2)) {
         key_2_pressed = true;
     } else {
         if (key_2_pressed) {
@@ -96,7 +96,7 @@ static void update_observer_state() {
             key_2_pressed = false;
         }
     }
-    if (key_is_pressed(SDLK_3)) {
+    if (key_is_pressed(SDLK_3) || key_is_pressed(SDLK_KP_3)) {
         key_3_pressed = true;
     } else {
         if (key_3_pressed) {
@@ -104,7 +104,7 @@ static void update_observer_state() {
             key_3_pressed = false;
         }
     }
-    if (key_is_pressed(SDLK_4)) {
+    if (key_is_pressed(SDLK_4) || key_is_pressed(SDLK_KP_4)) {
         key_4_pressed = true;
     } else {
         if (key_4_pressed) {
@@ -271,9 +271,9 @@ static bool game_logic_iteration(bool * trigger_shot) {
                 }
                 level->observer_angle2 = MIN(MAX(level->observer_angle2 - angle_change, 1.0), 179.0);
             }
-        } else if (event.type == SDL_MOUSEBUTTONUP) {
+        } else if (event.type == SDL_MOUSEBUTTONUP && ((SDL_MouseButtonEvent *)&event)->button == SDL_BUTTON_LEFT) {
             set_mouse_left_key_pressed(false);
-        } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+        } else if (event.type == SDL_MOUSEBUTTONDOWN && ((SDL_MouseButtonEvent *)&event)->button == SDL_BUTTON_LEFT) {
             set_mouse_left_key_pressed(true);
         }
     }
@@ -674,7 +674,7 @@ static void render_menus_loop(unsigned int start_menu) {
                 key_down_pressed = false;
             }
         }
-        if (key_is_pressed(SDLK_RETURN)) {
+        if (key_is_pressed(SDLK_RETURN) || key_is_pressed(SDLK_KP_ENTER)) {
             key_enter_pressed = true;
         } else {
             if (key_enter_pressed) {
