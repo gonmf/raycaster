@@ -1,9 +1,16 @@
+- Allow options change in the middle of playing
+
+- Texture on ceiling and floor
+
+- Slightly move weapon sprites up/down depending on vertical viewing angle
+
 - Ray tracing slow when very closed to downed enemy?
   - Doesn't matter as much now with separate graphics and logic update cycles
 
 ------------
 
 - Design some better levels: replicate E1M1 for testing purposes
+  - Play with new (open source) textures
 
 - Add more data to level pack(s): like text to be shown between missions and what background music should play
   - Add transition effects
