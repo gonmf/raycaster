@@ -122,6 +122,7 @@ void open_door_in_front(level_t * level) {
     opening_door_y = door_y;
     door_open_ticks = DOOR_OPEN_SPEED;
     level->content_type[door_x + door_y * level->width] = CONTENT_TYPE_DOOR_OPEN;
+    invalidate_distance_maps();
 }
 
 bool short_flash_effect(double * percentage, pixel_t * color) {
@@ -189,6 +190,8 @@ void apply_special_effect(level_t * level, bool * exit_found) {
     }
 
     effect = level->object[obj_i].special_effect;
+
+    unsigned int objects_count_before = level->objects_count;
 
     switch (effect) {
         case SPECIAL_EFFECT_NONE:
@@ -277,6 +280,10 @@ void apply_special_effect(level_t * level, bool * exit_found) {
             break;
         default:
             error("Unknown special effect applicable to object");
+    }
+
+    if (level->objects_count != objects_count_before) {
+        invalidate_objects_cache();
     }
 }
 
@@ -374,7 +381,7 @@ void move_player(level_t * level, double x_change, double y_change) {
     move_player2(level, 0.0, y_change);
 }
 
-void init_animations() {
+void init_animations(void) {
     door_open_ticks = 0;
     flash_effect_ticks = 0;
     shooting_ticks = 0;

@@ -79,7 +79,15 @@ static void screen_write_char(const pixel_t * sprite, unsigned int screen_x, uns
                 }
 
                 for (unsigned int dst_y = screen_y + src_y * scale; dst_y < screen_y + src_y * scale + scale; ++dst_y) {
+                    if (dst_y >= VIEWPORT_HEIGHT) {
+                        continue;
+                    }
+
                     for (unsigned int dst_x = screen_x + src_x * scale; dst_x < screen_x + src_x * scale + scale; ++dst_x) {
+                        if (dst_x >= VIEWPORT_WIDTH) {
+                            continue;
+                        }
+
                         fg_buffer[dst_x + dst_y * VIEWPORT_WIDTH] = pixel;
                     }
                 }

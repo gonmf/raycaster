@@ -6,7 +6,7 @@ static bool show_fps = false;
 static bool invert_mouse = false;
 static unsigned char mouse_sensibility = 4;
 
-static void save_user_options() {
+static void save_user_options(void) {
     FILE * file = fopen("local.options", "w");
     if (file == NULL) {
         error("Could not open file local.options for writing");
@@ -21,7 +21,7 @@ static void save_user_options() {
     fclose(file);
 }
 
-void load_user_options() {
+void load_user_options(void) {
     FILE * file = fopen("local.options", "r");
     if (file == NULL) {
         save_user_options();
@@ -43,8 +43,6 @@ void load_user_options() {
             invert_mouse = val;
         } else if (start_with(buffer, "mouse_sensibility:")) {
             mouse_sensibility = MIN(MAX(atoi(buffer + strlen("mouse_sensibility: ")), 1), 8);
-        } else {
-            error("Unexpected local.options file format");
         }
     }
 
@@ -52,11 +50,11 @@ void load_user_options() {
     fclose(file);
 }
 
-bool is_fullscreen() {
+bool is_fullscreen(void) {
     return fullscreen;
 }
 
-void toggle_fullscreen() {
+void toggle_fullscreen(void) {
     fullscreen = !fullscreen;
 
     save_user_options();
@@ -65,41 +63,41 @@ void toggle_fullscreen() {
     window_start();
 }
 
-bool is_look_up_down() {
+bool is_look_up_down(void) {
     return look_up_down;
 }
 
-void toggle_look_up_down() {
+void toggle_look_up_down(void) {
     look_up_down = !look_up_down;
 
     save_user_options();
 }
 
-bool is_show_fps() {
+bool is_show_fps(void) {
     return show_fps;
 }
 
-void toggle_show_fps() {
+void toggle_show_fps(void) {
     show_fps = !show_fps;
 
     save_user_options();
 }
 
-bool is_invert_mouse() {
+bool is_invert_mouse(void) {
     return invert_mouse;
 }
 
-void toggle_invert_mouse() {
+void toggle_invert_mouse(void) {
     invert_mouse = !invert_mouse;
 
     save_user_options();
 }
 
-unsigned char get_mouse_sensibility() {
+unsigned char get_mouse_sensibility(void) {
     return mouse_sensibility;
 }
 
-void increase_mouse_sensibility() {
+void increase_mouse_sensibility(void) {
     mouse_sensibility++;
     if (mouse_sensibility > 8) {
         mouse_sensibility = 1;

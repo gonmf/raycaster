@@ -100,8 +100,19 @@ static void read_sprite_pack_pixels(
         error("Not a Windows Bitmap (BM) file");
     }
 
-    unsigned int data_offset = (((unsigned int)file_buf[13]) << 24) + (((unsigned int)file_buf[12]) << 16) + (((unsigned int)file_buf[11]) << 8) + file_buf[10];
+    const unsigned char * header = (const unsigned char *)file_buf;
+
+    if (read < 54) {
+        error("Not a valid Windows Bitmap file with 24pp");
+    }
+
+    unsigned int data_offset = (((unsigned int)header[13]) << 24) + (((unsigned int)header[12]) << 16) + (((unsigned int)header[11]) << 8) + header[10];
     if (read < data_offset) {
+        error("Not a valid Windows Bitmap file with 24pp");
+    }
+
+    unsigned int bits_per_pixel = (((unsigned int)header[29]) << 8) + header[28];
+    if (bits_per_pixel != 24) {
         error("Not a valid Windows Bitmap file with 24pp");
     }
 
@@ -111,19 +122,24 @@ static void read_sprite_pack_pixels(
     transparent_pixel.blue = transparent_color & 0xff;
     transparent_pixel.alpha = 0;
 
-    char * data = file_buf + data_offset;
+    const unsigned char * data = header + data_offset;
     unsigned int total_width = pack->width * pack->sprite_size;
     unsigned int total_height = pack->height * pack->sprite_size;
+    unsigned int row_size = (total_width * 3 + 3) & ~((unsigned int)3);
 
-    for (unsigned int y = 0, yt = 0; yt < total_height; ++y, ++yt) {
-        for (unsigned int x = 0, xt = 0; xt < total_width; ++x, ++xt) {
-            unsigned int dst_idx = x + y * pack->width * pack->sprite_size;
-            unsigned int inverted_yt = total_height - yt - 1;
-            unsigned int src_idx = xt + inverted_yt * total_width;
+    if (read - data_offset < row_size * total_height) {
+        error("Windows Bitmap file smaller than the sprite pack dimensions");
+    }
 
-            dst[dst_idx].red = data[src_idx * 3 + 2];
-            dst[dst_idx].green = data[src_idx * 3 + 1];
-            dst[dst_idx].blue = data[src_idx * 3];
+    for (unsigned int y = 0; y < total_height; ++y) {
+        for (unsigned int x = 0; x < total_width; ++x) {
+            unsigned int dst_idx = x + y * total_width;
+            unsigned int inverted_y = total_height - y - 1;
+            unsigned int src_idx = x * 3 + inverted_y * row_size;
+
+            dst[dst_idx].red = data[src_idx + 2];
+            dst[dst_idx].green = data[src_idx + 1];
+            dst[dst_idx].blue = data[src_idx];
 
             if (has_transparent_color && EQUAL_PIXEL(dst[dst_idx], transparent_pixel)) {
                 dst[dst_idx].alpha = 255;

@@ -70,31 +70,40 @@ static void write_enemy_array(enemy_t * arr, unsigned int len) {
     }
 }
 
-static void read_string(char * str) {
-    getline(&line_buffer, &line_buffer_size, file);
+static void read_string(char * str, size_t str_size) {
+    if (getline(&line_buffer, &line_buffer_size, file) == -1) {
+        str[0] = 0;
+        return;
+    }
 
-    snprintf(str, 80, "%s", line_buffer);
+    snprintf(str, str_size, "%s", line_buffer);
+
+    size_t len = strlen(str);
+    while (len > 0 && (str[len - 1] == '\n' || str[len - 1] == '\r')) {
+        str[len - 1] = 0;
+        len--;
+    }
 }
 
-static double read_double() {
+static double read_double(void) {
     getline(&line_buffer, &line_buffer_size, file);
 
     return atof(line_buffer);
 }
 
-static unsigned int read_int() {
+static unsigned int read_int(void) {
     getline(&line_buffer, &line_buffer_size, file);
 
     return (unsigned int)atoi(line_buffer);
 }
 
-static unsigned char read_char() {
+static unsigned char read_char(void) {
     getline(&line_buffer, &line_buffer_size, file);
 
     return (unsigned char)atoi(line_buffer);
 }
 
-static bool read_bool() {
+static bool read_bool(void) {
     getline(&line_buffer, &line_buffer_size, file);
 
     return (bool)atoi(line_buffer);
@@ -167,6 +176,10 @@ void save_game_state(unsigned char idx, const level_t * level) {
     snprintf(buffer, 200, "saves/%u.save", idx);
 
     file = fopen(buffer, "w");
+    if (file == NULL) {
+        fprintf(stderr, "WARNING: could not open file \"%s\" for writing\n", buffer);
+        return;
+    }
 
     time_t t = time(NULL);
     char buffer2[18];
@@ -203,8 +216,7 @@ void save_game_state(unsigned char idx, const level_t * level) {
 }
 
 bool read_game_state_name(unsigned char idx, char * s) {
-    char * orig_line_buffer = calloc(SAVE_FILE_NAME_SIZ, sizeof(char));
-    line_buffer = orig_line_buffer;
+    line_buffer = calloc(SAVE_FILE_NAME_SIZ, sizeof(char));
     line_buffer_size = SAVE_FILE_NAME_SIZ;
 
     char buffer[SAVE_FILE_NAME_SIZ];
@@ -212,30 +224,36 @@ bool read_game_state_name(unsigned char idx, char * s) {
 
     file = fopen(buffer, "r");
     if (file == NULL) {
-        free(orig_line_buffer);
+        free(line_buffer);
+        line_buffer = NULL;
         return false;
     }
 
-    read_string(s);
+    read_string(s, SAVE_FILE_NAME_SIZ);
 
     fclose(file);
-    free(orig_line_buffer);
+    free(line_buffer);
+    line_buffer = NULL;
 
     return true;
 }
 
 level_t * load_game_state(unsigned char idx) {
-    char * orig_line_buffer = calloc(SAVE_FILE_NAME_SIZ, sizeof(char));
-    line_buffer = orig_line_buffer;
+    line_buffer = calloc(SAVE_FILE_NAME_SIZ, sizeof(char));
     line_buffer_size = SAVE_FILE_NAME_SIZ;
 
     char buffer[SAVE_FILE_NAME_SIZ];
     snprintf(buffer, SAVE_FILE_NAME_SIZ, "saves/%u.save", idx);
 
     file = fopen(buffer, "r");
+    if (file == NULL) {
+        free(line_buffer);
+        line_buffer = NULL;
+        return NULL;
+    }
 
     char save_name[SAVE_FILE_NAME_SIZ];
-    read_string(save_name);
+    read_string(save_name, SAVE_FILE_NAME_SIZ);
 
     unsigned int level_nr = read_int();
 
@@ -258,9 +276,15 @@ level_t * load_game_state(unsigned char idx) {
     level->special_effects = read_char_array(level->width * level->height);
     level->map_revealed = read_bool_array(level->width * level->height);
     level->objects_count = read_int();
-    level->object = read_object_array(level->objects_count);
+    object_t * objects = read_object_array(level->objects_count);
     level->enemies_count = read_int();
     level->enemy = read_enemy_array(level->enemies_count);
+
+    level->object = calloc(MAX(level->objects_count + level->enemies_count, 1), sizeof(object_t));
+    if (level->objects_count > 0) {
+        memcpy(level->object, objects, level->objects_count * sizeof(object_t));
+    }
+    free(objects);
 
     level->score = read_int();
     level->level_start_score = read_int();
@@ -273,7 +297,8 @@ level_t * load_game_state(unsigned char idx) {
     level->ammo = read_int();
 
     fclose(file);
-    free(orig_line_buffer);
+    free(line_buffer);
+    line_buffer = NULL;
 
     return level;
 }

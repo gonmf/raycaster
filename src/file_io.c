@@ -11,15 +11,21 @@ unsigned int file_read(char * dst, unsigned int max_size, const char * filename)
 
     unsigned int total_read = 0;
 
-    do {
-        total_read += fread(dst, 1, max_size, file);
+    while (total_read < max_size) {
+        size_t read = fread(dst + total_read, 1, max_size - total_read, file);
 
         if (ferror(file)) {
             char * sb = calloc(MAX_FILE_NAME_SIZ, 1);
             sprintf(sb, "Error reading file \"%s\"", filename);
             error(sb);
         }
-    } while (!feof(file));
+
+        total_read += (unsigned int)read;
+
+        if (read == 0) {
+            break;
+        }
+    }
 
     fclose(file);
 

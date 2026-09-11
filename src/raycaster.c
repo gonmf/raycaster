@@ -14,7 +14,7 @@ sprite_pack_t * font_sprites;
 
 pixel_t  * fg_buffer;
 
-static char * enemy_angles;
+static signed char * enemy_angles;
 static obj_distance_t * sorted_distances;
 static double fish_eye_table[VIEWPORT_WIDTH];
 static bool * object_locations;
@@ -29,7 +29,7 @@ static unsigned int horizon_offset(const level_t * level) {
     }
 }
 
-void init_fish_eye_table() {
+void init_fish_eye_table(void) {
     double half_fov = FIELD_OF_VIEW / 2.0;
 
     unsigned int center_x = VIEWPORT_WIDTH / 2;
@@ -66,7 +66,16 @@ static void fill_in_background(const level_t * level) {
 }
 
 static int obj_distance_compare(const void * a, const void * b) {
-  return ((const obj_distance_t *)a)->val > ((const obj_distance_t *)b)->val;
+    double val_a = ((const obj_distance_t *)a)->val;
+    double val_b = ((const obj_distance_t *)b)->val;
+
+    if (val_a < val_b) {
+        return -1;
+    }
+    if (val_a > val_b) {
+        return 1;
+    }
+    return 0;
 }
 
 static double cast_simple_ray(const level_t * level, double angle, double * block_x, unsigned int * object, unsigned int * enemy, unsigned int * step_count) {
@@ -334,10 +343,11 @@ static double cast_ray(const level_t * level, double angle, double * hit_angle, 
 }
 
 static void enemy_color(pixel_t * dst, double sprite_x, double sprite_y, double intensity, unsigned char sprite_type, unsigned char enemy_type) {
-    unsigned int x = (unsigned int)(enemy_sprites[enemy_type]->sprite_size * sprite_x);
-    unsigned int y = (unsigned int)(enemy_sprites[enemy_type]->sprite_size * sprite_y);
+    unsigned int sprite_size = enemy_sprites[enemy_type]->sprite_size;
+    unsigned int x = MIN((unsigned int)(sprite_size * sprite_x), sprite_size - 1);
+    unsigned int y = MIN((unsigned int)(sprite_size * sprite_y), sprite_size - 1);
 
-    pixel_t src = enemy_sprites[enemy_type]->sprites[sprite_type][x + y * enemy_sprites[enemy_type]->sprite_size];
+    pixel_t src = enemy_sprites[enemy_type]->sprites[sprite_type][x + y * sprite_size];
     // alpha == 1 is used as indicator another object's pixel was already painted
     if (src.alpha == 0 && dst->alpha == 0) {
         *dst = darken_shading(src, intensity);
@@ -346,10 +356,11 @@ static void enemy_color(pixel_t * dst, double sprite_x, double sprite_y, double 
 }
 
 static void object_color(pixel_t * dst, double sprite_x, double sprite_y, double intensity, unsigned char sprite_type) {
-    unsigned int x = (unsigned int)(objects_sprites->sprite_size * sprite_x);
-    unsigned int y = (unsigned int)(objects_sprites->sprite_size * sprite_y);
+    unsigned int sprite_size = objects_sprites->sprite_size;
+    unsigned int x = MIN((unsigned int)(sprite_size * sprite_x), sprite_size - 1);
+    unsigned int y = MIN((unsigned int)(sprite_size * sprite_y), sprite_size - 1);
 
-    pixel_t src = objects_sprites->sprites[sprite_type][x + y * objects_sprites->sprite_size];
+    pixel_t src = objects_sprites->sprites[sprite_type][x + y * sprite_size];
     // alpha == 1 is used as indicator another object's pixel was already painted
     if (src.alpha == 0 && dst->alpha == 0) {
         *dst = darken_shading(src, intensity);
@@ -358,15 +369,35 @@ static void object_color(pixel_t * dst, double sprite_x, double sprite_y, double
 }
 
 static void block_color(pixel_t * dst, double block_x, double block_y, double intensity, unsigned char block_type) {
-    unsigned int x = (unsigned int)(wall_textures->sprite_size * block_x);
-    unsigned int y = (unsigned int)(wall_textures->sprite_size * block_y);
+    unsigned int sprite_size = wall_textures->sprite_size;
+    unsigned int x = MIN((unsigned int)(sprite_size * block_x), sprite_size - 1);
+    unsigned int y = MIN((unsigned int)(sprite_size * block_y), sprite_size - 1);
 
-    pixel_t src = wall_textures->sprites[block_type][x + y * wall_textures->sprite_size];
+    pixel_t src = wall_textures->sprites[block_type][x + y * sprite_size];
     *dst = darken_shading(src, intensity);
 }
 
-void invalidate_objects_cache() {
+void invalidate_objects_cache(void) {
     object_locations_refresh_required = true;
+}
+
+static void mark_object_location(const level_t * level, double location_x, double location_y) {
+    unsigned int x = (unsigned int)(location_x + 0.5);
+    unsigned int y = (unsigned int)(location_y + 0.5);
+
+    object_locations[x + y * level->width] = true;
+    if (x > 0) {
+        object_locations[x - 1 + y * level->width] = true;
+    }
+    if (x < level->width - 1) {
+        object_locations[x + 1 + y * level->width] = true;
+    }
+    if (y > 0) {
+        object_locations[x + (y - 1) * level->width] = true;
+    }
+    if (y < level->height - 1) {
+        object_locations[x + (y + 1) * level->width] = true;
+    }
 }
 
 static void refresh_object_cache(const level_t * level) {
@@ -377,28 +408,10 @@ static void refresh_object_cache(const level_t * level) {
     object_locations_refresh_required = false;
     memset(object_locations, false, level->width * level->height * sizeof(bool));
     for (unsigned int i = 0; i < level->enemies_count; ++i) {
-        unsigned int x = (unsigned int)(level->enemy[i].x + 0.5);
-        unsigned int y = (unsigned int)(level->enemy[i].y + 0.5);
-
-        object_locations[x + y * level->width] = true;
-        if (x > 0) {
-            object_locations[x - 1 + y * level->width] = true;
-        }
-        if (x < level->width - 1) {
-            object_locations[x + 1 + y * level->width] = true;
-        }
-        if (y > 0) {
-            object_locations[x + (y - 1) * level->width] = true;
-        }
-        if (y < level->height - 1) {
-            object_locations[x + (y + 1) * level->width] = true;
-        }
+        mark_object_location(level, level->enemy[i].x, level->enemy[i].y);
     }
     for (unsigned int i = 0; i < level->objects_count; ++i) {
-        unsigned int x = (unsigned int)(level->object[i].x + 0.5);
-        unsigned int y = (unsigned int)(level->object[i].y + 0.5);
-
-        object_locations[x + y * level->width] = true;
+        mark_object_location(level, level->object[i].x, level->object[i].y);
     }
 }
 
@@ -409,7 +422,7 @@ static void fill_in_objects(level_t * level, bool trigger_shot) {
     unsigned int enemy_i = INT_MAX;
     unsigned int viewport_mid = horizon_offset(level);
     unsigned char enemy_type = 0;
-    double block_x;
+    double block_x = 0.0;
 
     // We remember enemy angles to make sure in the same frame always the same angle/sprite
     // is used.
@@ -629,7 +642,7 @@ void paint_scene(level_t * level, bool trigger_shot) {
     fill_in_weapon(level);
 }
 
-void load_textures() {
+void load_textures(void) {
     wall_textures = calloc(1, sizeof(sprite_pack_t));
     read_sprite_pack(wall_textures, "walls");
 
@@ -663,7 +676,7 @@ void init_raycaster(const level_t * level) {
         free(object_locations);
     }
 
-    enemy_angles = malloc(level->enemies_count * sizeof(char));
+    enemy_angles = malloc(level->enemies_count * sizeof(signed char));
     // level->enemies_count * 2 because dead enemies create an object
     sorted_distances = malloc((level->objects_count + level->enemies_count * 2) * sizeof(obj_distance_t));
 

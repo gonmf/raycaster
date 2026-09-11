@@ -57,8 +57,8 @@ void paint_map(const level_t * level) {
     }
 
     for (unsigned int i = 0; i < level->objects_count; ++i) {
-        unsigned int x = (unsigned int)level->object[i].x;
-        unsigned int y = level->height - ((unsigned int)level->object[i].y) - 1;
+        unsigned int x = (unsigned int)(level->object[i].x + 0.5);
+        unsigned int y = level->height - ((unsigned int)(level->object[i].y + 0.5)) - 1;
 
         if (level->object[i].revealed) {
             if (level->object[i].type == OBJECT_TYPE_BLOCKING) {

@@ -144,7 +144,7 @@ level_t * read_level_info(unsigned int level_nr) {
     unsigned int map_layout_idx = 0;
     int player_start_x = -1;
     int player_start_y = -1;
-    int player_start_angle = 0;
+    int player_start_angle = -360;
     int type_nr = 0;
     bool exit_placed = false;
     char last_command[MAX_LEVEL_SIZE + 1];
@@ -159,10 +159,6 @@ level_t * read_level_info(unsigned int level_nr) {
         c = buffer[ci];
 
         if (c == '\n') {
-            if (line_pos > MAX_LEVEL_SIZE) {
-                error("Invalid sprite pack format");
-            }
-
             if (line_buffer[0]) {
                 if (line_buffer[0] == '#') {
                     // skip line
@@ -193,7 +189,7 @@ level_t * read_level_info(unsigned int level_nr) {
                     } else if (start_with(last_command, "WALL_TYPE_")) {
                         if (last_command_uses == 0) {
                             type_nr = (last_command + strlen("WALL_TYPE_"))[0] - 'A';
-                            validate_scalar(type_nr, 0, 10, line);
+                            validate_scalar(type_nr, 0, 9, line);
                             if (wall_types_x[type_nr] != -1) {
                                 error_w_line("duplicated command", line - 1);
                             }
@@ -208,7 +204,7 @@ level_t * read_level_info(unsigned int level_nr) {
                     } else if (start_with(last_command, "FURNITURE_OBJECT_TYPE_")) {
                         if (last_command_uses == 0) {
                             type_nr = atoi(last_command + strlen("FURNITURE_OBJECT_TYPE_"));
-                            validate_scalar(type_nr, 0, 10, line);
+                            validate_scalar(type_nr, 0, 9, line);
                             if (furniture_obj_types_x[type_nr] != -1) {
                                 error_w_line("duplicated command", line - 1);
                             }
@@ -452,6 +448,10 @@ level_t * read_level_info(unsigned int level_nr) {
 
             line++;
         } else if (c != '\r') {
+            if (line_pos >= MAX_LEVEL_SIZE) {
+                error_w_line("line too long", line);
+            }
+
             line_buffer[line_pos] = c;
             line_pos++;
             line_buffer[line_pos] = 0;

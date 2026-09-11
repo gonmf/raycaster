@@ -28,8 +28,6 @@
             <option value="K">Door Regular</option>
             <option value="L">Door for Key 1</option>
             <option value="M">Door for Key 2</option>
-            <option value="N">Level Start Door</option>
-            <option value="O">Level End Door</option>
             <option value="clear">Clear</option>
         </select>
 
@@ -182,7 +180,7 @@
                 for (var x = 0; x < window.totalWidth; ++x) {
                     if (!window.contents[y][x]) { continue; }
 
-                    if (window.contents[y][x] >= "A" && window.contents[y][x] <= "O") {
+                    if (window.contents[y][x] >= "A" && window.contents[y][x] <= "M") {
                         ctx.fillStyle = "black";
                         ctx.fillRect(x * window.blockSize, y * window.blockSize, window.blockSize, window.blockSize);
                         ctx.fillStyle = colorFor(window.contents[y][x]);
@@ -274,7 +272,7 @@
         };
 
         const isWall = function(code) {
-            return code && code >= "A" && code <= "O";
+            return code && code >= "A" && code <= "M";
         }
 
         const adjustCanvasSizes = function() {
@@ -390,7 +388,10 @@
             var diffX = Math.round(Math.round(window.totalWidth / 2) - centerX);
             var diffY = Math.round(Math.round(window.totalHeight / 2) - centerY);
 
-            var newContents = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+            diffX = Math.max(-minX, Math.min(diffX, window.totalWidth - 1 - maxX));
+            diffY = Math.max(-minY, Math.min(diffY, window.totalHeight - 1 - maxY));
+
+            var newContents = Array.from(Array(window.totalHeight), () => new Array(window.totalWidth));
 
             for (var y = 0; y < window.totalHeight; ++y) {
                 for (var x = 0; x < window.totalWidth; ++x) {
@@ -431,7 +432,7 @@
             for (var y = minY; y <= maxY; ++y) {
                 for (var x = minX; x <= maxX; ++x) {
                     if (y == minY || y == maxY || x == minX || x == maxX) {
-                        if ((window.contents[y][x] >= "A" && window.contents[y][x] <= "J") || window.contents[y][x] == 'N' || window.contents[y][x] == 'O') {
+                        if (window.contents[y][x] >= "A" && window.contents[y][x] <= "J") {
                             // do nothing
                         } else {
                             window.contents[y][x] = wallType;
@@ -453,7 +454,7 @@
 
             window.totalWidth = width;
             window.totalHeight = height;
-            window.contents = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+            window.contents = Array.from(Array(window.totalHeight), () => new Array(window.totalWidth));
             adjustCanvasSizes();
             refreshCanvas();
             refreshTextOutput();
@@ -462,7 +463,7 @@
         const loadFromText = function() {
             var text = document.getElementById("textOutput");
             var textContent = (text.value + "").trim();
-            var newContents = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+            var newContents = Array.from(Array(window.totalHeight), () => new Array(window.totalWidth));
 
             textContent = textContent.split("LAYOUT\n");
             textContent = textContent[1] || textContent[0];
@@ -485,6 +486,10 @@
                 } else if (c === ".") {
                     // do nothing
                 } else if (isWall(c) || (c >= "0" && c <= "9") || ["s", "e", "k", "l", "t", "y", "u", "i", "b", "n", "m", "q", "w", "r", "a", "z", "x", "c", "v", "P", "Q", "R", "S", "T", "V", "X"].includes(c)) {
+                    if (x >= window.totalWidth || y >= window.totalHeight) {
+                        text.value = `Error: map does not fit in a ${window.totalWidth}x${window.totalHeight} canvas`;
+                        return;
+                    }
                     newContents[y][x] = c;
                 } else {
                     text.value = `Error: invalid character "${c}" (${x},${y})`;
@@ -522,7 +527,7 @@
         window.totalHeight = 50;
         window.blockSize = 16;
         window.painting = false;
-        window.contents = Array.from(Array(window.totalWidth), () => new Array(window.totalHeight));
+        window.contents = Array.from(Array(window.totalHeight), () => new Array(window.totalWidth));
 
         // Event handlers
 

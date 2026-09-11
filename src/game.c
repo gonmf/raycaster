@@ -53,6 +53,7 @@ void hit_enemy(level_t * level, enemy_t * enemy, double distance) {
                 level->object[level->objects_count].texture = SMALL_AMMO_TEXTURE;
                 level->object[level->objects_count].special_effect = SPECIAL_EFFECT_AMMO;
             }
+            level->object[level->objects_count].revealed = false;
             level->object[level->objects_count].x = enemy->x;
             level->object[level->objects_count].y = enemy->y;
             level->objects_count++;
@@ -157,6 +158,11 @@ static void pick_target_coord(
     }
 }
 
+void invalidate_distance_maps(void) {
+    player_dist_map_x = UINT_MAX;
+    player_dist_map_y = UINT_MAX;
+}
+
 static void calc_distances_to_player(const level_t * level) {
     unsigned int width = level->width;
     unsigned int height = level->height;
@@ -190,6 +196,11 @@ static void calc_distances_to_player(const level_t * level) {
 
     fill_in_player_dist_map(level, player_dist_map, rounded_x, rounded_y, 0);
     fill_in_player_dist_map(level, noise_dist_map, rounded_x, rounded_y, 0);
+
+    player_dist_map[rounded_x + rounded_y * width] = -2;
+
+    player_dist_map_x = rounded_x;
+    player_dist_map_y = rounded_y;
 }
 
 void alert_enemies_in_proximity(const level_t * level, unsigned int distance) {
@@ -225,7 +236,7 @@ static bool make_movement_plan(const level_t * level, enemy_t * enemy) {
     unsigned int rounded_enemy_y = (unsigned int)(enemy->y + 0.5);
 
     int dist = player_dist_map[rounded_enemy_x + rounded_enemy_y * level->width];
-    if (dist == -1) {
+    if (dist <= 0) {
         return false; // no path exists
     }
 
@@ -250,7 +261,7 @@ static bool make_movement_plan(const level_t * level, enemy_t * enemy) {
     }
 
     if (min_distance == -1) {
-        error("unexpected error in path finding");
+        return false;
     }
 
     double final_target_x = ((double)target_x) - 0.2 + 0.4 * (rand() / ((double)RAND_MAX));
@@ -269,18 +280,9 @@ static bool in_enemy_view(level_t * level, enemy_t * enemy) {
     double x = level->observer_x - enemy->x;
     double y = level->observer_y - enemy->y;
 
-    double angle = fit_angle(atan(y / x) * RADIAN_CONSTANT);
-    if (x < 0.0) {
-        angle -= 180.0;
-    }
+    double angle = fit_angle(atan2(y, x) * RADIAN_CONSTANT - enemy->angle);
 
-    angle = fit_angle(angle + enemy->angle);
-
-    if (enemy->angle == 270.0) {
-        return angle > 270.0 - (ENEMY_FIELD_OF_VIEW / 2.0) && angle < 270.0 + (ENEMY_FIELD_OF_VIEW / 2.0);
-    } else {
-        return angle > 90.0 - (ENEMY_FIELD_OF_VIEW / 2.0) && angle < 90.0 + (ENEMY_FIELD_OF_VIEW / 2.0);
-    }
+    return angle > 90.0 - (ENEMY_FIELD_OF_VIEW / 2.0) && angle < 90.0 + (ENEMY_FIELD_OF_VIEW / 2.0);
 }
 
 static bool in_shooting_distance(double distance) {
@@ -297,7 +299,7 @@ static bool has_line_of_fire(const level_t * level, const enemy_t * enemy, doubl
     double x = level->observer_x - enemy->x;
     double y = level->observer_y - enemy->y;
 
-    double angle_radians = atan(y / x);
+    double angle_radians = atan2(y, x);
     double x_change = cos(angle_radians) * ROUGH_RAY_STEP_CONSTANT;
     double y_change = sin(angle_radians) * ROUGH_RAY_STEP_CONSTANT;
     double curr_x = enemy->x + 0.5;
@@ -431,4 +433,5 @@ void init_game_buffers(const level_t * level) {
     player_dist_map = malloc(width * height * sizeof(int));
     noise_dist_map = malloc(width * height * sizeof(int));
     player_dist_map_x = UINT_MAX;
+    player_dist_map_y = UINT_MAX;
 }

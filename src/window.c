@@ -10,7 +10,7 @@ void set_cursor_visible(bool visible) {
     SDL_ShowCursor(visible ? SDL_ENABLE : SDL_DISABLE);
 }
 
-static void window_start_windowed() {
+static void window_start_windowed(void) {
     double screen_ratio = 1.0;
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -59,7 +59,7 @@ static void window_start_windowed() {
     SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 
-static void window_start_fullscreen() {
+static void window_start_fullscreen(void) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         error("Could not initialize SDL");
     }
@@ -100,7 +100,7 @@ static void window_start_fullscreen() {
     SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 
-void window_start() {
+void window_start(void) {
     if (sdl_inited) {
         error("SDL already initialized");
     }
@@ -112,7 +112,7 @@ void window_start() {
     }
 }
 
-void window_close() {
+void window_close(void) {
     if (texture) {
         SDL_DestroyTexture(texture);
         texture = NULL;

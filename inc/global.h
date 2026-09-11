@@ -144,6 +144,7 @@ typedef struct __sprite_pack_ {
 #define UI_PADDING 10
 #define MAX_FPS 120
 #define GAME_LOGIC_CYCLE_STEP 8 // ms, 8ms = 125 updates / sec
+#define MAX_GAME_LOGIC_CYCLES 16
 #define FIELD_OF_VIEW 72 // degrees
 #define MAP_BLOCK_SIZE 8
 
@@ -226,7 +227,7 @@ extern sprite_pack_t * wall_textures;
 extern sprite_pack_t * objects_sprites;
 extern sprite_pack_t * font_sprites;
 extern pixel_t * fg_buffer;
-void load_textures();
+void load_textures(void);
 
 // color.c
 extern pixel_t color_white;
@@ -257,9 +258,9 @@ void error_w_line(const char * s, unsigned int line);
 void add_key_pressed(SDL_Keycode code);
 void remove_key_pressed(SDL_Keycode code);
 bool key_is_pressed(SDL_Keycode code);
-bool player_moving();
-void clear_keys_pressed();
-bool is_mouse_left_key_pressed();
+bool player_moving(void);
+void clear_keys_pressed(void);
+bool is_mouse_left_key_pressed(void);
 void set_mouse_left_key_pressed(bool value);
 
 // file_io.c
@@ -267,7 +268,6 @@ unsigned int file_read(char * dst, unsigned int max_size, const char * filename)
 
 // math.c
 double fit_angle(double d);
-int fit_angle_int(int d);
 double distance(double a_x, double a_y, double b_x, double b_y);
 
 // string.c
@@ -275,15 +275,15 @@ bool start_with(const char * s, const char * prefix);
 
 // window.c
 void set_cursor_visible(bool visible);
-void window_start();
-void window_close();
+void window_start(void);
+void window_close(void);
 void window_update_pixels(const pixel_t * pixels);
 
 // raycaster.c
-void init_fish_eye_table();
+void init_fish_eye_table(void);
 void paint_scene(level_t * level, bool trigger_shot);
 void init_raycaster(const level_t * level);
-void invalidate_objects_cache();
+void invalidate_objects_cache(void);
 
 // actions.c
 void transition_step(level_t * level, bool * trigger_shot);
@@ -297,7 +297,7 @@ void apply_special_effect(level_t * level, bool * exit_found);
 bool shooting_state(unsigned int * step);
 void shooting_start_action(const level_t * level);
 void move_player(level_t * level, double x_change, double y_change);
-void init_animations();
+void init_animations(void);
 
 // ui.c
 void paint_map(const level_t * level);
@@ -306,7 +306,7 @@ void paint_map(const level_t * level);
 pixel_t shading(pixel_t min_color, pixel_t max_color, double factor);
 void scene_shading(pixel_t color, double factor);
 pixel_t darken_shading(pixel_t color, double factor);
-void init_base_colors();
+void init_base_colors(void);
 
 // game.c
 void make_weapon_available(level_t * level, unsigned char weapon_nr);
@@ -315,6 +315,7 @@ void alert_enemies_in_proximity(const level_t * level, unsigned int distance);
 void hit_enemy(level_t * level, enemy_t * enemy, double distance);
 void update_enemies_state(level_t * level);
 void init_game_buffers(const level_t * level);
+void invalidate_distance_maps(void);
 
 // font.c
 void screen_write_scaled(const char * str, unsigned int screen_x, unsigned int screen_y, unsigned int scale, double factor);
@@ -326,17 +327,17 @@ bool read_game_state_name(unsigned char idx, char * s);
 level_t * load_game_state(unsigned char idx);
 
 // options.c
-void load_user_options();
-bool is_fullscreen();
-void toggle_fullscreen();
-bool is_look_up_down();
-void toggle_look_up_down();
-bool is_show_fps();
-void toggle_show_fps();
-bool is_invert_mouse();
-void toggle_invert_mouse();
-unsigned char get_mouse_sensibility();
-void increase_mouse_sensibility();
+void load_user_options(void);
+bool is_fullscreen(void);
+void toggle_fullscreen(void);
+bool is_look_up_down(void);
+void toggle_look_up_down(void);
+bool is_show_fps(void);
+void toggle_show_fps(void);
+bool is_invert_mouse(void);
+void toggle_invert_mouse(void);
+unsigned char get_mouse_sensibility(void);
+void increase_mouse_sensibility(void);
 
 // timing.c
 bool limit_fps(long unsigned int us_time);

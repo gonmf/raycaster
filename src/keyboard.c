@@ -39,7 +39,7 @@ bool key_is_pressed(SDL_Keycode code) {
     return false;
 }
 
-bool player_moving() {
+bool player_moving(void) {
     for (unsigned int i = 0; i < keys_pressed_count; ++i) {
         SDL_Keycode code = keys_pressed[i];
 
@@ -51,12 +51,12 @@ bool player_moving() {
     return false;
 }
 
-void clear_keys_pressed() {
+void clear_keys_pressed(void) {
     keys_pressed_count = 0;
     mouse_left_key_pressed = false;
 }
 
-bool is_mouse_left_key_pressed() {
+bool is_mouse_left_key_pressed(void) {
     return mouse_left_key_pressed;
 }
 

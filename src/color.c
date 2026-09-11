@@ -34,7 +34,7 @@ pixel_t darken_shading(pixel_t color, double factor) {
     return shading(color_black, color, factor);
 }
 
-void init_base_colors() {
+void init_base_colors(void) {
     color_white.red = 255;
     color_white.green = 255;
     color_white.blue = 255;

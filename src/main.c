@@ -12,11 +12,12 @@ static bool key_up_pressed = false;
 static bool key_down_pressed = false;
 static bool key_enter_pressed = false;
 static bool show_map = false;
+static bool abandon_game = false;
 static char * save_games[SAVE_FILES_COUNT];
 static pixel_t * backup_buffer;
 static struct timespec spec;
 
-static void update_observer_state() {
+static void update_observer_state(void) {
     bool keyW = key_is_pressed(SDLK_w);
     bool keyS = key_is_pressed(SDLK_s);
     bool keyA = key_is_pressed(SDLK_a);
@@ -172,7 +173,7 @@ static void start_screen_to_color_animation(pixel_t color, unsigned int duration
     }
 }
 
-static void write_text_ui() {
+static void write_text_ui(void) {
     char buffer[20];
 
     // Top left corner: Score
@@ -248,6 +249,10 @@ static bool game_logic_iteration(bool * trigger_shot) {
 
             if (code == SDLK_ESCAPE) {
                 render_menus_loop(3);
+
+                if (abandon_game) {
+                    return true;
+                }
             } else {
                 add_key_pressed(code);
             }
@@ -285,7 +290,7 @@ static bool game_logic_iteration(bool * trigger_shot) {
     return false;
 }
 
-static void main_render_loop() {
+static void main_render_loop(void) {
     unsigned int frames_second = 1;
     long unsigned int last_ms = 0;
 
@@ -334,7 +339,7 @@ static void main_render_loop() {
     }
 }
 
-static void open_level() {
+static void open_level(void) {
     init_animations();
     init_raycaster(level);
     init_game_buffers(level);
@@ -343,7 +348,7 @@ static void open_level() {
     main_render_loop();
 }
 
-static void unload_assets() {
+static void unload_assets(void) {
     action_btn_pressed = false;
     map_btn_pressed = false;
     key_1_pressed = false;
@@ -366,7 +371,7 @@ static void unload_assets() {
     clear_keys_pressed();
 }
 
-static void advance_level() {
+static void advance_level(void) {
     level_t * new_level = read_level_info(level->level_nr + 1);
 
     new_level->score = level->score;
@@ -385,9 +390,9 @@ static void advance_level() {
     level = new_level;
 }
 
-static void game_level_loop() {
-    char buffer[64];
-    file_read(buffer, 64, "levels/all.info");
+static void game_level_loop(void) {
+    char buffer[64] = {0};
+    file_read(buffer, 63, "levels/all.info");
     int levels = atoi(buffer);
     if (levels <= 0 || levels > 99) {
         error("Invalid number of levels");
@@ -395,6 +400,11 @@ static void game_level_loop() {
 
     while (level->level_nr < (unsigned int)levels) {
         open_level();
+
+        if (abandon_game) {
+            abandon_game = false;
+            return;
+        }
 
         if (level->life == 0) {
             if (level->lives == 0) {
@@ -428,7 +438,7 @@ static void game_level_loop() {
     }
 }
 
-static void start_new_game() {
+static void start_new_game(void) {
     unload_assets();
 
     level = read_level_info(0);
@@ -572,7 +582,7 @@ static void render_load_save_menu(unsigned int current_option, double shading_fa
     window_update_pixels(fg_buffer);
 }
 
-static void reload_save_games() {
+static void reload_save_games(void) {
     char buffer[SAVE_FILE_NAME_SIZ];
 
     for (unsigned int i = 0; i < SAVE_FILES_COUNT; ++i) {
@@ -701,7 +711,7 @@ static void render_menus_loop(unsigned int start_menu) {
                         }
                         break;
                     case 1:
-                        if (current_option < SAVE_FILES_COUNT) {
+                        if (current_option < SAVE_FILES_COUNT && save_games[current_option]) {
                             continue_game(current_option);
                         }
                         current_menu = 0;
@@ -738,8 +748,8 @@ static void render_menus_loop(unsigned int start_menu) {
                                 current_option = 0;
                                 break;
                             case 2:
-                                current_menu = 0;
-                                current_option = 0;
+                                abandon_game = true;
+                                return;
                         }
                         break;
                     case 4:
@@ -771,7 +781,7 @@ static void render_menus_loop(unsigned int start_menu) {
     }
 }
 
-int main() {
+int main(void) {
     init_base_colors();
     init_fish_eye_table();
     load_textures();

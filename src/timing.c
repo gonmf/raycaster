@@ -22,6 +22,12 @@ unsigned int game_logic_cycles(long unsigned int ms_time) {
 
     long unsigned int elapsed = ms_time - last_logic_ms_time;
     long unsigned int logic_cycles = elapsed / GAME_LOGIC_CYCLE_STEP;
+
+    if (logic_cycles > MAX_GAME_LOGIC_CYCLES) {
+        last_logic_ms_time = ms_time;
+        return MAX_GAME_LOGIC_CYCLES;
+    }
+
     last_logic_ms_time += logic_cycles * GAME_LOGIC_CYCLE_STEP;
     return logic_cycles;
 }
