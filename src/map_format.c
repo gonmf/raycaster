@@ -105,7 +105,7 @@ level_t * read_level_info(unsigned int level_nr) {
     char * str_buf = calloc(MAX_FILE_NAME_SIZ, 1);
     snprintf(str_buf, MAX_FILE_NAME_SIZ, "./levels/%u.level", level_nr);
     char * buffer = calloc(MAX_FILE_SIZE, 1);
-    file_read(buffer, MAX_FILE_SIZE, str_buf);
+    file_read(buffer, MAX_FILE_SIZE - 1, str_buf);
     free(str_buf);
 
     int map_size_w = -1;

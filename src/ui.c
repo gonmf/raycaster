@@ -7,14 +7,14 @@ static void paint_map_part(pixel_t color, unsigned int x, unsigned int y, unsign
         unsigned int y2 = y * MAP_BLOCK_SIZE + by + offset_y + shift;
 
         if (y2 >= VIEWPORT_HEIGHT) {
-            return;
+            continue;
         }
 
         for (unsigned int bx = 0; bx < MAP_BLOCK_SIZE - shift * 2; ++bx) {
             unsigned int x2 = x * MAP_BLOCK_SIZE + bx + offset_x + shift;
 
             if (x2 >= VIEWPORT_WIDTH) {
-                return;
+                continue;
             }
 
             fg_buffer[x2 + y2 * VIEWPORT_WIDTH] = color;

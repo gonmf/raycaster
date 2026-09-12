@@ -32,7 +32,7 @@ static void parse_sprite_pack_metadata(
     char * str_buf = calloc(MAX_FILE_NAME_SIZ, 1);
     snprintf(str_buf, MAX_FILE_NAME_SIZ, "./sprites/%s.info", pack->name);
     char * file_buf = calloc(MAX_FILE_SIZE, 1);
-    file_read(file_buf, MAX_FILE_SIZE, str_buf);
+    file_read(file_buf, MAX_FILE_SIZE - 1, str_buf);
     free(str_buf);
 
     char * buffer = file_buf;
@@ -43,7 +43,7 @@ static void parse_sprite_pack_metadata(
     char c;
     while ((c = *buffer)) {
         if (c == '\n') {
-            if (line_pos == 3) {
+            if (line_pos == 0) {
                 error("Invalid sprite pack format");
             }
 
@@ -93,7 +93,7 @@ static void read_sprite_pack_pixels(
     char * str_buf = calloc(MAX_FILE_NAME_SIZ, 1);
     snprintf(str_buf, MAX_FILE_NAME_SIZ, "./sprites/%s.bmp", pack->name);
     char * file_buf = calloc(MAX_FILE_SIZE, 1);
-    unsigned int read = file_read(file_buf, MAX_FILE_SIZE, str_buf);
+    unsigned int read = file_read(file_buf, MAX_FILE_SIZE - 1, str_buf);
     free(str_buf);
 
     if (file_buf[0] != 0x42 || file_buf[1] != 0x4D) {

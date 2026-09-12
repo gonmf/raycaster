@@ -22,6 +22,8 @@ static void update_observer_state(void) {
     bool keyS = key_is_pressed(SDLK_s);
     bool keyA = key_is_pressed(SDLK_a);
     bool keyD = key_is_pressed(SDLK_d);
+    bool keyQ = key_is_pressed(SDLK_q);
+    bool keyE = key_is_pressed(SDLK_e);
 
     if (keyW && keyS) {
         keyW = keyS = false;
@@ -29,11 +31,21 @@ static void update_observer_state(void) {
     if (keyA && keyD) {
         keyA = keyD = false;
     }
+    if (keyQ && keyE) {
+        keyQ = keyE = false;
+    }
 
     double mov_value = MOVEMENT_CONSTANT;
 
-    if ((keyW || keyS) && (keyA || keyD)) {
+    if ((keyW || keyS) && (keyQ || keyE)) {
         mov_value *=  0.70710678118;
+    }
+
+    if (keyA) {
+        level->observer_angle = fit_angle(level->observer_angle - KEYBOARD_ROTATION_CONSTANT);
+    }
+    if (keyD) {
+        level->observer_angle = fit_angle(level->observer_angle + KEYBOARD_ROTATION_CONSTANT);
     }
 
     if (keyW) {
@@ -50,22 +62,22 @@ static void update_observer_state(void) {
 
         move_player(level, -x_change, -y_change);
     }
-    if (keyA) {
+    if (keyQ) {
         double angle_radians = fit_angle(level->observer_angle - 90.0) / RADIAN_CONSTANT;
-        double x_change = sin(angle_radians) * (mov_value / 1.0);
-        double y_change = cos(angle_radians) * (mov_value / 1.0);
+        double x_change = sin(angle_radians) * mov_value;
+        double y_change = cos(angle_radians) * mov_value;
 
         move_player(level, x_change, y_change);
     }
-    if (keyD) {
+    if (keyE) {
         double angle_radians = fit_angle(level->observer_angle + 90.0) / RADIAN_CONSTANT;
-        double x_change = sin(angle_radians) * (mov_value / 1.0);
-        double y_change = cos(angle_radians) * (mov_value / 1.0);
+        double x_change = sin(angle_radians) * mov_value;
+        double y_change = cos(angle_radians) * mov_value;
 
         move_player(level, x_change, y_change);
     }
 
-    if (key_is_pressed(SDLK_e)) {
+    if (key_is_pressed(SDLK_SPACE)) {
         action_btn_pressed = true;
     } else {
         if (action_btn_pressed) {
@@ -266,7 +278,7 @@ static bool game_logic_iteration(bool * trigger_shot) {
 
             if (move_x) {
                 double angle_change = ((double)move_x) * ROTATION_CONSTANT * get_mouse_sensibility() * 2 / VIEWPORT_WIDTH;
-                level->observer_angle += angle_change;
+                level->observer_angle = fit_angle(level->observer_angle + angle_change);
             }
 
             if (move_y && is_look_up_down()) {
@@ -283,7 +295,7 @@ static bool game_logic_iteration(bool * trigger_shot) {
         }
     }
 
-    if (is_mouse_left_key_pressed()) {
+    if (fire_key_held()) {
         shooting_start_action(level);
     }
 

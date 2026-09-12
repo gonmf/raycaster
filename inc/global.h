@@ -132,6 +132,10 @@ typedef struct __sprite_pack_ {
 
 #define WEAPON_SPRITE_MULTIPLIER 4
 
+// Each argument appears twice in the expansion, so an argument with side effects
+// may be evaluated twice, and nesting the two compounds it: writing
+// MIN(MAX(read_double(), 1.0), 179.0) would consume several lines of input.
+// Read into a variable first and pass that.
 #define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
 
@@ -191,6 +195,7 @@ typedef struct __sprite_pack_ {
 // Voodoo:
 #define MOVEMENT_CONSTANT 0.07
 #define ROTATION_CONSTANT 4.0
+#define KEYBOARD_ROTATION_CONSTANT 1.0 // degrees per logic cycle, 125 deg/s
 
 // In rendering blocks we need very fine ray steps to catch the edges.
 // To render simple objects, usually even round and with transparent sides,
@@ -259,8 +264,8 @@ void add_key_pressed(SDL_Keycode code);
 void remove_key_pressed(SDL_Keycode code);
 bool key_is_pressed(SDL_Keycode code);
 bool player_moving(void);
+bool fire_key_held(void);
 void clear_keys_pressed(void);
-bool is_mouse_left_key_pressed(void);
 void set_mouse_left_key_pressed(bool value);
 
 // file_io.c

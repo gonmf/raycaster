@@ -22,8 +22,9 @@ static bool object_locations_refresh_required;
 
 static unsigned int horizon_offset(const level_t * level) {
     if (is_look_up_down()) {
-        double vertical_multiplier = level->observer_angle2 / 90.0;
-        return (unsigned int)((VIEWPORT_HEIGHT / 2) * vertical_multiplier);
+        double vertical_multiplier = MIN(MAX(level->observer_angle2, 1.0), 179.0) / 90.0;
+        unsigned int offset = (unsigned int)((VIEWPORT_HEIGHT / 2) * vertical_multiplier);
+        return MIN(offset, (unsigned int)(VIEWPORT_HEIGHT - 1));
     } else {
         return VIEWPORT_HEIGHT / 2;
     }

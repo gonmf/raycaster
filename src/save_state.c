@@ -3,6 +3,7 @@
 static FILE * file;
 static char * line_buffer;
 static size_t line_buffer_size;
+static bool read_error;
 
 static void write_string(const char * v) {
     fprintf(file, "%s\n", v);
@@ -72,6 +73,7 @@ static void write_enemy_array(enemy_t * arr, unsigned int len) {
 
 static void read_string(char * str, size_t str_size) {
     if (getline(&line_buffer, &line_buffer_size, file) == -1) {
+        read_error = true;
         str[0] = 0;
         return;
     }
@@ -86,25 +88,37 @@ static void read_string(char * str, size_t str_size) {
 }
 
 static double read_double(void) {
-    getline(&line_buffer, &line_buffer_size, file);
+    if (getline(&line_buffer, &line_buffer_size, file) == -1) {
+        read_error = true;
+        return 0.0;
+    }
 
     return atof(line_buffer);
 }
 
 static unsigned int read_int(void) {
-    getline(&line_buffer, &line_buffer_size, file);
+    if (getline(&line_buffer, &line_buffer_size, file) == -1) {
+        read_error = true;
+        return 0;
+    }
 
     return (unsigned int)atoi(line_buffer);
 }
 
 static unsigned char read_char(void) {
-    getline(&line_buffer, &line_buffer_size, file);
+    if (getline(&line_buffer, &line_buffer_size, file) == -1) {
+        read_error = true;
+        return 0;
+    }
 
     return (unsigned char)atoi(line_buffer);
 }
 
 static bool read_bool(void) {
-    getline(&line_buffer, &line_buffer_size, file);
+    if (getline(&line_buffer, &line_buffer_size, file) == -1) {
+        read_error = true;
+        return false;
+    }
 
     return (bool)atoi(line_buffer);
 }
@@ -218,6 +232,7 @@ void save_game_state(unsigned char idx, const level_t * level) {
 bool read_game_state_name(unsigned char idx, char * s) {
     line_buffer = calloc(SAVE_FILE_NAME_SIZ, sizeof(char));
     line_buffer_size = SAVE_FILE_NAME_SIZ;
+    read_error = false;
 
     char buffer[SAVE_FILE_NAME_SIZ];
     snprintf(buffer, SAVE_FILE_NAME_SIZ, "saves/%u.save", idx);
@@ -235,12 +250,106 @@ bool read_game_state_name(unsigned char idx, char * s) {
     free(line_buffer);
     line_buffer = NULL;
 
-    return true;
+    return !read_error;
+}
+
+static bool valid_cell_effect(unsigned char effect) {
+    return effect == SPECIAL_EFFECT_NONE || effect == SPECIAL_EFFECT_LEVEL_END ||
+           effect == SPECIAL_EFFECT_REQUIRES_KEY_1 || effect == SPECIAL_EFFECT_REQUIRES_KEY_2;
+}
+
+static bool valid_object_effect(unsigned char effect) {
+    switch (effect) {
+        case SPECIAL_EFFECT_NONE:
+        case SPECIAL_EFFECT_SCORE_1:
+        case SPECIAL_EFFECT_SCORE_2:
+        case SPECIAL_EFFECT_SCORE_3:
+        case SPECIAL_EFFECT_SCORE_4:
+        case SPECIAL_EFFECT_KEY_1:
+        case SPECIAL_EFFECT_KEY_2:
+        case SPECIAL_EFFECT_AMMO:
+        case SPECIAL_EFFECT_MSG:
+        case SPECIAL_EFFECT_MINIGUN:
+        case SPECIAL_EFFECT_SMALL_HEALTH:
+        case SPECIAL_EFFECT_MEDIUM_HEALTH:
+        case SPECIAL_EFFECT_LARGE_HEALTH:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool level_is_sane(const level_t * level) {
+    unsigned int cells = level->width * level->height;
+    unsigned int wall_texture_count = wall_textures->width * wall_textures->height;
+    unsigned int object_texture_count = objects_sprites->width * objects_sprites->height;
+
+    if (level->observer_x < 0.0 || level->observer_x > (double)(level->width - 1) ||
+        level->observer_y < 0.0 || level->observer_y > (double)(level->height - 1)) {
+        return false;
+    }
+
+    for (unsigned int i = 0; i < cells; ++i) {
+        if (level->content_type[i] > CONTENT_TYPE_DOOR_OPEN) {
+            return false;
+        }
+        if (level->texture[i] >= wall_texture_count) {
+            return false;
+        }
+        if (!valid_cell_effect(level->special_effects[i])) {
+            return false;
+        }
+    }
+
+    for (unsigned int i = 0; i < level->objects_count; ++i) {
+        const object_t * object = &level->object[i];
+
+        if (object->type > OBJECT_TYPE_NON_BLOCK || object->texture >= object_texture_count ||
+            !valid_object_effect(object->special_effect) ||
+            object->x < 0.0 || object->x > (double)(level->width - 1) ||
+            object->y < 0.0 || object->y > (double)(level->height - 1)) {
+            return false;
+        }
+    }
+
+    for (unsigned int i = 0; i < level->enemies_count; ++i) {
+        const enemy_t * enemy = &level->enemy[i];
+
+        if (enemy->type > 2 || enemy->state > ENEMY_STATE_DEAD ||
+            enemy->strategic_state > ENEMY_STRATEGIC_STATE_ENGAGED ||
+            enemy->x < 0.0 || enemy->x > (double)(level->width - 1) ||
+            enemy->y < 0.0 || enemy->y > (double)(level->height - 1)) {
+            return false;
+        }
+    }
+
+    return level->weapon <= 3;
+}
+
+static level_t * abort_load(level_t * level, const char * filename) {
+    fprintf(stderr, "WARNING: ignoring truncated or corrupt save file \"%s\"\n", filename);
+
+    if (level) {
+        free(level->content_type);
+        free(level->texture);
+        free(level->special_effects);
+        free(level->map_revealed);
+        free(level->object);
+        free(level->enemy);
+        free(level);
+    }
+
+    fclose(file);
+    free(line_buffer);
+    line_buffer = NULL;
+
+    return NULL;
 }
 
 level_t * load_game_state(unsigned char idx) {
     line_buffer = calloc(SAVE_FILE_NAME_SIZ, sizeof(char));
     line_buffer_size = SAVE_FILE_NAME_SIZ;
+    read_error = false;
 
     char buffer[SAVE_FILE_NAME_SIZ];
     snprintf(buffer, SAVE_FILE_NAME_SIZ, "saves/%u.save", idx);
@@ -257,27 +366,51 @@ level_t * load_game_state(unsigned char idx) {
 
     unsigned int level_nr = read_int();
 
+    if (read_error) {
+        return abort_load(NULL, buffer);
+    }
+
     level_t * level = read_level_info(level_nr);
     free(level->content_type);
+    level->content_type = NULL;
     free(level->texture);
+    level->texture = NULL;
     free(level->special_effects);
+    level->special_effects = NULL;
     free(level->map_revealed);
+    level->map_revealed = NULL;
     free(level->object);
+    level->object = NULL;
     free(level->enemy);
+    level->enemy = NULL;
 
     level->level_nr = level_nr;
 
     level->observer_x = read_double();
     level->observer_y = read_double();
-    level->observer_angle = read_double();
-    level->observer_angle2 = read_double();
+    level->observer_angle = fit_angle(read_double());
+    double observer_angle2 = read_double();
+    level->observer_angle2 = MIN(MAX(observer_angle2, 1.0), 179.0);
     level->content_type = read_char_array(level->width * level->height);
     level->texture = read_char_array(level->width * level->height);
     level->special_effects = read_char_array(level->width * level->height);
     level->map_revealed = read_bool_array(level->width * level->height);
+
+    // Both counts are bounded by the map: map objects and enemies sit on distinct
+    // cells, and a dying enemy leaves at most one object behind.
+    unsigned int max_count = level->width * level->height;
+
     level->objects_count = read_int();
+    if (read_error || level->objects_count > max_count) {
+        return abort_load(level, buffer);
+    }
     object_t * objects = read_object_array(level->objects_count);
+
     level->enemies_count = read_int();
+    if (read_error || level->enemies_count > max_count) {
+        free(objects);
+        return abort_load(level, buffer);
+    }
     level->enemy = read_enemy_array(level->enemies_count);
 
     level->object = calloc(MAX(level->objects_count + level->enemies_count, 1), sizeof(object_t));
@@ -295,6 +428,13 @@ level_t * load_game_state(unsigned char idx) {
     level->weapon = read_char();
     level->weapons_available = read_char();
     level->ammo = read_int();
+
+    if (read_error || !level_is_sane(level)) {
+        return abort_load(level, buffer);
+    }
+
+    level->life = MIN(level->life, 100);
+    level->ammo = MIN(level->ammo, (unsigned int)MAX_AMMO);
 
     fclose(file);
     free(line_buffer);

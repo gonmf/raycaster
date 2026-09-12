@@ -43,7 +43,7 @@ bool player_moving(void) {
     for (unsigned int i = 0; i < keys_pressed_count; ++i) {
         SDL_Keycode code = keys_pressed[i];
 
-        if (code == SDLK_w || code == SDLK_s || code == SDLK_a || code == SDLK_d) {
+        if (code == SDLK_w || code == SDLK_s || code == SDLK_q || code == SDLK_e) {
             return true;
         }
     }
@@ -56,8 +56,8 @@ void clear_keys_pressed(void) {
     mouse_left_key_pressed = false;
 }
 
-bool is_mouse_left_key_pressed(void) {
-    return mouse_left_key_pressed;
+bool fire_key_held(void) {
+    return mouse_left_key_pressed || key_is_pressed(SDLK_RETURN) || key_is_pressed(SDLK_KP_ENTER);
 }
 
 void set_mouse_left_key_pressed(bool value) {

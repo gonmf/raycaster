@@ -27,11 +27,13 @@ If that's case, try granting the program [accessibility permissions](https://use
 
 Input | Action
 --- | ---
-Keys `WASD` | Move character
+Keys `W` `S` | Move forwards and backwards
+Keys `A` `D` | Rotate left and right
+Keys `Q` `E` | Strafe left and right
 _mouse movement_ | Move camera
-_mouse left click_ | Shoot weapon
+_mouse left click_ or key `Enter` | Shoot weapon
 Keys `1234` | Select weapon
-Key `E` | Open doors
+_space bar_ | Open doors
 Key `M` | Toggle map
 
 ## Screenshots

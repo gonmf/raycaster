@@ -2,6 +2,7 @@
 
 static int * player_dist_map;
 static int * noise_dist_map;
+static unsigned char * difficult_map;
 static unsigned int player_dist_map_x;
 static unsigned int player_dist_map_y;
 
@@ -30,7 +31,8 @@ void hit_enemy(level_t * level, enemy_t * enemy, double distance) {
     }
 
     if (enemy->state != ENEMY_STATE_DYING && enemy->state != ENEMY_STATE_DEAD) {
-        unsigned char shot_power = MAX((unsigned int)(90 / distance) + 18, 12) + (rand() % 20);
+        unsigned int power = MAX((unsigned int)(90 / MAX(distance, 0.1)) + 18, 12u) + (rand() % 20);
+        unsigned char shot_power = (unsigned char)MIN(power, 255u);
 
         if (enemy->life > shot_power) {
             enemy->life -= shot_power;
@@ -78,7 +80,7 @@ static void hit_player(level_t * level, enemy_t * enemy) {
         return;
     }
 
-    unsigned char shot_power = MAX(MIN((unsigned int)(18 / dist) + 18, 50), 18);
+    unsigned char shot_power = MAX(MIN((unsigned int)(18 / MAX(dist, 0.1)) + 18, 50), 18);
     if (enemy->type == 2) {
         shot_power /= 2;
     } else {
@@ -99,7 +101,7 @@ static void decrement_animation_step(enemy_t * enemy) {
     }
 }
 
-static void fill_in_player_dist_map(const level_t * level, int * map, unsigned int x, unsigned int y, int steps) {
+static void fill_in_player_dist_map(const level_t * level, int * map, const unsigned char * difficulty, unsigned int x, unsigned int y, int steps) {
     unsigned int width = level->width;
     unsigned int height = level->height;
 
@@ -109,7 +111,7 @@ static void fill_in_player_dist_map(const level_t * level, int * map, unsigned i
     if (map[x + y * width] == -2 || level->content_type[x + y * width] == CONTENT_TYPE_WALL || level->content_type[x + y * width] == CONTENT_TYPE_DOOR) {
         return;
     }
-    if (map[x + y * width] == -1) {
+    if (difficulty && difficulty[x + y * width]) {
         steps += 10;
     }
 
@@ -119,15 +121,15 @@ static void fill_in_player_dist_map(const level_t * level, int * map, unsigned i
 
     map[x + y * width] = steps;
 
-    fill_in_player_dist_map(level, map, x + 1, y, steps + 10);
-    fill_in_player_dist_map(level, map, x - 1, y, steps + 10);
-    fill_in_player_dist_map(level, map, x, y + 1, steps + 10);
-    fill_in_player_dist_map(level, map, x, y - 1, steps + 10);
+    fill_in_player_dist_map(level, map, difficulty, x + 1, y, steps + 10);
+    fill_in_player_dist_map(level, map, difficulty, x - 1, y, steps + 10);
+    fill_in_player_dist_map(level, map, difficulty, x, y + 1, steps + 10);
+    fill_in_player_dist_map(level, map, difficulty, x, y - 1, steps + 10);
 
-    fill_in_player_dist_map(level, map, x + 1, y + 1, steps + 14);
-    fill_in_player_dist_map(level, map, x + 1, y - 1, steps + 14);
-    fill_in_player_dist_map(level, map, x - 1, y + 1, steps + 14);
-    fill_in_player_dist_map(level, map, x - 1, y - 1, steps + 14);
+    fill_in_player_dist_map(level, map, difficulty, x + 1, y + 1, steps + 14);
+    fill_in_player_dist_map(level, map, difficulty, x + 1, y - 1, steps + 14);
+    fill_in_player_dist_map(level, map, difficulty, x - 1, y + 1, steps + 14);
+    fill_in_player_dist_map(level, map, difficulty, x - 1, y - 1, steps + 14);
 }
 
 static void pick_target_coord(
@@ -176,26 +178,39 @@ static void calc_distances_to_player(const level_t * level) {
     // map can be accessible (0), difficult (-1) or impassable (-2)
     memset(player_dist_map, 0, width * height * sizeof(int));
     memset(noise_dist_map, 0, width * height * sizeof(int));
+    memset(difficult_map, 0, width * height);
 
     for (unsigned int i = 0; i < level->enemies_count; ++i) {
         unsigned int x = (unsigned int)(level->enemy[i].x + 0.5);
         unsigned int y = (unsigned int)(level->enemy[i].y + 0.5);
 
-        player_dist_map[x + y * level->width] = -1;
+        if (x >= width || y >= height) {
+            continue;
+        }
+
+        player_dist_map[x + y * width] = -1;
+        difficult_map[x + y * width] = 1;
     }
     for (unsigned int i = 0; i < level->objects_count; ++i) {
         unsigned int x = (unsigned int)(level->object[i].x + 0.5);
         unsigned int y = (unsigned int)(level->object[i].y + 0.5);
 
+        if (x >= width || y >= height) {
+            continue;
+        }
+
         if (level->object[i].type == OBJECT_TYPE_BLOCKING) {
-            player_dist_map[x + y * level->width] = -2;
+            player_dist_map[x + y * width] = -2;
+            difficult_map[x + y * width] = 0;
         } else {
-            player_dist_map[x + y * level->width] = -1;
+            player_dist_map[x + y * width] = -1;
+            difficult_map[x + y * width] = 1;
         }
     }
 
-    fill_in_player_dist_map(level, player_dist_map, rounded_x, rounded_y, 0);
-    fill_in_player_dist_map(level, noise_dist_map, rounded_x, rounded_y, 0);
+    // noise travels regardless of what is standing in the way
+    fill_in_player_dist_map(level, player_dist_map, difficult_map, rounded_x, rounded_y, 0);
+    fill_in_player_dist_map(level, noise_dist_map, NULL, rounded_x, rounded_y, 0);
 
     player_dist_map[rounded_x + rounded_y * width] = -2;
 
@@ -226,7 +241,7 @@ static bool is_empty(const level_t * level, unsigned int x, unsigned int y) {
     if (x < level->width && y < level->height) {
         return level->content_type[x + y * level->width] == CONTENT_TYPE_EMPTY || level->content_type[x + y * level->width] == CONTENT_TYPE_DOOR_OPEN;
     }
-    return true;
+    return false;
 }
 
 static bool make_movement_plan(const level_t * level, enemy_t * enemy) {
@@ -390,7 +405,7 @@ void update_enemies_state(level_t * level) {
             continue;
         }
         if (enemy->strategic_state == ENEMY_STRATEGIC_STATE_WAITING) {
-            if (enemy_distance < ENEMY_VIEWING_DISTANCE && in_enemy_view(level, enemy)) {
+            if (enemy_distance < ENEMY_VIEWING_DISTANCE && in_enemy_view(level, enemy) && has_line_of_fire(level, enemy, enemy_distance)) {
                 enemy->strategic_state = ENEMY_STRATEGIC_STATE_ALERTED;
             }
         }
@@ -426,12 +441,16 @@ void init_game_buffers(const level_t * level) {
     if (noise_dist_map) {
         free(noise_dist_map);
     }
+    if (difficult_map) {
+        free(difficult_map);
+    }
 
     unsigned int width = level->width;
     unsigned int height = level->height;
 
     player_dist_map = malloc(width * height * sizeof(int));
     noise_dist_map = malloc(width * height * sizeof(int));
+    difficult_map = malloc(width * height);
     player_dist_map_x = UINT_MAX;
     player_dist_map_y = UINT_MAX;
 }
